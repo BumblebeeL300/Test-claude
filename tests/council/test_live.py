@@ -104,3 +104,12 @@ async def test_council_run_live_flag(monkeypatch, mock_client, panel) -> None:
     result = await Council(mock_client).run("hi", "moa", models=panel, layers=0, live=True)
     assert result.answer
     assert "Council" in sink.getvalue()
+
+
+def test_consensus_note_attaches_to_the_latest_phase() -> None:
+    view = CouncilLive(Console(file=io.StringIO()))
+    view(PhaseStarted("Round 1 · revise"))
+    view(started(0, "a/m", "Agent 1", "Round 1 · revise"))
+    view(ConsensusComputed("Round 1", 0.77))  # phase name differs from the call phase
+    assert [p.name for p in view.phases] == ["Round 1 · revise"]
+    assert "agreement 0.77" in text_of(view)

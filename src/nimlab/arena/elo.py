@@ -177,6 +177,11 @@ def bootstrap_elo(
     full = fit_bradley_terry(outs, names, prior=prior, base=base)
     if not len(s):
         return {m: EloRating(m, base, base, base, 0) for m in names}
+    if n_boot <= 0:  # point estimates only
+        return {
+            m: EloRating(m, full.elo[m], full.elo[m], full.elo[m], int(full.games[i]))
+            for i, m in enumerate(names)
+        }
     rng = np.random.default_rng(seed)
     m = len(s)
     samples = np.empty((n_boot, n))

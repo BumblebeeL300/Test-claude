@@ -13,7 +13,7 @@ from rich.text import Text
 
 from .leaderboard import Leaderboard, ModelStanding
 
-__all__ = ["render_html", "render_terminal", "write_html"]
+__all__ = ["render_elo_table", "render_html", "render_terminal", "write_html"]
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 _N_BUCKETS = 9
@@ -465,3 +465,44 @@ def _terminal_row(st: ModelStanding, lb: Leaderboard) -> list[Any]:
         ("$" * st.cost_tier) if st.cost_tier else "?",
     ]
     return cells
+
+
+def render_elo_table(lb: Leaderboard, run: Any = None) -> Table:
+    """Rich table of Elo ratings with confidence intervals (and battle record if ``run`` given)."""
+    source = {"battles": "judge battles", "scores": "per-item scores", "none": "no data"}[lb.elo_source]
+    table = Table(
+        title=f"Elo (Bradley–Terry, 95% bootstrap CI) • {source} • {lb.elo_games} games",
+        title_justify="left",
+        header_style="bold",
+    )
+    table.add_column("#", justify="right")
+    table.add_column("Model", overflow="fold")
+    table.add_column("Elo", justify="right")
+    table.add_column("95% CI", justify="right")
+    table.add_column("Games", justify="right")
+    record: dict[str, list[int]] = {}
+    if run is not None and getattr(run, "battles", None):
+        for b in run.battles:
+            for m, s in ((b.model_a, b.score_a), (b.model_b, 1.0 - b.score_a)):
+                w = record.setdefault(m, [0, 0, 0])
+                w[0 if s > 0.5 else 2 if s < 0.5 else 1] += 1
+        table.add_column("W-T-L", justify="right")
+    rated = sorted((s for s in lb.standings if s.elo is not None), key=lambda s: -(s.elo or 0))
+    for i, s in enumerate(rated, 1):
+        row = [
+            str(i),
+            s.model,
+            f"{s.elo:.0f}",
+            f"{s.elo_lo:.0f} – {s.elo_hi:.0f}" if s.elo_lo is not None else "–",
+            str(s.elo_games),
+        ]
+        if record:
+            w = record.get(s.model, [0, 0, 0])
+            row.append(f"{w[0]}-{w[1]}-{w[2]}")
+        table.add_row(*row)
+    if lb.position_bias is not None:
+        table.caption = (
+            f"Judge picked slot A in {lb.position_bias * 100:.0f}% of decisive verdicts "
+            "(50% = no position bias; each pair is judged in both orders)."
+        )
+    return table

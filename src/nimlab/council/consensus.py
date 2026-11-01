@@ -28,7 +28,7 @@ _STOP = frozenset(
 )
 
 
-def cosine_matrix(vectors: Sequence[Sequence[float]]) -> np.ndarray:
+def cosine_matrix(vectors: Sequence[Sequence[float]] | np.ndarray) -> np.ndarray:
     """Pairwise cosine similarity (n x n). Zero vectors have similarity 0 to everything else."""
     if len(vectors) == 0:
         return np.zeros((0, 0))

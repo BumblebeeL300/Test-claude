@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import re
 import time
 from collections.abc import AsyncIterator, Callable, Sequence
@@ -211,8 +212,6 @@ class Atlas:
             if media_type_for(name) is None:
                 finish(FileReport(path=key, name=name, status="skipped", message="unsupported type"))
                 continue
-            import hashlib
-
             raw_hash = hashlib.sha256(data).hexdigest()
             existing = self.store.get_document(collection, key)
             if (
@@ -279,7 +278,7 @@ class Atlas:
                     existing=existing,
                     chunks=kept,
                     duplicates=dups,
-                    reused={h: v for h, v in old.items()},
+                    reused=dict(old),
                     todo=[c for c in kept if c.hash not in old],
                 )
             )

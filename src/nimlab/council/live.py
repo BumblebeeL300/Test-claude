@@ -126,14 +126,15 @@ class CouncilLive:
             phase.calls.append(call)
             self._style(event.model)
         elif isinstance(event, CallFinished):
-            call = self._calls.get(event.step_index)
-            if call is not None:
-                call.status = "ok" if event.ok else "error"
-                call.duration = event.duration_s
-                call.tokens = event.total_tokens
-                call.error = event.error
+            finished = self._calls.get(event.step_index)
+            if finished is not None:
+                finished.status = "ok" if event.ok else "error"
+                finished.duration = event.duration_s
+                finished.tokens = event.total_tokens
+                finished.error = event.error
         elif isinstance(event, ConsensusComputed):
-            phase = self._open_phase(event.phase)
+            # the agreement belongs to the stage that just finished, not to a phase of its own
+            phase = self.phases[-1] if self.phases else self._open_phase(event.phase)
             outliers = f", outliers: {', '.join(event.outliers)}" if event.outliers else ""
             phase.note = f"agreement {event.agreement:.2f}{outliers}"
         elif isinstance(event, RunFinished):

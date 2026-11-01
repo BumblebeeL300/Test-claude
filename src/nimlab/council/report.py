@@ -213,7 +213,7 @@ def build_view(trace: Trace) -> dict[str, Any]:
             "total": f"{totals['total']:,}",
         },
         "total_tokens": f"{totals['total']:,}",
-        "meta": {k: v for k, v in trace.meta.items() if k != "warnings"},
+        "meta": {k: v for k, v in trace.meta.items() if k != "warnings" and v is not None},
         "warnings": trace.meta.get("warnings", []),
     }
 

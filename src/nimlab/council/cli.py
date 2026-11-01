@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.table import Table
@@ -81,7 +82,7 @@ def ask(
     except CouncilError as exc:
         raise typer.BadParameter(str(exc), param_hint="--strategy") from exc
 
-    overrides = {
+    overrides: dict[str, Any] = {
         "rounds": rounds,
         "layers": layers,
         "n": n,
@@ -99,7 +100,7 @@ def ask(
     if mock:
         os.environ["NIMLAB_MOCK"] = "1"
     try:
-        result, error = asyncio.run(
+        result, error, usage = asyncio.run(
             _ask(question, strategy, _split_models(models), overrides, live, console)
         )
     finally:
@@ -122,16 +123,18 @@ def ask(
         raise typer.Exit(1)
     assert result is not None
     print_result(console, result, verbose=verbose)
+    if usage is not None:
+        console.print(usage)
 
 
 async def _ask(
     question: str,
     strategy: str,
     models: list[str] | None,
-    overrides: dict[str, object],
+    overrides: dict[str, Any],
     live: bool | None,
     console,
-) -> tuple[CouncilResult | None, CouncilError | None]:
+) -> tuple[CouncilResult | None, CouncilError | None, Table | None]:
     from nimlab.core.client import NIMClient
 
     use_live = console.is_terminal if live is None else live
@@ -146,9 +149,8 @@ async def _ask(
             else:
                 result = await council.run(question, strategy, models=models, **overrides)
         except CouncilError as exc:
-            return None, exc
-        console.print(client.usage.rich_table("Token usage"))
-        return result, None
+            return None, exc, None
+        return result, None, client.usage.rich_table("Token usage")
 
 
 @app.command()

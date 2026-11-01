@@ -150,7 +150,7 @@ class FakeClient:
 
 
 def _keyword_embedding(text: str) -> list[float]:
-    """One-hot-ish topic vectors: texts mentioning ALPHA / BETA / GAMMA point in different directions."""
+    """One-hot-ish topic vectors: ALPHA / BETA / GAMMA texts point in different directions."""
     low = text.lower()
     vec = [float("alpha" in low), float("beta" in low), float("gamma" in low), 0.05]
     return vec
