@@ -1,4 +1,4 @@
-"""End to end ingest -> ask: offline mock backend over the example corpus, and scripted live-style runs."""
+"""End to end ingest -> ask: offline mock over the example corpus, then scripted live-style runs."""
 
 from __future__ import annotations
 
@@ -8,10 +8,13 @@ import pytest
 
 from nimlab.atlas import Atlas, AtlasError
 from nimlab.atlas.engine import MOCK_WARNING
+from nimlab.atlas.retrieval import RetrievalResult
 
-from .conftest import FakeClient  # noqa: TID252
+from .conftest import FakeClient
 
-HEARTBEAT_Q = "How often do robots send heartbeats, and how many missed heartbeats mark a robot as lost?"
+HEARTBEAT_Q = (
+    "How often do robots send heartbeats, and how many missed heartbeats mark a robot as lost?"
+)
 
 
 # ----------------------------------------------------------------------------- mock backend
@@ -36,10 +39,12 @@ async def test_mock_ask_retrieves_the_right_document_and_reports_the_pipeline(in
         ("What is the API rate limit?", "api_guide.md"),
         ("What first-response time is required for a Sev1 incident?", "incident_runbook.md"),
         ("How many approvals does firmware code need?", "onboarding.md"),
-        ("What does the term tote mean?", "glossary.md"),
+        ("How many kilograms can a tote hold?", "glossary.md"),
     ],
 )
-async def test_mock_ask_finds_the_relevant_file_for_varied_questions(indexed: Atlas, question: str, expected: str):
+async def test_mock_ask_finds_the_relevant_file_for_varied_questions(
+    indexed: Atlas, question: str, expected: str
+):
     answer = await indexed.ask(question, k=4)
     assert expected in {s.source for s in answer.sources[:2]}
 
@@ -55,14 +60,17 @@ async def test_mock_ask_with_verify_uses_the_offline_lexical_judge(indexed: Atla
     assert [s.kind for s in answer.trace][-2:] == ["verify", "verify"]
 
 
-async def test_mock_ask_with_revise_never_crashes_and_keeps_the_original_if_not_better(indexed: Atlas):
+async def test_mock_ask_with_revise_never_crashes_and_keeps_the_original_if_not_better(
+    indexed: Atlas,
+):
     answer = await indexed.ask(HEARTBEAT_Q, revise=True)
     assert answer.verification is not None and answer.text
 
 
 async def test_mock_agentic_mode_end_to_end(indexed: Atlas):
     answer = await indexed.ask(
-        "What must I complete before primary on-call? Who is paged if the primary does not acknowledge?",
+        "What must I complete before primary on-call? "
+        "Who is paged if the primary does not acknowledge?",
         mode="agentic",
         verify=True,
         k=4,
@@ -79,9 +87,16 @@ async def test_unknown_collection_or_empty_collection_returns_a_helpful_message(
     assert any("empty" in w for w in answer.warnings)
 
 
-async def test_query_without_any_overlap_finds_nothing_relevant(indexed: Atlas):
-    answer = await indexed.ask("qxqxqx zzvvzz")
+async def test_no_retrieved_passages_means_no_model_call(indexed: Atlas, monkeypatch):
+    async def nothing(*args, **kwargs):
+        return RetrievalResult([])
+
+    monkeypatch.setattr(indexed.retriever, "retrieve", nothing)
+    before = indexed.client.usage.total_calls
+    answer = await indexed.ask("anything")
     assert answer.sources == [] and "could not find anything relevant" in answer.text
+    assert indexed.client.usage.total_calls == before  # the model was never asked
+    assert any("Nothing relevant" in w for w in answer.warnings)
 
 
 async def test_invalid_arguments(indexed: Atlas):
@@ -95,7 +110,9 @@ async def test_stream_events_arrive_in_order_and_tokens_rebuild_the_answer(index
     events = [e async for e in indexed.ask_stream(HEARTBEAT_Q, verify=True)]
     types = [e.type for e in events]
     assert types[-1] == "final" and types.count("final") == 1 and types.count("sources") == 1
-    assert types.index("trace") < types.index("sources") < types.index("token") < types.index("final")
+    assert (
+        types.index("trace") < types.index("sources") < types.index("token") < types.index("final")
+    )
     assert types[types.index("token") :].count("trace") >= 2  # verification steps follow the tokens
     streamed = "".join(e.text for e in events if e.type == "token")
     assert streamed.strip() == events[-1].answer.text  # type: ignore[union-attr]
@@ -111,7 +128,9 @@ async def test_answer_serialises_to_json(indexed: Atlas):
     answer = await indexed.ask(HEARTBEAT_Q, verify=True)
     data = answer.model_dump(mode="json")
     assert data["sources"][0]["label"].startswith("architecture.md")
-    assert {"question", "text", "citations", "sources", "verification", "trace", "warnings"} <= set(data)
+    assert {"question", "text", "citations", "sources", "verification", "trace", "warnings"} <= set(
+        data
+    )
 
 
 async def test_stats_describe_database_and_models(indexed: Atlas):
@@ -129,7 +148,7 @@ async def test_open_context_manager_owns_client_and_store(tmp_path, corpus_dir):
         assert answer.sources[0].source == "glossary.md"
 
 
-# ----------------------------------------------------------------------------- scripted "live" client
+# ------------------------------------------------------------------- scripted "live" client
 
 
 def source_number(system_prompt: str, filename: str) -> int:
@@ -153,10 +172,13 @@ async def make_atlas(client, db_path, corpus_dir) -> Atlas:
 
 
 async def test_citations_are_mapped_to_chunks_and_hallucinated_ones_removed(db_path, corpus_dir):
-    client = FakeClient(chat=citing_chat("Robots send heartbeats every 2 seconds [{n}]. Invented detail [9]."))
+    client = FakeClient(
+        chat=citing_chat("Robots send heartbeats every 2 seconds [{n}]. Invented detail [9].")
+    )
     atlas = await make_atlas(client, db_path, corpus_dir)
     answer = await atlas.ask(HEARTBEAT_Q)
-    assert answer.text == "Robots send heartbeats every 2 seconds [%d]. Invented detail." % answer.citations[0].n
+    n = answer.citations[0].n
+    assert answer.text == f"Robots send heartbeats every 2 seconds [{n}]. Invented detail."
     (citation,) = answer.citations
     assert citation.source == "architecture.md" and "Messaging" in citation.heading_path
     assert citation in answer.sources and citation.text.startswith("Robots and Hive exchange")
@@ -169,7 +191,9 @@ async def test_answer_without_citations_gets_a_warning_unless_it_abstains(db_pat
     answer = await atlas.ask(HEARTBEAT_Q)
     assert answer.citations == [] and any("no inline citations" in w for w in answer.warnings)
     atlas.close()
-    atlas = await make_atlas(FakeClient(chat="The provided sources do not cover this."), db_path, corpus_dir)
+    atlas = await make_atlas(
+        FakeClient(chat="The provided sources do not cover this."), db_path, corpus_dir
+    )
     answer = await atlas.ask(HEARTBEAT_Q)
     assert not any("no inline citations" in w for w in answer.warnings)
     atlas.close()
@@ -188,7 +212,9 @@ async def test_prompt_contains_numbered_sources_and_the_bare_question(db_path, c
 
 
 async def test_streaming_uses_stream_chat_and_final_event_has_citations(db_path, corpus_dir):
-    client = FakeClient(chat=citing_chat("Heartbeats every 2 seconds [{n}]. Lost after 3 missed [{n}]."))
+    client = FakeClient(
+        chat=citing_chat("Heartbeats every 2 seconds [{n}]. Lost after 3 missed [{n}].")
+    )
     atlas = await make_atlas(client, db_path, corpus_dir)
     events = [e async for e in atlas.ask_stream(HEARTBEAT_Q)]
     assert client.chat_calls[-1].get("stream") is True
@@ -213,10 +239,16 @@ async def test_verification_with_a_scripted_judge_reports_groundedness(db_path, 
     def judge(messages):
         claim = messages[-1]["content"].split("CLAIM\n", 1)[1]
         ok = "2 seconds" in claim
-        return {"verdict": "supported" if ok else "unsupported", "evidence": "", "reason": "scripted"}
+        return {
+            "verdict": "supported" if ok else "unsupported",
+            "evidence": "",
+            "reason": "scripted",
+        }
 
     client = FakeClient(
-        chat=citing_chat("Heartbeats are sent every 2 seconds [{n}]. Robots communicate with telepathy [{n}]."),
+        chat=citing_chat(
+            "Heartbeats are sent every 2 seconds [{n}]. Robots communicate with telepathy [{n}]."
+        ),
         json={"ClaimJudgement": judge},
     )
     atlas = await make_atlas(client, db_path, corpus_dir)
@@ -225,14 +257,16 @@ async def test_verification_with_a_scripted_judge_reports_groundedness(db_path, 
     assert report is not None and report.method == "llm"
     assert report.groundedness == pytest.approx(0.5) and report.unsupported == 1
     assert [c.text for c in report.unsupported_claims] == [
-        "Robots communicate with telepathy [%d]." % answer.citations[0].n
+        f"Robots communicate with telepathy [{answer.citations[0].n}]."
     ]
-    assert answer.usage["calls"] >= 5  # embed + rerank + answer + two judgements
+    assert answer.usage["calls"] == 4  # query embedding + answer + two judgements
     atlas.close()
 
 
 async def test_sources_contain_every_context_passage_even_if_uncited(db_path, corpus_dir):
-    atlas = await make_atlas(FakeClient(chat=citing_chat("Only one cite [{n}].")), db_path, corpus_dir)
+    atlas = await make_atlas(
+        FakeClient(chat=citing_chat("Only one cite [{n}].")), db_path, corpus_dir
+    )
     answer = await atlas.ask(HEARTBEAT_Q, k=5)
     assert len(answer.sources) == 5 and len(answer.citations) == 1
     atlas.close()

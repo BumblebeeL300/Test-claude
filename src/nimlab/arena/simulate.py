@@ -10,8 +10,8 @@ Everything else (arbitrary chat, tool calls, JSON schemas, embeddings) is delega
 mock client, so the proxy keeps working for any prompt.
 
 Timing is *virtual*: the client really sleeps for ``virtual_seconds * time_scale`` and advertises
-``time_scale`` so that the runner can report the virtual figures (a 40 ms sleep is reported as 2 s
-at the default scale of 0.02).
+``time_scale`` so that the runner can report the virtual figures (a 40 ms sleep is reported as 1 s
+at the default scale of 0.04).
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ __all__ = ["ModelProfile", "SimulatedClient", "model_profile"]
 
 T = TypeVar("T", bound=BaseModel)
 
-DEFAULT_TIME_SCALE = 0.02
+DEFAULT_TIME_SCALE = 0.04
 _WRONG_TEXT = "I'm not certain about this one, so I will not commit to a specific answer."
 
 
@@ -153,12 +153,26 @@ class SimulatedClient:
     def _answer(self, model: str, suite: Suite, item: EvalItem) -> str:
         prof = model_profile(model, self.registry)
         u = _u01("answer", model, suite.name, item.id)
-        reference = item.reference or ""
         if suite.grader_for(item).type == "llm_judge":
             return self._summary(prof, suite, item, u)
         if u < prof.p_correct(suite.category):
-            return reference
+            return item.reference or self._synthesize(suite, item)
         return self._wrong(suite, item)
+
+    @staticmethod
+    def _synthesize(suite: Suite, item: EvalItem) -> str:
+        """A correct answer for simple graders when the item carries no ``reference``."""
+        spec = suite.grader_for(item)
+        params = spec.params
+        if spec.type == "numeric":
+            return f"Answer: {float(params['expected']):g}"
+        if spec.type == "exact":
+            expected = params["expected"]
+            return expected if isinstance(expected, str) else str(expected[0])
+        if spec.type == "contains_all":
+            words = [*params.get("required", []), *(g[0] for g in params.get("any_of", []))]
+            return " ".join(words)
+        return ""
 
     def _wrong(self, suite: Suite, item: EvalItem) -> str:
         spec = suite.grader_for(item)

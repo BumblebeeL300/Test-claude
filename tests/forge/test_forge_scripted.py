@@ -15,7 +15,7 @@ from forge_fakes import FakeCall, FakeClient, calls, say, tc
 
 from conftest import APPROVE_JSON, FIZZBUZZ_BUGGY, FIZZBUZZ_PATCH, FIZZBUZZ_TESTS, PLAN_JSON
 from nimlab.core import NIMAuthError, NIMJSONError, NIMResponseError
-from nimlab.forge import Forge, ForgeConfig, ForgeEvent, ForgeReport
+from nimlab.forge import Forge, ForgeConfig, ForgeEvent, ForgeReport, apply_patch_text
 from nimlab.forge.context import TRANSITIONS, State
 from nimlab.forge.models import REPORT_JSON, REPORT_MD
 from nimlab.forge.roles import model_family
@@ -229,6 +229,54 @@ class TestHappyPath:
         assert {c.path for c in report.files_changed} == {"fizzbuzz.py", "test_fizzbuzz.py"}
         implement_prompt = client.of_kind("chat")[0].messages[1]["content"]
         assert "README.md" in implement_prompt and "def helper(x)" in implement_prompt
+
+
+class TestNoChanges:
+    GREEN = {
+        "fizzbuzz.py": apply_patch_text(FIZZBUZZ_BUGGY, FIZZBUZZ_PATCH).text,
+        "test_fizzbuzz.py": FIZZBUZZ_TESTS,
+    }
+
+    def seed(self, ws: Path) -> None:
+        for name, text in self.GREEN.items():
+            (ws / name).write_text(text)
+
+    async def test_green_but_untouched_workspace_is_nudged_then_succeeds(self, ws: Path) -> None:
+        self.seed(ws)
+        extra_test = (
+            FIZZBUZZ_TESTS + "\n\ndef test_big():\n    assert fizzbuzz(1500) == 'FizzBuzz'\n"
+        )
+
+        def chat(call: FakeCall) -> Any:
+            if call.index == 0:
+                return say("The code already works, nothing to do.")  # lazy coder
+            if call.messages[-1]["role"] == "tool":
+                return say("Added a test.")
+            return calls(tc("write_file", path="test_fizzbuzz.py", content=extra_test))
+
+        client = FakeClient(chat=chat, json=[PLAN_JSON, APPROVE_JSON])
+        report, events = await run_forge(client, ws)
+        assert report.status == "success" and report.iterations == 1
+        assert [r.ok for r in report.test_rounds] == [True, True]
+        nudge = client.of_kind("chat")[1].last_user
+        assert "no file in the workspace has been created or modified" in nudge
+        assert [c.path for c in report.files_changed] == ["test_fizzbuzz.py"]
+        assert any("nothing was changed" in e.message for e in events)
+
+    async def test_coder_that_never_acts_ends_as_not_done(self, ws: Path) -> None:
+        self.seed(ws)
+        client = FakeClient(chat=lambda _call: say("Looks good to me."), json=[PLAN_JSON])
+        report, _ = await run_forge(client, ws, rollback_on_fail=True)
+        assert report.status == "failed" and report.ended_reason.startswith("the tests pass but no")
+        assert report.iterations == 2 and report.rolled_back is False  # nothing to roll back
+        assert report.review is None and report.files_changed == []
+        assert "not done" in report.summary or "no files were changed" in report.summary
+
+    async def test_nudging_respects_max_iters(self, ws: Path) -> None:
+        self.seed(ws)
+        client = FakeClient(chat=lambda _call: say("done"), json=[PLAN_JSON])
+        report, _ = await run_forge(client, ws, max_iters=0)
+        assert report.status == "failed" and report.iterations == 0 and len(report.test_rounds) == 1
 
 
 class TestReviewRound:
@@ -691,3 +739,23 @@ class TestFailureModes:
         report, _ = await run_forge(FakeClient(**script), ws)
         assert report.status == "success"
         assert any("test count dropped from 2 to 1" in w for w in report.warnings)
+
+
+async def test_workspace_that_is_a_file_is_rejected(tmp_path: Path) -> None:
+    target = tmp_path / "file.txt"
+    target.write_text("not a directory")
+    with pytest.raises(NotADirectoryError):
+        await Forge(FakeClient(json=[PLAN_JSON])).run("task", target, dry_run=True)
+
+
+async def test_concurrent_runs_do_not_interfere(tmp_path: Path) -> None:
+    dirs = [tmp_path / "one", tmp_path / "two"]
+    for d in dirs:
+        d.mkdir()
+    clients = [FakeClient(**fizzbuzz_script()) for _ in dirs]
+    reports = await asyncio.gather(*(run_forge(c, d) for c, d in zip(clients, dirs, strict=True)))
+    for (report, _), d, client in zip(reports, dirs, clients, strict=True):
+        assert report.status == "success" and report.workspace == str(d.resolve())
+        assert client.unexpected == []
+        assert report.usage["total"]["calls"] == len(client.calls) == 9
+        assert sorted(p.name for p in d.iterdir()) == [".forge", "fizzbuzz.py", "test_fizzbuzz.py"]

@@ -7,9 +7,8 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 import pytest
-from arena_fakes import ScriptedClient
+from arena_fakes import BIG, CODER, FASTM, REASONER, ScriptedClient, make_run
 from fastapi.testclient import TestClient
-from test_router import BIG, CODER, FASTM, REASONER, make_run
 
 from nimlab.arena.leaderboard import Leaderboard
 from nimlab.arena.proxy import AUTO_MODEL, create_app

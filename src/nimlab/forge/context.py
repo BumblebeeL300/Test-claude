@@ -96,6 +96,8 @@ class RunContext:
     iterations: int = 0  # debug + review-fix rounds used (shared budget: config.max_iters)
     escalations: int = 0
     pending_rca: str | None = None
+    nudges: int = 0  # times the coder was told "tests pass but nothing changed"
+    no_changes_pending: bool = False
     root_causes: list[str] = field(default_factory=list)
 
     review: Review | None = None

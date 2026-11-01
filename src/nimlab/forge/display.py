@@ -194,14 +194,14 @@ def render_report(report: ForgeReport, *, show_diff: bool = False) -> list[Rende
         )
 
     if report.files_changed:
-        files = Table(title="Files changed", title_justify="left")
-        files.add_column("file")
-        files.add_column("status")
-        files.add_column("+", justify="right", style="green")
-        files.add_column("-", justify="right", style="red")
+        changed = Table(title="Files changed", title_justify="left")
+        changed.add_column("file")
+        changed.add_column("status")
+        changed.add_column("+", justify="right", style="green")
+        changed.add_column("-", justify="right", style="red")
         for c in report.files_changed:
-            files.add_row(escape(c.path), c.status, str(c.additions), str(c.deletions))
-        out.append(files)
+            changed.add_row(escape(c.path), c.status, str(c.additions), str(c.deletions))
+        out.append(changed)
 
     if report.timings:
         timings = Table(title="Phase timings", title_justify="left")

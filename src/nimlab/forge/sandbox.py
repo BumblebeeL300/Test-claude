@@ -20,10 +20,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import os
+import shlex
 import signal
 import sys
 import time
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -221,7 +222,7 @@ async def _drain(stream: asyncio.StreamReader | None, cap: int) -> _CappedBuffer
         buf.feed(chunk)
 
 
-def _child_limits(cpu_seconds: int, max_file_bytes: int):  # type: ignore[no-untyped-def]
+def _child_limits(cpu_seconds: int, max_file_bytes: int) -> Callable[[], None] | None:
     """``preexec_fn`` applying POSIX resource limits to the child (None where unsupported)."""
     if os.name != "posix":  # pragma: no cover - windows
         return None
@@ -459,15 +460,19 @@ class Sandbox:
         base = [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", f"--rootdir={self.root}"]
         if not _is_pytest_config(self.root):
             ini = self._write_default_pytest_ini()
-            base += ["-c", str(ini)]
+            # The ini lives in .forge/, so conftest discovery must be anchored at the root.
+            base += ["-c", str(ini), f"--confcutdir={self.root}"]
         return base + checked
 
     def _write_default_pytest_ini(self) -> Path:
         ini = self.root / ".forge" / "pytest.ini"
         if not self.read_only:
             ini.parent.mkdir(exist_ok=True)
-            if not ini.exists():
-                ini.write_text("[pytest]\npythonpath = . src\naddopts =\n", encoding="utf-8")
+            # pythonpath entries are relative to the ini file, so spell out absolute paths.
+            paths = " ".join(shlex.quote(str(p)) for p in (self.root, self.root / "src"))
+            text = f"[pytest]\npythonpath = {paths}\naddopts =\n"
+            if not ini.exists() or ini.read_text(encoding="utf-8") != text:
+                ini.write_text(text, encoding="utf-8")
         return ini
 
     def _python_argv(self, args: Sequence[str]) -> list[str]:

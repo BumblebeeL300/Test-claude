@@ -104,7 +104,7 @@ def test_pack_context_limits_item_count():
 
 def test_pack_context_truncates_a_too_large_first_item():
     text = "First sentence here. Second sentence follows. " * 20
-    (index, packed), = pack_context([text], budget_chars=120, max_items=5)
+    ((index, packed),) = pack_context([text], budget_chars=120, max_items=5)
     assert index == 0 and len(packed) <= 120 and packed.endswith("...")
 
 

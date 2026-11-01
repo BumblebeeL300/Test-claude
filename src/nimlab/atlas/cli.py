@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, TypeVar
+from typing import Annotated, Any, TypeVar
 
 import typer
 from rich.panel import Panel
@@ -50,8 +50,8 @@ MockOption = Annotated[
 ]
 
 
-def _run(coro: Awaitable[T]) -> T:
-    return asyncio.run(coro)  # type: ignore[arg-type]
+def _run(coro: Coroutine[Any, Any, T]) -> T:
+    return asyncio.run(coro)
 
 
 def _fail(message: str, code: int = 1) -> typer.Exit:
@@ -261,7 +261,7 @@ def ask(
         return await atlas.ask(
             question,
             collection,
-            mode=mode.value,  # type: ignore[arg-type]
+            mode=mode.value,
             k=k,
             verify=verify,
             revise=revise,
@@ -476,7 +476,7 @@ def eval_cmd(
             items,
             collection=collection,
             k=k,
-            mode=mode.value,  # type: ignore[arg-type]
+            mode=mode.value,
             answer=answer,
             verify=answer,
             name=name,

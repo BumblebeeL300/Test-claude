@@ -8,7 +8,7 @@ from nimlab.atlas import Atlas, AtlasConfig
 from nimlab.atlas.agent import AgenticRetriever, AgentState, heuristic_subquestions
 from nimlab.core import NIMError
 
-from .conftest import FakeClient  # noqa: TID252
+from .conftest import FakeClient
 
 
 @pytest.mark.parametrize(
@@ -46,12 +46,20 @@ def agent_client(*, plan=None, reflect=None, **kw) -> FakeClient:
 
 async def test_agentic_mode_searches_the_question_and_every_sub_question(db_path, corpus_dir):
     client = agent_client(
-        plan={"sub_questions": ["on-call prerequisites shadow rotations", "PagerDuty escalation secondary"], "rationale": "two hops"},
+        plan={
+            "sub_questions": [
+                "on-call prerequisites shadow rotations",
+                "PagerDuty escalation secondary",
+            ],
+            "rationale": "two hops",
+        },
         reflect={"sufficient": True},
     )
     atlas = Atlas(client, db_path)
     await atlas.ingest(corpus_dir)
-    answer = await atlas.ask("What do I need before on-call, and who is paged if there is no ack?", mode="agentic")
+    answer = await atlas.ask(
+        "What do I need before on-call, and who is paged if there is no ack?", mode="agentic"
+    )
     kinds = [s.kind for s in answer.trace]
     assert kinds[0] == "plan" and kinds.count("search") == 3 and "reflect" in kinds
     assert kinds.index("merge") > max(i for i, k in enumerate(kinds) if k == "search")
@@ -72,10 +80,17 @@ async def test_agentic_mode_searches_the_question_and_every_sub_question(db_path
 
 async def test_reflection_can_request_follow_up_searches(db_path, corpus_dir):
     reflections = [
-        {"sufficient": False, "missing": "who is paged", "follow_up_queries": ["PagerDuty hive-secondary escalation"]},
+        {
+            "sufficient": False,
+            "missing": "who is paged",
+            "follow_up_queries": ["PagerDuty hive-secondary escalation"],
+        },
         {"sufficient": True},
     ]
-    client = agent_client(plan={"sub_questions": ["shadow rotation requirements"]}, reflect=lambda m: reflections.pop(0))
+    client = agent_client(
+        plan={"sub_questions": ["shadow rotation requirements"]},
+        reflect=lambda m: reflections.pop(0),
+    )
     atlas = Atlas(client, db_path)
     await atlas.ingest(corpus_dir)
     answer = await atlas.ask("What about on-call?", mode="agentic")
@@ -91,7 +106,10 @@ async def test_reflection_can_request_follow_up_searches(db_path, corpus_dir):
 async def test_hop_limit_stops_the_loop(db_path, corpus_dir):
     client = agent_client(
         plan={"sub_questions": []},
-        reflect=lambda m: {"sufficient": False, "follow_up_queries": [f"never satisfied {len(m[-1]['content'])}"]},
+        reflect=lambda m: {
+            "sufficient": False,
+            "follow_up_queries": [f"never satisfied {len(m[-1]['content'])}"],
+        },
     )
     atlas = Atlas(client, db_path, config=AtlasConfig(max_hops=1))
     await atlas.ingest(corpus_dir)
@@ -135,7 +153,9 @@ async def test_planner_failure_falls_back_to_the_question(db_path, corpus_dir):
 async def test_hyde_adds_a_trace_step_and_a_passage_embedding(db_path, corpus_dir):
     client = agent_client(plan={"sub_questions": []}, reflect={"sufficient": True})
     client._chat = lambda model, messages: (
-        "The allocator is restarted with kubectl rollout restart." if "Write a short passage" in messages[0]["content"] else "Done [1]."
+        "The allocator is restarted with kubectl rollout restart."
+        if "Write a short passage" in messages[0]["content"]
+        else "Done [1]."
     )
     atlas = Atlas(client, db_path)
     await atlas.ingest(corpus_dir)
@@ -166,7 +186,8 @@ async def test_hyde_failure_degrades_gracefully(db_path, corpus_dir):
 async def test_mock_mode_uses_offline_heuristics_without_llm_planning(indexed: Atlas):
     before = indexed.client.usage.summary()["models"].get(indexed.models.fast, {}).get("calls", 0)
     answer = await indexed.ask(
-        "What must I finish before primary on-call? Who is paged if nobody acknowledges?", mode="agentic"
+        "What must I finish before primary on-call? Who is paged if nobody acknowledges?",
+        mode="agentic",
     )
     after = indexed.client.usage.summary()["models"].get(indexed.models.fast, {}).get("calls", 0)
     assert after == before  # no planner / reflection calls offline
@@ -177,12 +198,17 @@ async def test_mock_mode_uses_offline_heuristics_without_llm_planning(indexed: A
 
 
 async def test_agent_state_collects_queries_and_hits(db_path, corpus_dir):
-    client = agent_client(plan={"sub_questions": ["rate limit requests"]}, reflect={"sufficient": True})
+    client = agent_client(
+        plan={"sub_questions": ["rate limit requests"]}, reflect={"sufficient": True}
+    )
     atlas = Atlas(client, db_path)
     await atlas.ingest(corpus_dir)
     agent = AgenticRetriever(client, atlas.retriever, atlas.models, atlas.config)
     state = AgentState()
-    steps = [s async for s in agent.explore("API rate limit", "default", k=4, use_hyde=False, state=state)]
+    steps = [
+        s
+        async for s in agent.explore("API rate limit", "default", k=4, use_hyde=False, state=state)
+    ]
     assert [s.kind for s in steps][-1] == "merge"
     assert state.queries == ["API rate limit", "rate limit requests"] and state.rounds == 1
     assert state.hits and state.hits[0].chunk.doc_name == "api_guide.md"

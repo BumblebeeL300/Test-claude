@@ -21,7 +21,7 @@ from nimlab.atlas.verify import (
 )
 from nimlab.core import NIMAuthError, NIMJSONError
 
-from .conftest import FakeClient  # noqa: TID252
+from .conftest import FakeClient
 
 SOURCES = [
     SourceRef(
@@ -46,8 +46,9 @@ SOURCES = [
 
 def test_claims_are_one_per_sentence_with_their_citations():
     claims = split_claims(
-        "Robots send heartbeats every 2 seconds [1]. A robot is lost after three missed heartbeats [1]."
-        " Keys rotate every 90 days [2]."
+        "Robots send heartbeats every 2 seconds [1]. "
+        "A robot is lost after three missed heartbeats [1]. "
+        "Keys rotate every 90 days [2]."
     )
     assert [c.cited for c in claims] == [[1], [1], [2]]
     assert claims[0].plain == "Robots send heartbeats every 2 seconds."
@@ -55,13 +56,18 @@ def test_claims_are_one_per_sentence_with_their_citations():
 
 
 def test_citation_after_the_period_attaches_to_the_previous_sentence():
-    claims = split_claims("The key header is X-Hive-Key. [2] Keys rotate every 90 days. [1][2] Done soon today.")
+    claims = split_claims(
+        "The key header is X-Hive-Key. [2] Keys rotate every 90 days. [1][2] Done soon today."
+    )
     assert claims[0].cited == [2] and claims[1].cited == [1, 2] and claims[2].cited == []
     assert claims[0].plain == "The key header is X-Hive-Key."
 
 
 def test_bullets_and_numbered_lists_become_separate_claims():
-    text = "Steps:\n- Restart the allocator pods now [1]\n- Wait ninety seconds for recovery [1]\n1. Check the queue depth metric [1]"
+    text = (
+        "Steps:\n- Restart the allocator pods now [1]\n"
+        "- Wait ninety seconds for recovery [1]\n1. Check the queue depth metric [1]"
+    )
     claims = split_claims(text)
     assert len(claims) == 3 and all(c.cited == [1] for c in claims)
     assert claims[0].plain == "Restart the allocator pods now"
@@ -76,10 +82,17 @@ def test_headings_questions_leadins_and_abstentions_are_not_claims():
 
 
 def test_abbreviations_decimals_and_code_do_not_split_sentences():
-    text = "Use tools e.g. kubectl or curl for debugging [1]. Version 2.5 ships with `a.b.c()` support [1]."
+    text = (
+        "Use tools e.g. kubectl or curl for debugging [1]. "
+        "Version 2.5 ships with `a.b.c()` support [1]."
+    )
     claims = split_claims(text)
     assert len(claims) == 2
-    assert "e.g. kubectl" in claims[0].text and "2.5" in claims[1].text and "`a.b.c()`" in claims[1].text
+    assert (
+        "e.g. kubectl" in claims[0].text
+        and "2.5" in claims[1].text
+        and "`a.b.c()`" in claims[1].text
+    )
     assert split_sentences("Dr. Smith arrived. He sat.") == ["Dr. Smith arrived.", "He sat."]
 
 
@@ -125,7 +138,12 @@ def test_lexical_judge_thresholds_and_evidence():
     passages = [SOURCES[0].text]
     verdict, evidence, cov = lexical_judge("Robots send a heartbeat every 2 seconds", passages)
     assert verdict == "supported" and cov >= 0.8 and "heartbeat" in evidence
-    assert lexical_judge("A robot is lost after missed heartbeats plus unrelated pricing tiers", passages)[0] == "partial"
+    assert (
+        lexical_judge(
+            "A robot is lost after missed heartbeats plus unrelated pricing tiers", passages
+        )[0]
+        == "partial"
+    )
     assert lexical_judge("Quarterly revenue grew sharply in Europe", passages)[0] == "unsupported"
     assert lexical_judge("anything", []) == ("unsupported", "", 0.0)
 
@@ -181,15 +199,24 @@ async def test_verifier_maps_scripted_judgements_to_a_report():
                         "evidence": "Robots send a heartbeat every 2 seconds.",
                         "reason": "stated",
                     },
-                    "lost after three": {"verdict": "partially_supported", "evidence": "", "reason": "count differs"},
-                    "rotate every 30 days": {"verdict": "unsupported", "evidence": "", "reason": "says 90"},
+                    "lost after three": {
+                        "verdict": "partially_supported",
+                        "evidence": "",
+                        "reason": "count differs",
+                    },
+                    "rotate every 30 days": {
+                        "verdict": "unsupported",
+                        "evidence": "",
+                        "reason": "says 90",
+                    },
                 }
             )
         }
     )
     verifier = Verifier(client, "judge-model")
     answer = (
-        "Robots send a heartbeat every 2 seconds [1]. A robot is lost after three missed beats [1]. "
+        "Robots send a heartbeat every 2 seconds [1]. "
+        "A robot is lost after three missed beats [1]. "
         "Keys rotate every 30 days [2]."
     )
     report = await verifier.verify(answer, SOURCES)
@@ -248,7 +275,8 @@ async def test_auth_errors_propagate_from_the_judge():
 async def test_lexical_only_mode_makes_no_model_calls():
     client = FakeClient()
     report = await Verifier(client, "m", lexical_only=True).verify(
-        "Rotate API keys every 90 days [2]. Pricing doubled across Europe last quarter [1].", SOURCES
+        "Rotate API keys every 90 days [2]. Pricing doubled across Europe last quarter [1].",
+        SOURCES,
     )
     assert client.json_calls == [] and report.method == "lexical"
     assert [c.verdict for c in report.claims] == ["supported", "unsupported"]
@@ -262,23 +290,33 @@ async def test_claim_limit_truncates_and_flags():
 
 
 async def test_answer_without_checkable_claims_has_no_score():
-    report = await Verifier(FakeClient(), "m").verify("The provided sources do not cover this.", SOURCES)
+    report = await Verifier(FakeClient(), "m").verify(
+        "The provided sources do not cover this.", SOURCES
+    )
     assert report.claims == [] and report.groundedness is None
 
 
 def test_judge_and_revision_prompts_contain_the_essentials():
     claim = Claim(id=1, text="X [1]", plain="Robots rotate keys", cited=[1])
     msgs = build_judge_messages(claim, SOURCES[:1])
-    assert "CLAIM\nRobots rotate keys" in msgs[1]["content"] and "[1] architecture.md" in msgs[1]["content"]
+    assert (
+        "CLAIM\nRobots rotate keys" in msgs[1]["content"]
+        and "[1] architecture.md" in msgs[1]["content"]
+    )
     from nimlab.atlas.models import ClaimCheck, VerificationReport
 
     report = VerificationReport(
-        claims=[ClaimCheck(id=1, text="Bad claim [1]", verdict="unsupported", reason="not in sources")],
+        claims=[
+            ClaimCheck(id=1, text="Bad claim [1]", verdict="unsupported", reason="not in sources")
+        ],
         unsupported=1,
     )
     revision = build_revision_messages("Q?", "Draft text", report, SOURCES)
     assert "Bad claim" in revision[1]["content"] and "not in sources" in revision[1]["content"]
-    assert "Draft text" in revision[1]["content"] and "revising a draft answer" in revision[0]["content"]
+    assert (
+        "Draft text" in revision[1]["content"]
+        and "revising a draft answer" in revision[0]["content"]
+    )
 
 
 # ----------------------------------------------------------------------------- end-to-end revise

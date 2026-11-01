@@ -158,19 +158,19 @@ class Leaderboard(BaseModel):
             return None
         if category == "general_chat":
             return standing.overall
-        vals = [standing.suite_scores.get(s) for s in self.suites_in(category)]
-        vals = [v for v in vals if v is not None]
-        return float(np.mean(vals)) if vals else None
+        scores = [standing.suite_scores.get(s) for s in self.suites_in(category)]
+        present = [v for v in scores if v is not None]
+        return float(np.mean(present)) if present else None
 
     def category_latency(self, model: str, category: str) -> float | None:
         standing = self.get(model)
         if standing is None:
             return None
         names = self.suites if category == "general_chat" else self.suites_in(category)
-        vals = [standing.suite_latency_s.get(s) for s in names]
-        vals = [v for v in vals if v is not None]
-        if vals:
-            return float(np.mean(vals))
+        latencies = [standing.suite_latency_s.get(s) for s in names]
+        known = [v for v in latencies if v is not None]
+        if known:
+            return float(np.mean(known))
         return standing.latency_p50_s
 
     def covered_categories(self) -> list[str]:

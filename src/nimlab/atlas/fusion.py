@@ -45,7 +45,7 @@ def minmax(values: Sequence[float] | np.ndarray) -> np.ndarray:
     arr = np.asarray(values, dtype=np.float64)
     if arr.size == 0:
         return arr
-    lo, hi = float(arr.min()), float(arr.max())
+    lo, hi = float(np.min(arr)), float(np.max(arr))
     if hi - lo < 1e-12:
         return np.ones_like(arr)
     return (arr - lo) / (hi - lo)

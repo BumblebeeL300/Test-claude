@@ -431,3 +431,57 @@ class TestCommandAllowlist:
         write(root, "test_ignored.py", "def test_bad():\n    assert False\n")
         res = await Sandbox(root).run_pytest()
         assert res.ok, res.output
+
+
+@posix_only
+async def test_cancelling_a_run_kills_the_child(sandbox: Sandbox, ws: Path) -> None:
+    import asyncio
+
+    write(
+        ws,
+        "sleeper.py",
+        "import os, time\nopen('sleeper.pid', 'w').write(str(os.getpid()))\ntime.sleep(60)\n",
+    )
+    task = asyncio.ensure_future(sandbox.run_python("sleeper.py", timeout=60))
+    pid_file = ws / "sleeper.pid"
+    for _ in range(100):
+        if pid_file.exists() and pid_file.read_text():
+            break
+        await asyncio.sleep(0.05)
+    pid = int(pid_file.read_text())
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    deadline = time.monotonic() + 5
+    alive = True
+    while alive and time.monotonic() < deadline:
+        stat = Path(f"/proc/{pid}/stat")
+        alive = stat.exists() and stat.read_text().split()[2] != "Z"
+        if alive:
+            await asyncio.sleep(0.05)
+    assert not alive, "child survived cancellation"
+
+
+@pytest.mark.parametrize("dirname", ["plain", "dir with spaces"])
+async def test_default_pytest_config_supports_conftest_and_src_layouts(
+    tmp_path: Path, dirname: str
+) -> None:
+    root = tmp_path / dirname
+    write(root, "conftest.py", "import pytest\n\n@pytest.fixture\ndef magic():\n    return 42\n")
+    write(
+        root, "tests/conftest.py", "import pytest\n\n@pytest.fixture\ndef inner():\n    return 1\n"
+    )
+    write(
+        root,
+        "tests/test_fixtures.py",
+        "def test_f(magic, inner):\n    assert (magic, inner) == (42, 1)\n",
+    )
+    write(root, "src/pkgx.py", "V = 1\n")
+    write(root, "tests/test_src.py", "from pkgx import V\n\ndef test_src():\n    assert V == 1\n")
+    write(root, "toplevel.py", "T = 2\n")
+    write(
+        root, "tests/test_top.py", "from toplevel import T\n\ndef test_top():\n    assert T == 2\n"
+    )
+    res = await Sandbox(root).run_pytest()
+    assert res.ok, res.output
+    assert "3 passed" in res.stdout

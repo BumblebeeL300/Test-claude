@@ -21,6 +21,7 @@ async def test_full_run_in_mock_mode_completes_and_reports(
         "Write a function slugify(text) that lowercases and joins words with dashes",
         ws,
         on_event=events.append,
+        max_iters=2,
     )
     assert mock_client.config.mock
     assert report.mock is True
@@ -55,18 +56,23 @@ async def test_mock_run_terminates_via_no_progress_detection(
     assert report.tests is not None and report.tests.no_tests
 
 
-async def test_mock_run_with_nothing_changed_skips_review(mock_client: NIMClient, ws: Path) -> None:
+async def test_mock_run_with_nothing_changed_is_not_a_success(
+    mock_client: NIMClient, ws: Path
+) -> None:
     (ws / "calc.py").write_text("def add(a, b):\n    return a + b\n")
     (ws / "test_calc.py").write_text(
         "from calc import add\n\n\ndef test_add():\n    assert add(1, 2) == 3\n"
     )
     events = []
     report = await Forge(mock_client).run("Add a subtract function", ws, on_event=events.append)
-    assert report.status == "success", report.summary  # tests were green from the start
-    assert report.errors == [] and report.test_rounds[0].ok
+    # Green tests are not enough: the (mock) coder never touched anything.
+    assert report.status == "failed" and report.ended_reason.startswith(
+        "the tests pass but no files"
+    )
+    assert report.errors == [] and all(r.ok for r in report.test_rounds)
+    assert report.iterations == 2 and len(report.test_rounds) == 3  # two nudges, then give up
     assert report.review is None and report.files_changed == []
-    assert any(e.message == "no changes to review" for e in events)
-    assert "Mock mode" in report.summary
+    assert any("nothing was changed" in e.message for e in events)
     assert (ws / "calc.py").read_text() == "def add(a, b):\n    return a + b\n"
 
 
@@ -113,7 +119,7 @@ async def test_mock_dry_run(mock_client: NIMClient, ws: Path) -> None:
 
 async def test_mock_rollback_leaves_workspace_pristine(mock_client: NIMClient, ws: Path) -> None:
     (ws / "keep.txt").write_text("keep\n")
-    report = await Forge(mock_client).run("Build something", ws, rollback_on_fail=True)
+    report = await Forge(mock_client).run("Build something", ws, rollback_on_fail=True, max_iters=1)
     assert report.status == "failed"
     assert (ws / "keep.txt").read_text() == "keep\n"
     assert sorted(p.name for p in ws.iterdir()) == [".forge", "keep.txt"]
@@ -139,7 +145,7 @@ async def test_mock_run_is_deterministic(ws: Path, tmp_path: Path, seed_tests: b
                 "from m import X\n\n\ndef test_x():\n    assert X == 1\n"
             )
         async with NIMClient(NIMConfig(mock=True)) as client:
-            return await Forge(client).run("Do the thing", target)
+            return await Forge(client).run("Do the thing", target, max_iters=1)
 
     a = await once(tmp_path / "a")
     b = await once(tmp_path / "b")

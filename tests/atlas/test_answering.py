@@ -15,8 +15,12 @@ from nimlab.atlas.answering import (
 from nimlab.atlas.models import SourceRef
 
 
-def src(n: int, text: str = "text", source: str = "doc.md", path: tuple[str, ...] = ()) -> SourceRef:
-    return SourceRef(n=n, chunk_id=n, source=source, path=f"/x/{source}", heading_path=list(path), text=text)
+def src(
+    n: int, text: str = "text", source: str = "doc.md", path: tuple[str, ...] = ()
+) -> SourceRef:
+    return SourceRef(
+        n=n, chunk_id=n, source=source, path=f"/x/{source}", heading_path=list(path), text=text
+    )
 
 
 @pytest.mark.parametrize(
@@ -51,7 +55,9 @@ def test_zero_is_never_a_valid_citation():
 
 
 def test_code_spans_and_links_are_not_mistaken_for_citations():
-    text = "Use `items[2]` or see [1](https://example.com). Also arr[3] and ```\nx[9]\n``` done [1]."
+    text = (
+        "Use `items[2]` or see [1](https://example.com). Also arr[3] and ```\nx[9]\n``` done [1]."
+    )
     parsed = parse_citations(text, 1)
     assert parsed.text == text
     assert parsed.cited == [1] and parsed.invalid == []

@@ -10,7 +10,7 @@ from nimlab.atlas import Atlas, AtlasConfig
 from nimlab.atlas.models import StoreError
 from nimlab.core import NIMError
 
-from .conftest import FakeClient  # noqa: TID252
+from .conftest import FakeClient
 
 
 def embed_calls(atlas: Atlas) -> int:
@@ -44,7 +44,9 @@ async def test_reingest_of_unchanged_files_does_nothing(atlas: Atlas, corpus_dir
     assert embed_calls(atlas) == calls  # no embedding requests at all
 
 
-async def test_changed_file_is_updated_and_only_new_chunks_are_embedded(atlas: Atlas, tmp_path: Path):
+async def test_changed_file_is_updated_and_only_new_chunks_are_embedded(
+    atlas: Atlas, tmp_path: Path
+):
     docs = tmp_path / "docs"
     docs.mkdir()
     body = "\n\n".join(
@@ -105,7 +107,9 @@ async def test_prune_removes_documents_whose_files_disappeared(atlas: Atlas, tmp
     assert [d.name for d in atlas.documents("default")] == ["keep.md"]
 
 
-async def test_unsupported_empty_and_corrupt_files_do_not_abort_the_run(atlas: Atlas, tmp_path: Path, make_pdf):
+async def test_unsupported_empty_and_corrupt_files_do_not_abort_the_run(
+    atlas: Atlas, tmp_path: Path, make_pdf
+):
     (tmp_path / "good.md").write_text("# Good\n\nReal content here.\n")
     (tmp_path / "empty.md").write_text("   \n")
     (tmp_path / "broken.pdf").write_bytes(b"not a pdf")
@@ -113,12 +117,19 @@ async def test_unsupported_empty_and_corrupt_files_do_not_abort_the_run(atlas: A
     (tmp_path / "pic.png").write_bytes(b"png")  # ignored by discovery
     report = await atlas.ingest(tmp_path)
     status = {f.name: f.status for f in report.files}
-    assert status == {"broken.pdf": "error", "empty.md": "error", "good.md": "added", "scan.pdf": "error"}
+    assert status == {
+        "broken.pdf": "error",
+        "empty.md": "error",
+        "good.md": "added",
+        "scan.pdf": "error",
+    }
     assert report.errors == 3 and len(atlas.store.index("default")) == 1
 
 
 async def test_pdf_ingest_keeps_page_numbers(atlas: Atlas, tmp_path: Path, make_pdf):
-    (tmp_path / "manual.pdf").write_bytes(make_pdf([["Page one talks about batteries."], ["Page two talks about docking stations."]]))
+    (tmp_path / "manual.pdf").write_bytes(
+        make_pdf([["Page one talks about batteries."], ["Page two talks about docking stations."]])
+    )
     await atlas.ingest(tmp_path)
     pages = sorted(c.page for c in atlas.store.index("default").chunks)
     assert pages == [1, 2]
@@ -134,7 +145,9 @@ async def test_ingest_single_file_and_missing_path(atlas: Atlas, corpus_dir: Pat
 
 
 async def test_ingest_bytes_stores_uploads_under_a_virtual_path(atlas: Atlas):
-    report = await atlas.ingest_bytes([("../../evil/notes.md", b"# N\n\nUploaded note about docks.\n")], "up")
+    report = await atlas.ingest_bytes(
+        [("../../evil/notes.md", b"# N\n\nUploaded note about docks.\n")], "up"
+    )
     assert report.files[0].name == "notes.md"  # directory components are dropped
     assert atlas.documents("up")[0].path == "upload://notes.md"
     again = await atlas.ingest_bytes([("notes.md", b"# N\n\nUploaded note about docks.\n")], "up")
@@ -151,12 +164,18 @@ async def test_force_reingests_unchanged_files_without_reembedding(atlas: Atlas,
     assert embed_calls(atlas) == calls
 
 
-async def test_changing_chunk_settings_triggers_reingest(mock_client, db_path: Path, corpus_dir: Path):
+async def test_changing_chunk_settings_triggers_reingest(
+    mock_client, db_path: Path, corpus_dir: Path
+):
     a = Atlas(mock_client, db_path)
     await a.ingest(corpus_dir)
     n_before = len(a.store.index("default"))
     a.close()
-    b = Atlas(mock_client, db_path, config=AtlasConfig(chunk_max_chars=500, chunk_overlap=50, chunk_min_chars=100))
+    b = Atlas(
+        mock_client,
+        db_path,
+        config=AtlasConfig(chunk_max_chars=500, chunk_overlap=50, chunk_min_chars=100),
+    )
     report = await b.ingest(corpus_dir)
     assert report.updated == 5
     assert len(b.store.index("default")) > n_before
@@ -184,7 +203,9 @@ async def test_embedding_failure_marks_files_as_errors_not_crashes(db_path: Path
     atlas.close()
 
 
-async def test_mixing_mock_and_live_vectors_in_one_collection_is_refused(mock_client, db_path: Path, corpus_dir: Path):
+async def test_mixing_mock_and_live_vectors_in_one_collection_is_refused(
+    mock_client, db_path: Path, corpus_dir: Path
+):
     a = Atlas(mock_client, db_path)
     await a.ingest(corpus_dir / "glossary.md")
     a.close()
@@ -194,7 +215,9 @@ async def test_mixing_mock_and_live_vectors_in_one_collection_is_refused(mock_cl
     live.close()
 
 
-async def test_reindex_reembeds_with_the_current_backend(mock_client, db_path: Path, corpus_dir: Path):
+async def test_reindex_reembeds_with_the_current_backend(
+    mock_client, db_path: Path, corpus_dir: Path
+):
     a = Atlas(mock_client, db_path)
     await a.ingest(corpus_dir / "glossary.md")
     a.close()
@@ -211,7 +234,13 @@ async def test_reindex_reembeds_with_the_current_backend(mock_client, db_path: P
 async def test_progress_callback_sees_every_file(atlas: Atlas, corpus_dir: Path):
     seen: list[str] = []
     await atlas.ingest(corpus_dir, on_file=lambda r: seen.append(r.name))
-    assert sorted(seen) == sorted(p.name for p in corpus_dir.glob("*.md"))
+    assert sorted(seen) == [
+        "api_guide.md",
+        "architecture.md",
+        "glossary.md",
+        "incident_runbook.md",
+        "onboarding.md",
+    ]
 
 
 async def test_empty_collection_name_is_rejected(atlas: Atlas, corpus_dir: Path):

@@ -388,10 +388,10 @@ def render_markdown(r: ForgeReport) -> str:
             "| phase | seconds | runs | LLM calls | tokens in | tokens out |",
             "|---|---|---|---|---|---|",
         ]
-        for t in r.timings:
+        for timing in r.timings:
             lines.append(
-                f"| {t.phase} | {t.seconds:.2f} | {t.runs} | {t.llm_calls} "
-                f"| {t.tokens_in} | {t.tokens_out} |"
+                f"| {timing.phase} | {timing.seconds:.2f} | {timing.runs} | {timing.llm_calls} "
+                f"| {timing.tokens_in} | {timing.tokens_out} |"
             )
         lines.append("")
     total = (r.usage or {}).get("total")

@@ -26,7 +26,7 @@ from nimlab.core import (
 from .config import DEFAULT_COLLECTION, DEFAULT_DB_PATH, AtlasConfig
 from .engine import Atlas
 from .loaders import SUPPORTED_EXTENSIONS, media_type_for
-from .models import Answer, AtlasError, IngestReport, Mode, StoreError
+from .models import Answer, AtlasError, FileReport, IngestReport, Mode, StoreError
 
 UI_PATH = Path(__file__).with_name("ui") / "index.html"
 MAX_UPLOAD_BYTES = 60 * 1024 * 1024
@@ -282,8 +282,6 @@ def create_app(
             )
         report = await atlas().ingest_bytes(accepted, collection, force=force)
         for name in rejected:
-            from .models import FileReport
-
             report.files.append(
                 FileReport(
                     path=f"upload://{name}", name=name, status="skipped", message="unsupported type"

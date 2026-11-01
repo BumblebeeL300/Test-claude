@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from nimlab.core import NIMConfig, Role, default_registry
 from nimlab.core.registry import ModelRegistry
@@ -110,10 +110,10 @@ class Arena:
         :class:`Suite` objects. ``resume`` continues an earlier run (id, path or object): only
         missing or errored items are re-queried.
         """
-        if isinstance(suites, list) and suites and isinstance(suites[0], Suite):
-            suite_list = [s.limited(limit) for s in suites]  # type: ignore[union-attr]
+        if isinstance(suites, list) and suites and all(isinstance(s, Suite) for s in suites):
+            suite_list = [s.limited(limit) for s in cast("list[Suite]", suites)]
         else:
-            suite_list = self.resolve_suites(suites, limit)  # type: ignore[arg-type]
+            suite_list = self.resolve_suites(cast("str | list[str] | None", suites), limit)
         previous = self._as_run(resume)
         return await self._runner(concurrency).run(
             models or default_models(self.registry),

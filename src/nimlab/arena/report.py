@@ -74,12 +74,18 @@ def _ticks(lo: float, hi: float, target: int = 6) -> list[float]:
 # ------------------------------------------------------------------------------ SVG charts
 
 
+def _elo_bounds(s: ModelStanding) -> tuple[float, float, float]:
+    """``(elo, lo, hi)`` of a rated model; the interval collapses to the point if unknown."""
+    elo = s.elo if s.elo is not None else 0.0
+    return elo, s.elo_lo if s.elo_lo is not None else elo, s.elo_hi if s.elo_hi is not None else elo
+
+
 def elo_svg(lb: Leaderboard) -> str:
     rated = sorted((s for s in lb.standings if s.elo is not None), key=lambda s: -(s.elo or 0.0))
     if not rated:
         return '<p class="muted">No pairwise data: run at least two models to compute Elo.</p>'
-    lo = min(s.elo_lo if s.elo_lo is not None else s.elo for s in rated)  # type: ignore[type-var]
-    hi = max(s.elo_hi if s.elo_hi is not None else s.elo for s in rated)  # type: ignore[type-var]
+    lo = min(_elo_bounds(s)[1] for s in rated)
+    hi = max(_elo_bounds(s)[2] for s in rated)
     pad = max(15.0, (hi - lo) * 0.06)
     lo, hi = lo - pad, hi + pad
     label_w = min(250, max(110, int(max(len(short_name(s.model)) for s in rated) * 6.6) + 12))
@@ -489,7 +495,7 @@ def render_terminal(lb: Leaderboard) -> Table:
     )
     table.add_column("#", justify="right")
     table.add_column("Model", overflow="fold", min_width=22)
-    table.add_column("Overall", justify="right")
+    table.add_column("Overall", justify="right", no_wrap=True, min_width=7)
     for s in lb.suites:
         table.add_column(_SHORT_SUITE.get(s, s[:8]), justify="right", no_wrap=True)
     table.add_column("Elo\u00b1CI", justify="right", no_wrap=True)

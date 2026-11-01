@@ -115,7 +115,10 @@ def test_corrupt_pdf_raises_loader_error():
 
 
 def test_reflow_joins_wrapped_lines_and_dehyphenates():
-    text = "The fleet manager allocates\ntasks to every idle ro-\nbot nearby.\n\n- first item\n- second item"
+    text = (
+        "The fleet manager allocates\ntasks to every idle ro-\nbot nearby.\n\n"
+        "- first item\n- second item"
+    )
     out = reflow_pdf_text(text)
     assert "allocates tasks to every idle robot nearby." in out
     assert "- first item" in out.split("\n\n") and "- second item" in out.split("\n\n")

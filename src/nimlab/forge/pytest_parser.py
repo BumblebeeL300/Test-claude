@@ -349,9 +349,11 @@ def parse_pytest_output(
     # Summary lines give canonical node ids.
     summary_items: list[tuple[str, str, str]] = []
     for line in sections.get("short test summary info", []):
-        m = _SUMMARY_ITEM.match(line.strip())
-        if m:
-            summary_items.append((m.group("kind"), m.group("nodeid"), m.group("msg") or ""))
+        item = _SUMMARY_ITEM.match(line.strip())
+        if item:
+            summary_items.append(
+                (item.group("kind"), item.group("nodeid"), item.group("msg") or "")
+            )
     nodeids = [nid for _, nid, _ in summary_items]
 
     def canonical(name: str) -> str:
@@ -369,28 +371,26 @@ def parse_pytest_output(
     cases: dict[str, FailureInfo] = {}
     for title in ("failures", "errors"):
         body = sections.get(title, [])
-        starts = [(i, _case_header(ln)) for i, ln in enumerate(body)]
-        starts = [(i, name) for i, name in starts if name]
+        headers = [(i, _case_header(ln)) for i, ln in enumerate(body)]
+        starts = [(i, name) for i, name in headers if name]
         for idx, (i, name) in enumerate(starts):
             end = starts[idx + 1][0] if idx + 1 < len(starts) else len(body)
             is_collection = name.startswith("ERROR collecting ")
-            kind: CaseKind = (
+            case_kind: CaseKind = (
                 "collection" if is_collection else ("error" if title == "errors" else "failure")
             )
             nodeid = canonical(name)
-            info = _parse_case(nodeid, body[i + 1 : end], kind)
-            cases[nodeid] = info
+            cases[nodeid] = _parse_case(nodeid, body[i + 1 : end], case_kind)
 
     for kind_word, nodeid, msg in summary_items:
         if nodeid not in cases:
-            kind = "failure" if kind_word == "FAILED" else "error"
-            info = FailureInfo(nodeid=nodeid, kind=kind)
+            info = FailureInfo(nodeid=nodeid, kind="failure" if kind_word == "FAILED" else "error")
             if msg:
                 info.message = _trim(msg)
                 info.detail = [info.message]
-                m = _ERROR_TYPE.match(msg)
-                if m:
-                    info.error_type = m.group("type")
+                err = _ERROR_TYPE.match(msg)
+                if err:
+                    info.error_type = err.group("type")
             cases[nodeid] = info
         elif msg and not cases[nodeid].message:
             cases[nodeid].message = _trim(msg)

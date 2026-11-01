@@ -24,6 +24,7 @@ from .prompts import (
     REVIEWER_SYSTEM,
     fix_prompt,
     implement_prompt,
+    no_changes_prompt,
     plan_prompt,
     rca_prompt,
     review_fix_prompt,
@@ -170,6 +171,10 @@ class ImplementPhase(Phase):
         return State.VERIFY
 
 
+#: How often the coder is told "tests pass, but you changed nothing" before giving up.
+MAX_NUDGES = 2
+
+
 class VerifyPhase(Phase):
     """Run the whole test suite and decide: done, debug, escalate or give up."""
 
@@ -211,6 +216,19 @@ class VerifyPhase(Phase):
                     self.name,
                 )
             ctx.max_tests_seen = max(ctx.max_tests_seen, report.total)
+            if (
+                ctx.snapshot is not None
+                and ctx.nudges < MAX_NUDGES
+                and ctx.iterations < cfg.max_iters
+            ):
+                diff = await asyncio.to_thread(ctx.snapshot.diff)
+                if diff.empty:  # green tests but no work done: do not call that a success
+                    ctx.nudges += 1
+                    ctx.no_changes_pending = True
+                    ctx.bus.emit(
+                        "info", self.name, "tests pass but nothing was changed; asking for the work"
+                    )
+                    return State.DEBUG
             ctx.ended_reason = "tests_pass"
             return State.REPORT if ctx.post_review else State.REVIEW
         ctx.max_tests_seen = max(ctx.max_tests_seen, report.total)
@@ -244,10 +262,14 @@ class DebugPhase(Phase):
     async def run(self, ctx: RunContext) -> State:
         assert ctx.last_tests is not None
         ctx.iterations += 1
-        prompt = fix_prompt(
-            ctx.last_tests.condensed(), ctx.iterations, ctx.config.max_iters, ctx.pending_rca
-        )
-        ctx.pending_rca = None
+        if ctx.no_changes_pending:
+            prompt = no_changes_prompt(ctx.iterations, ctx.config.max_iters)
+            ctx.no_changes_pending = False
+        else:
+            prompt = fix_prompt(
+                ctx.last_tests.condensed(), ctx.iterations, ctx.config.max_iters, ctx.pending_rca
+            )
+            ctx.pending_rca = None
         ctx.bus.emit("info", self.name, f"fix round {ctx.iterations}/{ctx.config.max_iters}")
         ctx.coder_messages.append({"role": "user", "content": prompt})
         loop = await run_tool_loop(
@@ -416,13 +438,15 @@ class FixPhase(Phase):
         return State.VERIFY
 
 
-def _status(ctx: RunContext) -> RunStatus:
+def _status(ctx: RunContext, *, changed: bool) -> RunStatus:
     if ctx.fatal_error:
         return "error"
     if ctx.config.dry_run:
         return "dry_run"
     if ctx.last_tests is not None and ctx.last_tests.ok:
-        return "success"
+        if changed:
+            return "success"
+        ctx.ended_reason = "no_changes"
     return "failed"
 
 
@@ -432,6 +456,7 @@ _REASONS = {
     "no_progress": "no progress: the same failures kept repeating after root-cause analysis",
     "llm_unavailable": "the coder model was unavailable",
     "dry_run": "dry run (nothing was written)",
+    "no_changes": "the tests pass but no files were changed, so the task was not done",
 }
 
 
@@ -469,23 +494,29 @@ class ReportPhase(Phase):
         return text
 
     async def run(self, ctx: RunContext) -> State:
-        status = _status(ctx)
         diff = None
         if ctx.snapshot is not None:
             diff = await asyncio.to_thread(ctx.snapshot.diff)
             ctx.diff = diff
-            if ctx.config.rollback_on_fail and status in ("failed", "error") and not diff.empty:
-                result = await asyncio.to_thread(ctx.snapshot.restore)
-                ctx.rolled_back = True
-                ctx.bus.emit(
-                    "rollback",
-                    self.name,
-                    f"restored {len(result.restored)} file(s), removed {len(result.removed)}",
-                    restored=len(result.restored),
-                    removed=len(result.removed),
-                )
-                if result.unrestorable:
-                    ctx.warn(f"could not restore: {', '.join(result.unrestorable[:5])}", self.name)
+        status = _status(ctx, changed=diff is None or not diff.empty)
+        if (
+            ctx.snapshot is not None
+            and diff is not None
+            and ctx.config.rollback_on_fail
+            and status in ("failed", "error")
+            and not diff.empty
+        ):
+            result = await asyncio.to_thread(ctx.snapshot.restore)
+            ctx.rolled_back = True
+            ctx.bus.emit(
+                "rollback",
+                self.name,
+                f"restored {len(result.restored)} file(s), removed {len(result.removed)}",
+                restored=len(result.restored),
+                removed=len(result.removed),
+            )
+            if result.unrestorable:
+                ctx.warn(f"could not restore: {', '.join(result.unrestorable[:5])}", self.name)
         report = ForgeReport(
             task=ctx.task,
             workspace=str(ctx.workspace),

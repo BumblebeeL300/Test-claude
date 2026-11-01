@@ -6,7 +6,7 @@ import asyncio
 import contextlib
 import random
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
@@ -133,6 +133,7 @@ class Runner:
 
         total = len(work)
         counter = 0
+        position = {r.key: i for i, r in enumerate(run.items)}
         global_sem = asyncio.Semaphore(self.settings.concurrency)
         model_sems = {
             m: asyncio.Semaphore(self.settings.per_model_concurrency)
@@ -147,7 +148,12 @@ class Runner:
                 if model in model_sems:
                     await stack.enter_async_context(model_sems[model])
                 result = await self.evaluate(model, suite, item, digest)
-            run.merge_item(result)
+            slot = position.get(result.key)
+            if slot is None:  # first result for this key (replacing keeps the list order stable)
+                position[result.key] = len(run.items)
+                run.items.append(result)
+            else:
+                run.items[slot] = result
             counter += 1
             self._checkpoint(run)
             if on_progress:
@@ -293,7 +299,7 @@ class Runner:
             self.store.save(run)
 
 
-async def _gather_fail_fast(tasks: list[asyncio.Future[Any]]) -> None:
+async def _gather_fail_fast(tasks: Sequence[asyncio.Future[Any]]) -> None:
     """Await all tasks; on the first exception cancel the rest and re-raise (py3.10-safe)."""
     try:
         await asyncio.gather(*tasks)

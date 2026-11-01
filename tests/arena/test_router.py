@@ -8,11 +8,11 @@ from typing import Any
 
 import numpy as np
 import pytest
-from arena_fakes import ScriptedClient
+from arena_fakes import BIG, CODER, FASTM, REASONER, TABLE, ScriptedClient, make_run
 from pydantic import BaseModel
 
 from nimlab.arena.leaderboard import Leaderboard
-from nimlab.arena.results import ItemResult, RunResult, RunStore, SuiteInfo
+from nimlab.arena.results import RunStore
 from nimlab.arena.router import (
     CATEGORY_ROLES,
     PROFILES,
@@ -26,34 +26,6 @@ from nimlab.arena.suites import CATEGORIES
 from nimlab.core import Role, default_registry
 from nimlab.core.errors import NIMError
 from nimlab.core.mock import mock_embeddings
-
-CODER = "qwen/qwen2.5-coder-32b-instruct"  # tier 2
-REASONER = "deepseek-ai/deepseek-r1"  # tier 4
-FASTM = "meta/llama-3.1-8b-instruct"  # tier 1
-BIG = "meta/llama-3.1-405b-instruct"  # tier 5
-
-# model -> {suite: (score, latency_s)}; suites map to categories below
-TABLE = {
-    CODER: {"code": (0.95, 1.5), "math": (0.40, 1.5), "facts": (0.70, 1.0)},
-    REASONER: {"code": (0.80, 6.0), "math": (0.97, 6.0), "facts": (0.85, 4.0)},
-    FASTM: {"code": (0.55, 0.4), "math": (0.50, 0.4), "facts": (0.60, 0.3)},
-    BIG: {"code": (0.85, 5.0), "math": (0.90, 5.0), "facts": (0.92, 3.0)},
-}
-CATS = {"code": "coding", "math": "math_reasoning", "facts": "factual_qa"}
-
-
-def make_run(table: dict = TABLE) -> RunResult:
-    run = RunResult.new(models=list(table))
-    run.suites = {s: SuiteInfo(name=s, category=c, n_items=2) for s, c in CATS.items()}
-    for model, suites in table.items():
-        for suite, (score, lat) in suites.items():
-            for i in range(2):
-                run.items.append(
-                    ItemResult(
-                        model=model, suite=suite, item_id=f"i{i}", score=score, latency_s=lat
-                    )
-                )
-    return run
 
 
 @pytest.fixture

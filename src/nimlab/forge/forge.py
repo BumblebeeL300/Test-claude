@@ -38,6 +38,8 @@ def _sandbox_root(workspace: Path, *, dry_run: bool) -> Iterator[Path]:
     """
     if workspace.is_dir():
         yield workspace
+    elif workspace.exists():
+        raise NotADirectoryError(f"workspace is not a directory: {workspace}")
     elif dry_run:
         with tempfile.TemporaryDirectory(prefix="forge-dryrun-") as tmp:
             yield Path(tmp)
@@ -98,6 +100,7 @@ class Forge:
 
         Raises:
             ValueError: ``task`` is empty.
+            OSError: the workspace exists but is not a directory, or cannot be created.
         """
         if not task or not task.strip():
             raise ValueError("task must not be empty")

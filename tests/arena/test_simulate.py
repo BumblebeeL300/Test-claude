@@ -95,8 +95,8 @@ async def test_wrong_answers_are_plausible_and_fail_their_graders() -> None:
 
 async def test_virtual_time_is_scaled_and_reported_unscaled() -> None:
     suite = load_suites()["factual_qa"].limited(2)
-    client = SimulatedClient(time_scale=0.02)
-    assert client.time_scale == 0.02
+    client = SimulatedClient(time_scale=0.04)
+    assert client.time_scale == 0.04
     start = time.perf_counter()
     run = await Runner(client, settings=RunSettings(concurrency=4)).run([BIG], [suite])
     wall = time.perf_counter() - start
@@ -104,7 +104,7 @@ async def test_virtual_time_is_scaled_and_reported_unscaled() -> None:
     for r in run.items:
         assert r.ttft_s is not None and prof.ttft_s * 0.8 < r.ttft_s < prof.ttft_s * 3
         assert r.latency_s >= r.ttft_s
-    assert wall < 2.0  # real time is ~50x shorter than the reported (virtual) time
+    assert wall < 2.0  # real time is ~25x shorter than the reported (virtual) time
 
 
 async def test_ttft_and_throughput_differ_between_models() -> None:
@@ -236,3 +236,44 @@ def test_transient_error_classification() -> None:
     assert not is_transient(NIMResponseError("400", status_code=400))
     assert not is_transient(ValueError("nope"))
     assert is_transient(httpx.ConnectError("x"))
+
+
+async def test_items_without_a_reference_still_get_correct_answers_for_simple_graders() -> None:
+    from nimlab.arena.suites import Suite
+
+    suite = Suite.model_validate(
+        {
+            "name": "noref",
+            "items": [
+                {
+                    "id": "n",
+                    "prompt": "Pick a number",
+                    "grader": {"type": "numeric", "expected": 7},
+                },
+                {
+                    "id": "e",
+                    "prompt": "Pick a word",
+                    "grader": {"type": "exact", "expected": ["alpha", "beta"]},
+                },
+                {
+                    "id": "c",
+                    "prompt": "Name two fruits",
+                    "grader": {
+                        "type": "contains_all",
+                        "required": ["apple", "pear"],
+                        "any_of": [["red", "green"]],
+                    },
+                },
+            ],
+        }
+    )
+    run = await Runner(SimulatedClient(time_scale=0.0)).run(
+        [BIG, "meta/llama-3.1-70b-instruct", CODER, REASONER], [suite]
+    )
+    passed = [r for r in run.items if r.passed]
+    assert passed, "at least some strong models must answer correctly from the grader parameters"
+    outputs = {r.item_id: r.output for r in passed}
+    assert set(outputs) <= {"n", "e", "c"}
+    for r in passed:
+        assert r.score == 1.0
+    assert all(r.output for r in run.items)

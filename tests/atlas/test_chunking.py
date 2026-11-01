@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import pytest
 
 from nimlab.atlas.chunking import chunk_sections, split_blocks, split_long
@@ -71,7 +73,7 @@ def test_overlap_shares_text_between_consecutive_chunks_of_a_section():
     md = "# T\n\n" + "\n\n".join(f"Paragraph {i}. {LOREM}" for i in range(8))
     chunks = chunks_of(md, max_chars=420, overlap=100, min_chars=0)
     assert len(chunks) >= 3
-    for prev, nxt in zip(chunks, chunks[1:], strict=False):
+    for prev, nxt in pairwise(chunks):
         head = nxt.text.split("\n\n")[0]
         assert 0 < len(head) <= 100
         assert head in prev.text  # the carried-over tail really came from the previous chunk
@@ -169,9 +171,7 @@ def test_ord_is_sequential_and_empty_input_gives_no_chunks():
     assert chunk_sections([Section("   \n  ")]) == []
 
 
-@pytest.mark.parametrize(
-    ("max_chars", "overlap"), [(0, 0), (100, 100), (100, -1), (100, 150)]
-)
+@pytest.mark.parametrize(("max_chars", "overlap"), [(0, 0), (100, 100), (100, -1), (100, 150)])
 def test_invalid_parameters_raise(max_chars: int, overlap: int):
     with pytest.raises(ValueError):
         chunk_sections([Section("text")], max_chars=max_chars, overlap=overlap)

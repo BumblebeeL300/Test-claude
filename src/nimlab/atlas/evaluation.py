@@ -153,11 +153,8 @@ async def run_eval(
                     if ans.verification:
                         result.groundedness = ans.verification.groundedness
                         result.unsupported_claims = ans.verification.unsupported
-                elif mode == "agentic":
-                    ans = await atlas.ask(item.question, collection, mode=mode, k=k)
-                    sources = ans.sources
                 else:
-                    sources = await atlas.retrieve(item.question, collection, k=k)
+                    sources = await atlas.retrieve(item.question, collection, k=k, mode=mode)
             except (AtlasError, NIMAuthError):
                 raise
             except Exception as exc:

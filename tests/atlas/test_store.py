@@ -29,7 +29,8 @@ def unit(*values: float) -> np.ndarray:
 
 def new_chunks(*specs: tuple[str, tuple[str, ...], int | None, np.ndarray]) -> list[NewChunk]:
     return [
-        NewChunk(Chunk(text, path, page, ord=i), vec) for i, (text, path, page, vec) in enumerate(specs)
+        NewChunk(Chunk(text, path, page, ord=i), vec)
+        for i, (text, path, page, vec) in enumerate(specs)
     ]
 
 
@@ -67,8 +68,15 @@ def test_data_persists_across_reopen(tmp_path: Path):
 
 def test_replace_document_swaps_chunks_atomically(store: AtlasStore):
     store.ensure_collection("c", "m")
-    store.replace_document("c", make_doc(), new_chunks(("old one", (), None, unit(1, 0)), ("old two", (), None, unit(0, 1))), "s")
-    store.replace_document("c", make_doc(sha="h2"), new_chunks(("new only", (), None, unit(1, 1))), "s")
+    store.replace_document(
+        "c",
+        make_doc(),
+        new_chunks(("old one", (), None, unit(1, 0)), ("old two", (), None, unit(0, 1))),
+        "s",
+    )
+    store.replace_document(
+        "c", make_doc(sha="h2"), new_chunks(("new only", (), None, unit(1, 1))), "s"
+    )
     assert [c.text for c in store.index("c").chunks] == ["new only"]
     (doc,) = store.list_documents("c")
     assert doc.content_hash == "h2" and doc.n_chunks == 1
@@ -89,7 +97,9 @@ def test_duplicate_chunk_text_is_stored_once_per_collection(store: AtlasStore):
     store.ensure_collection("d", "m")
     dup = new_chunks(("same text", (), None, unit(1, 0)), ("same   text", (), None, unit(1, 0)))
     assert store.replace_document("c", make_doc(), dup, "s") == 1  # whitespace-normalised hash
-    assert store.replace_document("d", make_doc(), dup[:1], "s") == 1  # other collection is separate
+    assert (
+        store.replace_document("d", make_doc(), dup[:1], "s") == 1
+    )  # other collection is separate
     assert store.known_chunk_hashes("c") == {dup[0].hash: "/docs/a.md"}
 
 
@@ -97,7 +107,12 @@ def test_collections_are_isolated_and_listed_with_counts(store: AtlasStore):
     for name in ("alpha", "beta"):
         store.ensure_collection(name, "m")
     store.replace_document("alpha", make_doc(), new_chunks(("a1", (), None, unit(1, 0))), "s")
-    store.replace_document("beta", make_doc(path="/b.md", name="b.md"), new_chunks(("b1", (), None, unit(0, 1)), ("b2", (), None, unit(1, 1))), "s")
+    store.replace_document(
+        "beta",
+        make_doc(path="/b.md", name="b.md"),
+        new_chunks(("b1", (), None, unit(0, 1)), ("b2", (), None, unit(1, 1))),
+        "s",
+    )
     info = {c.name: c for c in store.collections()}
     assert (info["alpha"].documents, info["alpha"].chunks) == (1, 1)
     assert (info["beta"].documents, info["beta"].chunks, info["beta"].dim) == (1, 2, 2)
@@ -123,7 +138,12 @@ def test_embedding_model_and_dimension_are_enforced(store: AtlasStore):
         store.ensure_collection("c", "model-b")
     store.ensure_collection("c", "model-a")  # same model is fine
     with pytest.raises(StoreError, match="dimension"):
-        store.replace_document("c", make_doc(path="/other.md", name="o.md"), new_chunks(("u", (), None, unit(1, 0, 0))), "s")
+        store.replace_document(
+            "c",
+            make_doc(path="/other.md", name="o.md"),
+            new_chunks(("u", (), None, unit(1, 0, 0))),
+            "s",
+        )
 
 
 def test_an_empty_collection_may_switch_embedding_model(store: AtlasStore):
@@ -175,7 +195,9 @@ def test_index_cache_is_reused_and_invalidated_by_writes(store: AtlasStore):
     store.replace_document("c", make_doc(), new_chunks(("one", (), None, unit(1, 0))), "s")
     first = store.index("c")
     assert store.index("c") is first
-    store.replace_document("c", make_doc(path="/b.md", name="b.md"), new_chunks(("two", (), None, unit(0, 1))), "s")
+    store.replace_document(
+        "c", make_doc(path="/b.md", name="b.md"), new_chunks(("two", (), None, unit(0, 1))), "s"
+    )
     second = store.index("c")
     assert second is not first and len(second) == 2
 

@@ -14,25 +14,54 @@ from nimlab.atlas.guard import (
 )
 from nimlab.core import NIMAuthError, NIMError
 
-from .conftest import FakeClient  # noqa: TID252
+from .conftest import FakeClient
 
 
 @pytest.mark.parametrize(
     ("raw", "stage", "expected"),
     [
         ('{"User Safety": "safe"}', "query", (True, [])),
-        ('{"User Safety": "unsafe", "Safety Categories": "Violence, Criminal Planning/Confessed Criminal Activity"}', "query",
-         (False, ["Violence", "Criminal Planning/Confessed Criminal Activity"])),
-        ('```json\n{"User Safety": "unsafe", "Safety Categories": "Malware"}\n```', "query", (False, ["Malware"])),
-        ('Sure! Here is the assessment: {"User Safety": "safe", "Response Safety": "safe"} Hope it helps.', "answer", (True, [])),
+        (
+            '{"User Safety": "unsafe", "Safety Categories": '
+            '"Violence, Criminal Planning/Confessed Criminal Activity"}',
+            "query",
+            (False, ["Violence", "Criminal Planning/Confessed Criminal Activity"]),
+        ),
+        (
+            '```json\n{"User Safety": "unsafe", "Safety Categories": "Malware"}\n```',
+            "query",
+            (False, ["Malware"]),
+        ),
+        (
+            'Sure! Here is the assessment: {"User Safety": "safe", "Response Safety": "safe"} '
+            "Hope it helps.",
+            "answer",
+            (True, []),
+        ),
         ('{"user safety": "SAFE"}', "query", (True, [])),
-        ('{"User Safety": "safe", "Response Safety": "unsafe", "Safety Categories": "Hate/Identity Hate"}', "answer",
-         (False, ["Hate/Identity Hate"])),
+        (
+            '{"User Safety": "safe", "Response Safety": "unsafe", '
+            '"Safety Categories": "Hate/Identity Hate"}',
+            "answer",
+            (False, ["Hate/Identity Hate"]),
+        ),
         ('{"User Safety": "unsafe", "Response Safety": "safe"}', "answer", (True, [])),
-        ('{"User Safety": "unsafe"}', "answer", (False, [])),  # no response rating: fall back to the user rating
+        (
+            '{"User Safety": "unsafe"}',
+            "answer",
+            (False, []),
+        ),  # no response rating: fall back to the user rating
         ('{"User Safety": "safe", "Response Safety": "unsafe"}', "query", (True, [])),
-        ('{"User Safety": "unsafe", "Safety Categories": "S1, S17"}', "query", (False, ["Violence", "Malware"])),
-        ('{"Safety Categories": ["Violence"], "User Safety": "unsafe"}', "query", (False, ["Violence"])),
+        (
+            '{"User Safety": "unsafe", "Safety Categories": "S1, S17"}',
+            "query",
+            (False, ["Violence", "Malware"]),
+        ),
+        (
+            '{"Safety Categories": ["Violence"], "User Safety": "unsafe"}',
+            "query",
+            (False, ["Violence"]),
+        ),
     ],
 )
 def test_json_replies(raw: str, stage: str, expected: tuple):
@@ -46,7 +75,7 @@ def test_json_replies(raw: str, stage: str, expected: tuple):
         ("Safe.", (True, [])),
         ("unsafe\nS1,S3", (False, ["Violence", "Criminal Planning/Confessed Criminal Activity"])),
         ("unsafe", (False, [])),
-        ('User Safety: unsafe\nSafety Categories: Fraud/Deception', (False, ["Fraud/Deception"])),
+        ("User Safety: unsafe\nSafety Categories: Fraud/Deception", (False, ["Fraud/Deception"])),
         ('"User Safety": "safe" (truncated json', (True, [])),
         ("harmful", (False, [])),
         ("unharmful", (True, [])),
@@ -56,7 +85,9 @@ def test_non_json_replies(raw: str, expected: tuple):
     assert parse_guard_output(raw) == expected
 
 
-@pytest.mark.parametrize("raw", ["", "I cannot comply with that.", "Lorem ipsum", "{}", '{"foo": "bar"}', "[]"])
+@pytest.mark.parametrize(
+    "raw", ["", "I cannot comply with that.", "Lorem ipsum", "{}", '{"foo": "bar"}', "[]"]
+)
 def test_unparseable_replies_return_none(raw: str):
     assert parse_guard_output(raw) == (None, [])
 
@@ -78,10 +109,19 @@ def test_refusal_text_mentions_categories():
 
 
 async def test_guard_check_with_scripted_replies():
-    unsafe = SafetyGuard(FakeClient(chat='{"User Safety": "unsafe", "Safety Categories": "Violence"}'), "g")
+    unsafe = SafetyGuard(
+        FakeClient(chat='{"User Safety": "unsafe", "Safety Categories": "Violence"}'), "g"
+    )
     verdict = await unsafe.check("query", "bad")
-    assert (verdict.safe, verdict.categories, verdict.stage, verdict.uncertain) == (False, ["Violence"], "query", False)
-    safe = await SafetyGuard(FakeClient(chat='{"User Safety": "safe"}'), "g").check("query", "hello")
+    assert (verdict.safe, verdict.categories, verdict.stage, verdict.uncertain) == (
+        False,
+        ["Violence"],
+        "query",
+        False,
+    )
+    safe = await SafetyGuard(FakeClient(chat='{"User Safety": "safe"}'), "g").check(
+        "query", "hello"
+    )
     assert safe.safe and not safe.uncertain
 
 
@@ -120,7 +160,9 @@ def guarded_client(query_safe: bool, answer_safe: bool) -> FakeClient:
         content = messages[0]["content"]
         if content.startswith("Task: Check if there is unsafe content"):
             if "response: agent:" in content:
-                return '{"User Safety": "safe", "Response Safety": "%s"}' % ("safe" if answer_safe else "unsafe")
+                return '{"User Safety": "safe", "Response Safety": "%s"}' % (
+                    "safe" if answer_safe else "unsafe"
+                )
             return '{"User Safety": "%s"}' % ("safe" if query_safe else "unsafe")
         return "Robots send a heartbeat every 2 seconds [1]."
 
@@ -182,4 +224,7 @@ async def test_guarded_streaming_releases_tokens_after_screening(db_path, corpus
 async def test_guard_in_mock_mode_is_a_noop(indexed: Atlas):
     answer = await indexed.ask("How often do robots send heartbeats?", guard=True)
     assert not answer.blocked
-    assert [(g.stage, g.safe, g.skipped) for g in answer.guard] == [("query", True, True), ("answer", True, True)]
+    assert [(g.stage, g.safe, g.skipped) for g in answer.guard] == [
+        ("query", True, True),
+        ("answer", True, True),
+    ]

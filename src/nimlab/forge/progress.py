@@ -70,7 +70,9 @@ class UsageProbe:
         models: dict[str, dict[str, Any]] = {}
         for name, stats in (now.get("models") or {}).items():
             before = (self._base.get("models") or {}).get(name, {})
-            row = {k: int(stats.get(k, 0)) - int(before.get(k, 0)) for k in self._FIELDS}
+            row: dict[str, Any] = {
+                k: int(stats.get(k, 0)) - int(before.get(k, 0)) for k in self._FIELDS
+            }
             row["latency_s"] = round(
                 float(stats.get("latency_s", 0)) - float(before.get("latency_s", 0)), 6
             )

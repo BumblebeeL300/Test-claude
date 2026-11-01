@@ -114,7 +114,6 @@ class Atlas:
         self.agent = AgenticRetriever(
             client, self.retriever, self.models, self.config, offline=self.mock
         )
-        self._owned_client: NIMClient | None = None
 
     # ------------------------------------------------------------------ construction
     @classmethod
@@ -423,11 +422,23 @@ class Atlas:
         collection: str = DEFAULT_COLLECTION,
         *,
         k: int | None = None,
+        mode: Mode = "simple",
         use_rerank: bool | None = None,
         use_mmr: bool | None = None,
         hyde_text: str | None = None,
     ) -> list[SourceRef]:
-        """Hybrid retrieval only (no generation). Returns numbered :class:`SourceRef` objects."""
+        """Retrieval only (no answer generation). Returns numbered :class:`SourceRef` objects.
+
+        ``mode="agentic"`` runs the planner and multi-hop search; ``use_rerank`` / ``use_mmr`` /
+        ``hyde_text`` apply to simple mode (the agent follows the configured defaults).
+        """
+        if mode == "agentic":
+            state = AgentState()
+            async for _ in self.agent.explore(
+                query, collection, k=k or self.config.k, use_hyde=self.config.hyde, state=state
+            ):
+                pass
+            return sources_from_hits(state.hits)
         result = await self.retriever.retrieve(
             query, collection, k=k, use_rerank=use_rerank, use_mmr=use_mmr, hyde_text=hyde_text
         )

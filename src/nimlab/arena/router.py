@@ -703,8 +703,9 @@ class SmartRouter:
                 candidates = sorted(raw, key=lambda c: (-(c.utility or 0.0), c.model))
                 best = candidates[0]
                 suites = lb.suites_in(category)
+                names = ", ".join(repr(x) for x in suites)
                 basis = (
-                    f"{category} suite{'s' if len(suites) != 1 else ''} ({', '.join(suites)})"
+                    f"the {names} suite{'s' if len(suites) != 1 else ''}"
                     if suites and category != "general_chat"
                     else "the overall score across all suites"
                 )

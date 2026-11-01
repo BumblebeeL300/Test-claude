@@ -137,7 +137,7 @@ def _scan(
                 else:
                     h = hashlib.sha256()
                     with full.open("rb") as fh:
-                        for chunk in iter(lambda fh=fh: fh.read(1 << 20), b""):
+                        while chunk := fh.read(1 << 20):
                             h.update(chunk)
                     digest = h.hexdigest()
                 files[rel] = FileState("file", digest, st.st_size, stat.S_IMODE(st.st_mode), data)

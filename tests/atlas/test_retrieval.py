@@ -13,7 +13,7 @@ from nimlab.atlas.evaluation import load_qa, retrieval_metrics
 from nimlab.atlas.retrieval import Hit, merge_hits
 from nimlab.core import NIMAuthError, NIMError
 
-from .conftest import FakeClient, QA_FILE  # noqa: TID252
+from .conftest import QA_FILE, FakeClient
 
 _, QA_ITEMS = load_qa(QA_FILE)
 
@@ -56,7 +56,9 @@ async def test_sources_are_numbered_and_carry_all_stage_scores(indexed: Atlas):
     assert [s.n for s in sources] == list(range(1, len(sources) + 1))
     top = sources[0]
     assert top.source == "api_guide.md" and top.heading_path[-1] == "Webhooks"
-    assert top.dense_score is not None and top.bm25_score is not None and top.rerank_score is not None
+    assert (
+        top.dense_score is not None and top.bm25_score is not None and top.rerank_score is not None
+    )
     assert "HMAC-SHA256" in top.text
     assert top.label.startswith("api_guide.md > Hive API Guide > Webhooks")
     assert top.path.endswith("api_guide.md")
@@ -127,9 +129,21 @@ async def _near_duplicate_atlas(client, db_path: Path, **cfg) -> Atlas:
     a = Atlas(client, db_path, config=AtlasConfig(**cfg))
     await a.ingest_bytes(
         [
-            ("a1.md", b"# One\n\nBattery swap procedure: remove the battery pack, insert a fresh battery pack, confirm the battery light."),
-            ("a2.md", b"# Two\n\nBattery swap procedure: remove the battery pack, insert a fresh battery pack, confirm the green battery light."),
-            ("b.md", b"# Three\n\nCharging docks are located at the end of each aisle; robots dock automatically when the battery is low."),
+            (
+                "a1.md",
+                b"# One\n\nBattery swap procedure: remove the battery pack, "
+                b"insert a fresh battery pack, confirm the battery light.",
+            ),
+            (
+                "a2.md",
+                b"# Two\n\nBattery swap procedure: remove the battery pack, "
+                b"insert a fresh battery pack, confirm the green battery light.",
+            ),
+            (
+                "b.md",
+                b"# Three\n\nCharging docks are located at the end of each aisle; "
+                b"robots dock automatically when the battery is low.",
+            ),
         ]
     )
     return a
@@ -160,7 +174,9 @@ async def test_hyde_text_is_embedded_as_a_passage_and_blended(db_path: Path, cor
     await a.ingest(corpus_dir / "glossary.md")
     client.embed_calls.clear()
     plain = await a.retriever.query_vector("tote weight")
-    blended = await a.retriever.query_vector("tote weight", hyde_text="A tote holds up to 25 kg of goods")
+    blended = await a.retriever.query_vector(
+        "tote weight", hyde_text="A tote holds up to 25 kg of goods"
+    )
     assert ("passage", 1) in client.embed_calls and ("query", 1) in client.embed_calls
     assert np.linalg.norm(blended) == pytest.approx(1.0, abs=1e-5)
     assert not np.allclose(plain, blended)

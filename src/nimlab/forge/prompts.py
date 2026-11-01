@@ -11,6 +11,7 @@ __all__ = [
     "REVIEWER_SYSTEM",
     "fix_prompt",
     "implement_prompt",
+    "no_changes_prompt",
     "plan_prompt",
     "rca_prompt",
     "review_fix_prompt",
@@ -107,6 +108,15 @@ def fix_prompt(report: str, iteration: int, max_iters: int, rca: str | None = No
         "Do not weaken or delete tests. Run run_tests to confirm, then reply with a short summary.",
     ]
     return "\n".join(parts)
+
+
+def no_changes_prompt(iteration: int, max_iters: int) -> str:
+    return (
+        f"Round {iteration} of at most {max_iters}: the tests pass, but no file in the workspace "
+        "has been created or modified, so the task is NOT implemented yet. Use the tools: "
+        "write the tests for the requested behaviour, implement it, and run run_tests. Do not "
+        "just describe what you would do."
+    )
 
 
 def rca_prompt(
