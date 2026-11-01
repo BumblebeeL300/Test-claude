@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{ title }} · {{ trace.question[:60] }}</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --fg: #15181e; --muted: #5d6675; --border: #dfe3ea;
+  --soft: #eef1f5; --accent: #2f6fed; --good: #17895a; --bad: #c0352b; --warn: #a86a00;
+  --heat: 34, 160, 110; --l: 40%; --shadow: 0 1px 2px rgba(20, 24, 31, .06);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1216; --card: #171b21; --fg: #e6e9ee; --muted: #9aa4b4; --border: #2a303a;
+    --soft: #1f242c; --accent: #6b9bff; --good: #4cc38a; --bad: #ff7b72; --warn: #e3a93c;
+    --heat: 20, 125, 90; --l: 66%; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); }
+main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+h1 { font-size: 1.55rem; margin: 0 0 4px; letter-spacing: -.01em; }
+h2 { font-size: 1.05rem; margin: 34px 0 12px; display: flex; align-items: center; gap: 10px; }
+h2 small { color: var(--muted); font-weight: 400; font-size: .82rem; }
+.kicker { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+.question { font-size: 1.08rem; margin: 6px 0 14px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+        padding: 16px 18px; box-shadow: var(--shadow); }
+.answer { border-left: 4px solid var(--accent); }
+.answer pre, .out pre { white-space: pre-wrap; word-wrap: break-word; margin: 0;
+        font: inherit; }
+.rationale { color: var(--muted); margin-top: 10px; font-size: .92rem; }
+.rationale b { color: var(--fg); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px;
+        border: 1px solid var(--border); border-radius: 999px; background: var(--soft);
+        font-size: .82rem; white-space: nowrap; }
+.chip i { width: 9px; height: 9px; border-radius: 50%;
+        background: hsl(var(--h) 68% var(--l)); display: inline-block; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;
+        margin: 16px 0 0; }
+.tile { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+        padding: 10px 14px; }
+.tile b { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.tile span { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
+.warn { color: var(--warn); }
+.bad { color: var(--bad); }
+.good { color: var(--good); }
+.muted { color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--border); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase;
+     letter-spacing: .05em; }
+tfoot td { font-weight: 700; border-bottom: 0; }
+.scroll { overflow-x: auto; }
+
+/* timeline */
+.timeline { padding: 14px 16px 10px; }
+.lane { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 10px;
+        margin-bottom: 6px; }
+.lane .name { font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { position: relative; height: 22px; background: var(--soft); border-radius: 5px; }
+.bar { position: absolute; top: 3px; height: 16px; border-radius: 4px; min-width: 3px;
+       background: hsl(var(--h) 68% var(--l)); opacity: .92; display: block; }
+.bar.error { background: repeating-linear-gradient(45deg, var(--bad), var(--bad) 3px, transparent 3px, transparent 6px); }
+.bar.consensus { opacity: .5; }
+.bar:hover { opacity: 1; outline: 2px solid var(--fg); outline-offset: 1px; }
+.axis { display: grid; grid-template-columns: 150px 1fr; gap: 10px; margin-top: 6px; }
+.ticks { position: relative; height: 18px; color: var(--muted); font-size: .72rem; }
+.ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ticks span:first-child { transform: none; }
+.ticks span:last-child { transform: translateX(-100%); }
+
+/* candidates */
+.cands { display: grid; gap: 10px; }
+.cand { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+.cand.sel { border-color: var(--good); box-shadow: 0 0 0 1px var(--good) inset; }
+.cand .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
+.cand .text { grid-column: 1 / -1; white-space: pre-wrap; font-size: .92rem; color: var(--fg);
+              max-height: 9.5em; overflow: auto; }
+.tag { font-size: .72rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border);
+       color: var(--muted); }
+.tag.good { color: var(--good); border-color: var(--good); }
+.tag.bad { color: var(--bad); border-color: var(--bad); }
+.score { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* heatmap */
+.heat td.cell { text-align: center; min-width: 64px; background: rgba(var(--heat), var(--a));
+                border: 2px solid var(--card); border-radius: 6px; font-weight: 600; }
+.heat td.diag { opacity: .55; }
+.heat th.colh { text-align: center; }
+.heat th.rowh { text-align: left; white-space: nowrap; text-transform: none; letter-spacing: 0;
+                font-size: .85rem; color: var(--fg); font-weight: 600; }
+.heatmeta { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: .85rem;
+            margin-bottom: 8px; }
+.meter { width: 90px; height: 8px; background: var(--soft); border-radius: 5px; overflow: hidden;
+         align-self: center; }
+.meter span { display: block; height: 100%; background: var(--good); }
+
+/* steps */
+.phase { margin: 18px 0 6px; font-weight: 600; color: var(--muted); font-size: .8rem;
+         text-transform: uppercase; letter-spacing: .07em; }
+details.step { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+               margin-bottom: 6px; }
+details.step > summary { cursor: pointer; list-style: none; padding: 8px 12px; display: flex;
+        flex-wrap: wrap; align-items: center; gap: 8px; }
+details.step > summary::-webkit-details-marker { display: none; }
+details.step > summary::before { content: "▸"; color: var(--muted); width: 1em; }
+details.step[open] > summary::before { content: "▾"; }
+details.step.error { border-color: var(--bad); }
+details.step:target { outline: 2px solid var(--accent); }
+.idx { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 2.2em; }
+.badge { font-size: .7rem; padding: 1px 8px; border-radius: 5px; text-transform: uppercase;
+         letter-spacing: .06em; background: var(--soft); border: 1px solid var(--border); }
+.badge.propose { color: var(--accent); }
+.badge.aggregate, .badge.judge { color: var(--good); }
+.badge.critique, .badge.score { color: var(--warn); }
+.badge.revise, .badge.draft { color: #a050e0; }
+.badge.consensus { color: var(--muted); }
+.grow { flex: 1; }
+.stat { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.body { padding: 4px 14px 14px 32px; display: grid; gap: 10px; }
+.body h4 { margin: 0 0 3px; font-size: .74rem; text-transform: uppercase; letter-spacing: .07em;
+           color: var(--muted); }
+.body pre { margin: 0; padding: 10px 12px; background: var(--soft); border-radius: 8px;
+            white-space: pre-wrap; word-wrap: break-word; font: .86rem/1.5 var(--mono);
+            max-height: 420px; overflow: auto; }
+.body details summary { cursor: pointer; color: var(--muted); font-size: .8rem; }
+.kv { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .8rem; color: var(--muted); }
+.kv b { color: var(--fg); font-weight: 600; }
+.toolbar { margin-left: auto; display: flex; gap: 6px; }
+button { font: inherit; font-size: .78rem; cursor: pointer; color: var(--fg); background: var(--soft);
+         border: 1px solid var(--border); border-radius: 6px; padding: 2px 10px; }
+button:hover { border-color: var(--accent); }
+footer { margin-top: 40px; color: var(--muted); font-size: .8rem; text-align: center; }
+@media (max-width: 600px) {
+  .lane, .axis { grid-template-columns: 90px 1fr; }
+  .body { padding-left: 14px; }
+  h1 { font-size: 1.3rem; }
+}
+@media print { details.step:not([open]) > *:not(summary) { display: block; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="kicker">NIM Lab · Council · {{ trace.strategy }}{% if trace.mock %} · mock mode{% endif %}</div>
+  <h1>{{ title }}</h1>
+  <p class="question">{{ trace.question }}</p>
+  <div class="chips" aria-label="Models">
+    {% for m in models %}
+    <span class="chip" style="--h: {{ m.hue }}" title="{{ m.id }}"><i></i>{{ m.short }}</span>
+    {% endfor %}
+  </div>
+  <div class="tiles">
+    <div class="tile"><b>{{ wall }}</b><span>wall time</span></div>
+    <div class="tile"><b>{{ n_steps }}</b><span>steps</span></div>
+    <div class="tile"><b>{{ total_tokens }}</b><span>tokens</span></div>
+    <div class="tile"><b{% if agreement is none %} class="muted"{% endif %}>{{ agreement if agreement is not none else "–" }}</b><span>final agreement</span></div>
+    <div class="tile"><b class="{{ 'bad' if n_errors else 'good' }}">{{ n_errors }}</b><span>failed calls</span></div>
+  </div>
+</header>
+
+{% if trace.error %}
+<h2 class="bad">Run failed</h2>
+<div class="card" role="alert"><pre>{{ trace.error }}</pre></div>
+{% endif %}
+
+<h2>Final answer</h2>
+<section class="card answer">
+  {% if trace.final_answer %}<pre>{{ trace.final_answer }}</pre>{% else %}<span class="muted">No answer was produced.</span>{% endif %}
+  {% if trace.rationale %}<div class="rationale"><b>Rationale.</b> {{ trace.rationale }}</div>{% endif %}
+  {% if meta %}
+  <div class="kv" style="margin-top:10px">
+    {% for k, v in meta.items() %}<span>{{ k }}: <b>{{ v | pretty }}</b></span>{% endfor %}
+  </div>
+  {% endif %}
+  {% for w in warnings %}<div class="warn" style="margin-top:8px">⚠ {{ w }}</div>{% endfor %}
+</section>
+
+{% if timeline.lanes %}
+<h2>Timeline <small>total {{ timeline.total }} · each bar is one model call</small></h2>
+<section class="card timeline" aria-label="Timeline">
+  {% for lane in timeline.lanes %}
+  <div class="lane">
+    <div class="name"><span class="chip" style="--h: {{ lane.hue }}" title="{{ lane.model }}"><i></i>{{ lane.short }}</span></div>
+    <div class="track">
+      {% for b in lane.bars %}
+      <a class="bar {{ b.type }}{% if b.status == 'error' %} error{% endif %}" style="--h: {{ lane.hue }}; left: {{ b.left }}%; width: {{ b.width }}%" href="#step-{{ b.index }}" title="{{ b.title }}" data-step="{{ b.index }}"></a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="axis"><div></div><div class="ticks">{% for t in timeline.ticks %}<span style="left: {{ t.pos }}%">{{ t.label }}</span>{% endfor %}</div></div>
+</section>
+{% endif %}
+
+{% if candidates %}
+<h2>Candidates <small>{{ candidates | length }} answers in the running{% if has_scores %} · scored{% endif %}</small></h2>
+<section class="cands">
+  {% for c in candidates %}
+  <article class="card cand{% if c.selected %} sel{% endif %}">
+    <div class="head">
+      <strong>{{ c.label }}</strong>
+      <span class="chip" style="--h: {{ c.hue }}" title="{{ c.model }}"><i></i>{{ c.short }}</span>
+      {% if c.score is not none %}<span class="score">{{ c.score }}</span><span class="tag">{{ c.source }}</span>{% endif %}
+      {% if c.selected %}<span class="tag good">selected</span>{% endif %}
+      {% if c.outlier %}<span class="tag bad">outlier</span>{% endif %}
+    </div>
+    <div class="text">{{ c.text }}</div>
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if consensus %}
+<h2>Consensus <small>pairwise cosine similarity between answers</small></h2>
+{% for rep in consensus %}
+<section class="card" style="margin-bottom:10px">
+  <div class="heatmeta">
+    <strong style="color:var(--fg)">{{ rep.phase }}</strong>
+    <span>agreement <b style="color:var(--fg)">{{ rep.agreement }}</b></span>
+    <div class="meter" title="{{ rep.agreement_pct }}%"><span style="width: {{ rep.agreement_pct }}%"></span></div>
+    <span>min pair {{ rep.min_pairwise }}</span>
+    <span>{{ rep.method }}{% if rep.embed_model %} · {{ rep.embed_model }}{% endif %}</span>
+    <span>outliers: {% if rep.outliers %}<b class="bad">{{ rep.outliers | join(", ") }}</b>{% else %}none{% endif %}</span>
+  </div>
+  <div class="scroll">
+  <table class="heat" aria-label="Consensus matrix: {{ rep.phase }}">
+    <thead><tr><th></th>{% for l in rep.labels %}<th class="colh">{{ l }}</th>{% endfor %}<th class="colh">mean</th></tr></thead>
+    <tbody>
+    {% for row in rep.rows %}
+      <tr>
+        <th class="rowh" scope="row"><span class="chip" style="--h: {{ row.hue }}"><i></i>{{ row.label }} · {{ row.short }}</span>{% if row.outlier %} <span class="tag bad">outlier</span>{% endif %}</th>
+        {% for cell in row.cells %}<td class="cell{% if cell.diag %} diag{% endif %}" style="--a: {{ cell.alpha }}">{{ cell.value }}</td>{% endfor %}
+        <td class="cell" style="--a: 0">{{ row.centrality }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endfor %}
+{% endif %}
+
+<h2>Steps <small>{{ n_steps }} recorded</small>
+  <span class="toolbar"><button type="button" id="expand">Expand all</button><button type="button" id="collapse">Collapse all</button></span>
+</h2>
+{% for phase in phases %}
+<div class="phase">{{ phase.name }}</div>
+  {% for s in phase.steps %}
+  <details class="step {{ s.type }}{% if s.status == 'error' %} error{% endif %}" id="step-{{ s.index }}">
+    <summary>
+      <span class="idx">#{{ s.index }}</span>
+      <span class="badge {{ s.type }}">{{ s.type_label }}</span>
+      <span class="chip" style="--h: {{ s.hue }}" title="{{ s.model }}"><i></i>{{ s.short }}</span>
+      <span>{{ s.label }}</span>
+      <span class="grow"></span>
+      {% if s.status == 'error' %}<span class="bad">failed</span>{% endif %}
+      <span class="stat">{{ s.duration }}</span>
+      <span class="stat">{{ s.tokens }} tok</span>
+    </summary>
+    <div class="body">
+      {% if s.prompt_summary %}<div><h4>Prompt</h4><div class="muted">{{ s.prompt_summary }}</div>
+        {% if s.prompt %}<details><summary>show full prompt</summary><pre>{{ s.prompt }}</pre></details>{% endif %}</div>{% endif %}
+      {% if s.output %}<div class="out"><h4>Output</h4><pre>{{ s.output }}</pre></div>{% endif %}
+      {% if s.reasoning %}<details><summary>reasoning ({{ s.reasoning | length }} chars)</summary><pre>{{ s.reasoning }}</pre></details>{% endif %}
+      {% if s.error %}<div><h4 class="bad">Error</h4><pre>{{ s.error }}</pre></div>{% endif %}
+      <div class="kv">
+        <span>model <b>{{ s.model }}</b></span>
+        <span>tokens <b>{{ s.tokens_detail }}</b></span>
+        {% if s.temperature is not none %}<span>temperature <b>{{ s.temperature }}</b></span>{% endif %}
+        {% for k, v in s.meta.items() %}<span>{{ k }} <b>{{ v | pretty }}</b></span>{% endfor %}
+      </div>
+    </div>
+  </details>
+  {% endfor %}
+{% endfor %}
+
+{% if usage %}
+<h2>Usage</h2>
+<section class="card scroll">
+  <table aria-label="Usage by model">
+    <thead><tr><th>Model</th><th>Calls</th><th>Errors</th><th>Tokens in</th><th>Tokens out</th><th>Total</th><th>Latency</th></tr></thead>
+    <tbody>
+    {% for u in usage %}
+      <tr><td><span class="chip" style="--h: {{ u.hue }}" title="{{ u.model }}"><i></i>{{ u.short }}</span></td><td>{{ u.calls }}</td><td>{{ u.errors }}</td><td>{{ u.prompt }}</td><td>{{ u.completion }}</td><td>{{ u.total }}</td><td>{{ u.latency }}</td></tr>
+    {% endfor %}
+    </tbody>
+    {% if usage | length > 1 %}
+    <tfoot><tr><td>Total</td><td>{{ usage_totals.calls }}</td><td>{{ usage_totals.errors }}</td><td>{{ usage_totals.prompt }}</td><td>{{ usage_totals.completion }}</td><td>{{ usage_totals.total }}</td><td>{{ usage_totals.latency }}</td></tr></tfoot>
+    {% endif %}
+  </table>
+</section>
+{% endif %}
+
+<footer>Generated by NIM Lab Council · {{ started }} · schema v{{ trace.schema_version }}</footer>
+</main>
+<script>
+(function () {
+  var all = function () { return document.querySelectorAll("details.step"); };
+  document.getElementById("expand").addEventListener("click", function () {
+    all().forEach(function (d) { d.open = true; });
+  });
+  document.getElementById("collapse").addEventListener("click", function () {
+    all().forEach(function (d) { d.open = false; });
+  });
+  function openTarget() {
+    var id = location.hash.slice(1), el = id && document.getElementById(id);
+    if (el && el.tagName === "DETAILS") { el.open = true; el.scrollIntoView({block: "center"}); }
+  }
+  window.addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+{
+  "name": "math_reasoning",
+  "title": "Math reasoning",
+  "description": "Word problems with a single numeric answer, graded with a numeric tolerance.",
+  "category": "math_reasoning",
+  "version": "1",
+  "system": "You are a careful mathematician. Work step by step but keep it short.",
+  "temperature": 0.0,
+  "max_tokens": 700,
+  "items": [
+    {
+      "id": "train-minutes",
+      "prompt": "A train covers 210 km at a constant speed of 84 km/h. How many minutes does the trip take?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "210 / 84 = 2.5 hours = 150 minutes.\nAnswer: 150",
+      "grader": {
+        "type": "numeric",
+        "expected": 150
+      },
+      "tags": []
+    },
+    {
+      "id": "price-up-down",
+      "prompt": "A jacket costing $250 has its price raised by 20%, and the new price is then discounted by 20%. What is the final price in dollars?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "250 * 1.2 = 300; 300 * 0.8 = 240.\nAnswer: 240",
+      "grader": {
+        "type": "numeric",
+        "expected": 240
+      },
+      "tags": []
+    },
+    {
+      "id": "sum-multiples",
+      "prompt": "What is the sum of all integers from 1 to 100 inclusive that are divisible by 3 or by 5?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "Multiples of 3 sum to 1683, multiples of 5 to 1050, multiples of 15 (counted twice) to 315: 1683 + 1050 - 315 = 2418.\nAnswer: 2418",
+      "grader": {
+        "type": "numeric",
+        "expected": 2418
+      },
+      "tags": []
+    },
+    {
+      "id": "two-pipes",
+      "prompt": "One pipe fills a tank in 6 hours and a second pipe fills the same tank in 12 hours. Working together, how many hours do they need to fill it?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "Combined rate = 1/6 + 1/12 = 1/4 tank per hour, so 4 hours.\nAnswer: 4",
+      "grader": {
+        "type": "numeric",
+        "expected": 4
+      },
+      "tags": []
+    },
+    {
+      "id": "letter-arrangements",
+      "prompt": "How many distinct arrangements are there of the letters in the word LETTER?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "6 letters with E and T each repeated twice: 6! / (2! * 2!) = 720 / 4 = 180.\nAnswer: 180",
+      "grader": {
+        "type": "numeric",
+        "expected": 180
+      },
+      "tags": []
+    },
+    {
+      "id": "dice-sum-eight",
+      "prompt": "Two fair six-sided dice are rolled. What is the probability that the sum is 8? Give a decimal rounded to 4 places.\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "Favourable pairs: (2,6), (3,5), (4,4), (5,3), (6,2) = 5 of 36, and 5/36 = 0.1389.\nAnswer: 0.1389",
+      "grader": {
+        "type": "numeric",
+        "expected": 0.1389,
+        "abs_tol": 0.0006,
+        "rel_tol": 0.0
+      },
+      "tags": []
+    },
+    {
+      "id": "consecutive-odds",
+      "prompt": "The sum of three consecutive odd integers is 117. What is the largest of the three?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "The middle integer is 117 / 3 = 39, so the integers are 37, 39, 41.\nAnswer: 41",
+      "grader": {
+        "type": "numeric",
+        "expected": 41
+      },
+      "tags": []
+    },
+    {
+      "id": "rectangle-area",
+      "prompt": "A rectangle has a perimeter of 54 cm, and its length is 3 cm more than twice its width. What is its area in square centimetres?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "l = 2w + 3 and l + w = 27 give w = 8 and l = 19; area = 8 * 19 = 152.\nAnswer: 152",
+      "grader": {
+        "type": "numeric",
+        "expected": 152
+      },
+      "tags": []
+    },
+    {
+      "id": "compound-interest",
+      "prompt": "$2,000 is invested at 5% annual interest compounded once a year for 3 years. What is the final amount in dollars, rounded to the nearest cent?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "2000 * 1.05^3 = 2000 * 1.157625 = 2315.25.\nAnswer: 2315.25",
+      "grader": {
+        "type": "numeric",
+        "expected": 2315.25,
+        "abs_tol": 0.005,
+        "rel_tol": 0.0
+      },
+      "tags": []
+    },
+    {
+      "id": "modular-power",
+      "prompt": "What is the remainder when 7^100 is divided by 13?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "7^6 is congruent to -1 (mod 13), so 7^12 is 1; 100 mod 12 = 4 and 7^4 = 2401 = 13 * 184 + 9.\nAnswer: 9",
+      "grader": {
+        "type": "numeric",
+        "expected": 9
+      },
+      "tags": []
+    },
+    {
+      "id": "fuel-left",
+      "prompt": "A car's tank holds 48 litres and the car uses 7.5 litres per 100 km. After driving 280 km from a full tank, how many litres remain?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "280 km uses 2.8 * 7.5 = 21 litres, leaving 48 - 21 = 27.\nAnswer: 27",
+      "grader": {
+        "type": "numeric",
+        "expected": 27
+      },
+      "tags": []
+    },
+    {
+      "id": "removed-number",
+      "prompt": "The average of five numbers is 18. After one number is removed, the average of the remaining four is 16. What number was removed?\n\nShow brief working, then end with a final line of the form `Answer: <number>`.",
+      "reference": "Total 5 * 18 = 90; remaining total 4 * 16 = 64; removed number = 26.\nAnswer: 26",
+      "grader": {
+        "type": "numeric",
+        "expected": 26
+      },
+      "tags": []
+    }
+  ]
+}

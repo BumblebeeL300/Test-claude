@@ -110,7 +110,15 @@ class UsageTracker:
         snap = self._snapshot()
         table = Table(title=title, title_justify="left")
         table.add_column("Model", overflow="fold")
-        for col in ("Calls", "Errors", "Retries", "Tokens in", "Tokens out", "Latency (s)", "Avg (s)"):
+        for col in (
+            "Calls",
+            "Errors",
+            "Retries",
+            "Tokens in",
+            "Tokens out",
+            "Latency (s)",
+            "Avg (s)",
+        ):
             table.add_column(col, justify="right")
 
         def row(name: str, s: ModelStats) -> list[str]:
