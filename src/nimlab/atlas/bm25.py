@@ -30,9 +30,7 @@ class BM25Index:
         self._idf: dict[str, float] = {}
 
     @classmethod
-    def build(
-        cls, docs: Sequence[Sequence[str]], k1: float = 1.5, b: float = 0.75
-    ) -> BM25Index:
+    def build(cls, docs: Sequence[Sequence[str]], k1: float = 1.5, b: float = 0.75) -> BM25Index:
         """Index pre-tokenised documents."""
         index = cls(k1=k1, b=b)
         index.n_docs = len(docs)

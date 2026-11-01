@@ -1,5 +1,7 @@
 """Sandbox: path confinement, env scrubbing, timeouts, output caps and the command allowlist."""
 
+# ruff: noqa: ASYNC240, ASYNC251
+
 from __future__ import annotations
 
 import json
@@ -10,7 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from nimlab.forge import CommandNotAllowedError, PathEscapeError, Sandbox, SandboxError, SandboxLimits
+from nimlab.forge import (
+    CommandNotAllowedError,
+    PathEscapeError,
+    Sandbox,
+    SandboxError,
+    SandboxLimits,
+)
 from nimlab.forge.sandbox import FileTooLargeError, ReservedPathError, SandboxReadOnlyError
 
 posix_only = pytest.mark.skipif(os.name != "posix", reason="POSIX process semantics")
@@ -63,7 +71,9 @@ class TestPathConfinement:
             sandbox.resolve("a\x00b.py")
 
     @posix_only
-    def test_symlink_to_outside_file_rejected(self, sandbox: Sandbox, ws: Path, tmp_path: Path) -> None:
+    def test_symlink_to_outside_file_rejected(
+        self, sandbox: Sandbox, ws: Path, tmp_path: Path
+    ) -> None:
         secret = tmp_path / "secret.txt"
         secret.write_text("top secret")
         (ws / "link.txt").symlink_to(secret)
@@ -102,7 +112,9 @@ class TestPathConfinement:
         (ws / "alias.py").symlink_to(ws / "real.py")
         assert sandbox.read_text("alias.py") == "x = 1\n"
 
-    @pytest.mark.parametrize("reserved", [".forge/report.json", ".git/config", ".forge", ".git/hooks/x"])
+    @pytest.mark.parametrize(
+        "reserved", [".forge/report.json", ".git/config", ".forge", ".git/hooks/x"]
+    )
     def test_reserved_dirs_blocked(self, sandbox: Sandbox, reserved: str) -> None:
         with pytest.raises(ReservedPathError):
             sandbox.resolve(reserved)
@@ -175,7 +187,9 @@ class TestEnvironmentScrubbing:
         "PYTEST_ADDOPTS": "--evil",
     }
 
-    def test_scrubbed_env_has_no_secrets(self, sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_scrubbed_env_has_no_secrets(
+        self, sandbox: Sandbox, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         for key, value in self.SECRETS.items():
             monkeypatch.setenv(key, value)
         env = sandbox.scrubbed_env()
@@ -316,7 +330,9 @@ class TestCommandAllowlist:
             [],
         ],
     )
-    async def test_non_allowlisted_commands_refused(self, sandbox: Sandbox, argv: list[str]) -> None:
+    async def test_non_allowlisted_commands_refused(
+        self, sandbox: Sandbox, argv: list[str]
+    ) -> None:
         with pytest.raises(CommandNotAllowedError):
             await sandbox.run(argv)
 
@@ -368,14 +384,18 @@ class TestCommandAllowlist:
             await sandbox.run(["pytest", target])
 
     def test_allowed_pytest_argv_is_built_safely(self, sandbox: Sandbox, ws: Path) -> None:
-        argv = sandbox.build_argv(["pytest", "-x", "-q", "-k", "foo and not bar", "--maxfail=2", "sub/test_a.py::test_x"])
+        argv = sandbox.build_argv(
+            ["pytest", "-x", "-q", "-k", "foo and not bar", "--maxfail=2", "sub/test_a.py::test_x"]
+        )
         assert argv[:3] == [sys.executable, "-m", "pytest"]
         assert "no:cacheprovider" in argv
         assert f"--rootdir={sandbox.root}" in argv
         assert "-k" in argv and "foo and not bar" in argv
         assert argv[-1] == "sub/test_a.py::test_x"
 
-    def test_python_dash_m_pytest_is_routed_through_pytest_validation(self, sandbox: Sandbox) -> None:
+    def test_python_dash_m_pytest_is_routed_through_pytest_validation(
+        self, sandbox: Sandbox
+    ) -> None:
         argv = sandbox.build_argv(["python", "-m", "pytest", "-x"])
         assert argv[1:3] == ["-m", "pytest"]
         with pytest.raises(CommandNotAllowedError):

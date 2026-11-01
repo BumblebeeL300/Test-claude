@@ -178,7 +178,9 @@ def _chunk_section(section: Section, max_chars: int, overlap: int) -> list[_Piec
         else:
             texts.append(cur)
             tail = _overlap_tail(cur, overlap)
-            cur = f"{tail}\n\n{block}" if tail and len(tail) + 2 + len(block) <= max_chars else block
+            cur = (
+                f"{tail}\n\n{block}" if tail and len(tail) + 2 + len(block) <= max_chars else block
+            )
     if cur:
         texts.append(cur)
     return [
@@ -233,7 +235,7 @@ def chunk_sections(
     overlap: int = 150,
     min_chars: int = 200,
 ) -> list[Chunk]:
-    """Chunk sections into :class:`~nimlab.atlas.models.Chunk` objects (heading path + page kept)."""
+    """Chunk sections into :class:`~nimlab.atlas.models.Chunk` objects (path and page kept)."""
     if max_chars <= 0:
         raise ValueError("max_chars must be positive")
     if not 0 <= overlap < max_chars:

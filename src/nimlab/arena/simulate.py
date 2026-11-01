@@ -168,7 +168,9 @@ class SimulatedClient:
         if spec.type == "code_exec":
             name = spec.params.get("entrypoint") or "solution"
             body = (
-                f"class {name}:\n    pass" if name[:1].isupper() else f"def {name}(*a, **k):\n    return None"
+                f"class {name}:\n    pass"
+                if name[:1].isupper()
+                else f"def {name}(*a, **k):\n    return None"
             )
             return f"```python\n{body}\n```"
         if spec.type == "json_schema":
@@ -198,7 +200,11 @@ class SimulatedClient:
         if schema_name == "PairwiseVerdict":
             from .battle import ANSWER_A_MARK, ANSWER_B_MARK, REFERENCE_MARK
 
-            a = re.search(re.escape(ANSWER_A_MARK) + r"\n(.*?)\n\n" + re.escape(ANSWER_B_MARK), text, re.DOTALL)
+            a = re.search(
+                re.escape(ANSWER_A_MARK) + r"\n(.*?)\n\n" + re.escape(ANSWER_B_MARK),
+                text,
+                re.DOTALL,
+            )
             b = re.search(re.escape(ANSWER_B_MARK) + r"\n(.*?)\n\nReturn JSON", text, re.DOTALL)
             ref = re.search(re.escape(REFERENCE_MARK) + r"\n(.*?)\n\n", text, re.DOTALL)
             if not (a and b and ref):
@@ -242,8 +248,14 @@ class SimulatedClient:
         found = None if (tools or response_format) else self._lookup(messages)
         if found is None:
             result = await self._base.chat(
-                model, messages, temperature=temperature, max_tokens=max_tokens, tools=tools,
-                tool_choice=tool_choice, response_format=response_format, extra=extra,
+                model,
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools,
+                tool_choice=tool_choice,
+                response_format=response_format,
+                extra=extra,
             )
             self.usage.record(model, result.usage, result.latency_s)
             return result
@@ -274,8 +286,14 @@ class SimulatedClient:
         found = None if (tools or response_format) else self._lookup(messages)
         if found is None:
             async for chunk in self._base.stream_chat(
-                model, messages, temperature=temperature, max_tokens=max_tokens, tools=tools,
-                tool_choice=tool_choice, response_format=response_format, extra=extra,
+                model,
+                messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                tools=tools,
+                tool_choice=tool_choice,
+                response_format=response_format,
+                extra=extra,
             ):
                 yield chunk
             return

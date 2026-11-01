@@ -46,7 +46,7 @@ class SuiteError(ValueError):
 
 
 class GraderSpec(BaseModel):
-    """``{"type": "numeric", "expected": 42}``: ``type`` picks the grader, the rest are its params."""
+    """``{"type": "numeric", "expected": 42}``: ``type`` picks the grader, the rest are params."""
 
     model_config = ConfigDict(extra="forbid")
 

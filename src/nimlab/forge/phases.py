@@ -32,7 +32,7 @@ from .prompts import (
 from .sandbox import SandboxError
 from .snapshot import Snapshot
 from .tools import clip
-from .workspace import summarize_workspace
+from .workspace import local_imports, summarize_workspace
 
 __all__ = [
     "DebugPhase",
@@ -269,16 +269,24 @@ class EscalatePhase(Phase):
 
     state = State.ESCALATE
 
-    def _sources(self, ctx: RunContext) -> dict[str, str]:
+    def _sources(self, ctx: RunContext, limit: int = 5) -> dict[str, str]:
+        """Files worth showing the analyst: failing frames, the tests, what they import, edits."""
         paths: list[str] = []
+        test_files: list[str] = []
         if ctx.last_tests:
             for failure in ctx.last_tests.failures:
-                for fr in failure.frames:
-                    paths.append(fr.file)
-                paths.append(failure.nodeid.split("::", 1)[0])
+                paths.extend(fr.file for fr in failure.frames)
+                test_files.append(failure.nodeid.split("::", 1)[0])
+        paths.extend(test_files)
+        for test_file in dict.fromkeys(test_files):
+            try:
+                paths.extend(local_imports(ctx.sandbox, ctx.sandbox.read_text(test_file)))
+            except SandboxError:
+                continue
+        paths.extend(sorted(ctx.tools.changed_files))
         out: dict[str, str] = {}
         for path in dict.fromkeys(p for p in paths if p.endswith(".py")):
-            if len(out) >= 5:
+            if len(out) >= limit:
                 break
             try:
                 out[path] = clip(ctx.sandbox.read_text(path), 3500)

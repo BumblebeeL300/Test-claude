@@ -12,7 +12,7 @@ def block(search: str, replace: str) -> str:
     return f"<<<<<<< SEARCH\n{search}\n=======\n{replace}\n>>>>>>> REPLACE\n"
 
 
-SOURCE = '''\
+SOURCE = """\
 import math
 
 
@@ -22,7 +22,7 @@ def area(r):
 
 def perimeter(r):
     return 2 * 3.14 * r
-'''
+"""
 
 
 class TestParsing:
@@ -31,7 +31,13 @@ class TestParsing:
         assert blocks == [EditBlock(("a = 1",), ("a = 2",))]
 
     def test_multiple_blocks_and_noise_between(self) -> None:
-        patch = "Here is the fix:\n```python\n" + block("x", "y") + "\nsome prose\n" + block("p", "q") + "```\n"
+        patch = (
+            "Here is the fix:\n```python\n"
+            + block("x", "y")
+            + "\nsome prose\n"
+            + block("p", "q")
+            + "```\n"
+        )
         blocks = parse_edit_blocks(patch)
         assert [b.search for b in blocks] == [("x",), ("p",)]
 
@@ -56,7 +62,10 @@ class TestParsing:
             ("just some text", "no SEARCH/REPLACE"),
             ("<<<<<<< SEARCH\nold\nnew\n>>>>>>> REPLACE", "divider"),
             ("<<<<<<< SEARCH\nold\n=======\nnew\n", "closing"),
-            ("<<<<<<< SEARCH\nold\n<<<<<<< SEARCH\nx\n=======\ny\n>>>>>>> REPLACE", "second SEARCH"),
+            (
+                "<<<<<<< SEARCH\nold\n<<<<<<< SEARCH\nx\n=======\ny\n>>>>>>> REPLACE",
+                "second SEARCH",
+            ),
         ],
     )
     def test_malformed_patches_explain_the_format(self, patch: str, needle: str) -> None:
@@ -70,20 +79,26 @@ class TestParsing:
 
 class TestApplying:
     def test_exact_replacement(self) -> None:
-        res = apply_patch_text(SOURCE, block("    return 3.14 * r * r", "    return math.pi * r * r"))
+        res = apply_patch_text(
+            SOURCE, block("    return 3.14 * r * r", "    return math.pi * r * r")
+        )
         assert "math.pi * r * r" in res.text
         assert "2 * 3.14 * r" in res.text  # the other function is untouched
         assert res.applied == 1 and res.tiers == ["exact"]
         assert (res.added, res.removed) == (1, 1)
 
     def test_multiple_blocks_apply_in_order(self) -> None:
-        patch = block("def area(r):", "def circle_area(r):") + block("def perimeter(r):", "def circle_perimeter(r):")
+        patch = block("def area(r):", "def circle_area(r):") + block(
+            "def perimeter(r):", "def circle_perimeter(r):"
+        )
         res = apply_patch_text(SOURCE, patch)
         assert "def circle_area(r):" in res.text and "def circle_perimeter(r):" in res.text
         assert res.applied == 2
 
     def test_second_block_can_target_text_created_by_the_first(self) -> None:
-        patch = block("def area(r):", "def surface(r):") + block("def surface(r):", "def surface_area(r):")
+        patch = block("def area(r):", "def surface(r):") + block(
+            "def surface(r):", "def surface_area(r):"
+        )
         assert "def surface_area(r):" in apply_patch_text(SOURCE, patch).text
 
     def test_delete_with_empty_replace(self) -> None:
@@ -145,7 +160,9 @@ class TestApplying:
 
     def test_over_indented_search_is_dedented(self) -> None:
         text = "def f():\n    return 1\n"
-        patch = block("        def f():\n            return 1", "        def f():\n            return 2")
+        patch = block(
+            "        def f():\n            return 1", "        def f():\n            return 2"
+        )
         assert apply_patch_text(text, patch).text == "def f():\n    return 2\n"
 
     def test_leading_and_trailing_blank_lines_in_search_are_forgiven(self) -> None:
@@ -185,12 +202,14 @@ class TestApplying:
         assert res.text == SOURCE and (res.added, res.removed) == (0, 0)
 
     def test_unicode_content(self) -> None:
-        res = apply_patch_text("s = 'héllo wörld ✓'\n", block("s = 'héllo wörld ✓'", "s = 'ünïcode ✓✓'"))
+        res = apply_patch_text(
+            "s = 'héllo wörld ✓'\n", block("s = 'héllo wörld ✓'", "s = 'ünïcode ✓✓'")
+        )
         assert res.text == "s = 'ünïcode ✓✓'\n"
 
     def test_lines_that_look_like_markers_inside_python_strings(self) -> None:
         text = 'banner = "======="\nx = 1\n'
-        # The divider must be the first bare '=======' line after SEARCH; quoted text is a normal line.
+        # The divider is the first bare '=======' line after SEARCH; quoted text is plain text.
         res = apply_patch_text(text, block('banner = "======="', 'banner = "-------"'))
         assert res.text == 'banner = "-------"\nx = 1\n'
 

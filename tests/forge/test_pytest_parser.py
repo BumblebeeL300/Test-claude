@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from nimlab.forge import Sandbox, parse_pytest_output
 from nimlab.forge.pytest_parser import PytestReport
 from nimlab.forge.tools import WorkspaceTools
@@ -307,11 +305,14 @@ class TestCondensedReport:
 
     def test_limits_failures_and_length(self) -> None:
         body = "".join(
-            f"_____ test_{i} _____\nt.py:{i}: in test_{i}\n    assert {i} == 0\nE   assert {i} == 0\n"
+            f"_____ test_{i} _____\nt.py:{i}: in test_{i}\n"
+            f"    assert {i} == 0\nE   assert {i} == 0\n"
             for i in range(1, 31)
         )
         summary = "".join(f"FAILED t.py::test_{i} - assert {i} == 0\n" for i in range(1, 31))
-        out = f"=== FAILURES ===\n{body}=== short test summary info ===\n{summary}30 failed in 1.0s\n"
+        out = (
+            f"=== FAILURES ===\n{body}=== short test summary info ===\n{summary}30 failed in 1.0s\n"
+        )
         rep = parse_pytest_output(out, exit_code=1)
         assert len(rep.failures) == 30
         text = rep.condensed(max_failures=5)
@@ -342,14 +343,17 @@ class TestSignature:
 
     def test_different_message_for_same_test_differs(self) -> None:
         a = parse_pytest_output(SHORT_FAILURES, exit_code=1)
-        b = parse_pytest_output(SHORT_FAILURES.replace("assert 'Fizz' ==", "assert 'Buzz' =="), exit_code=1)
+        b = parse_pytest_output(
+            SHORT_FAILURES.replace("assert 'Fizz' ==", "assert 'Buzz' =="), exit_code=1
+        )
         assert a.signature != b.signature
 
     def test_memory_addresses_and_paths_do_not_change_signature(self) -> None:
         tmpl = (
             "=== FAILURES ===\n_____ test_a _____\nt.py:1: in test_a\n    f()\n"
             "E   AssertionError: <Foo object at {addr}> in {path}\n"
-            "=== short test summary info ===\nFAILED t.py::test_a - AssertionError\n1 failed in 0.1s\n"
+            "=== short test summary info ===\n"
+            "FAILED t.py::test_a - AssertionError\n1 failed in 0.1s\n"
         )
         a = parse_pytest_output(tmpl.format(addr="0x7f01", path="/tmp/aaa/bbb/ccc.py"), exit_code=1)
         b = parse_pytest_output(tmpl.format(addr="0x7f99", path="/tmp/xxx/yyy/zzz.py"), exit_code=1)

@@ -167,7 +167,9 @@ class FakeClient:
             pos = self._chat_pos if which == "chat" else self._json_pos
             if pos >= len(script):
                 self.unexpected.append(call)
-                raise AssertionError(f"unexpected extra {call.kind} call #{call.index} ({call.model})")
+                raise AssertionError(
+                    f"unexpected extra {call.kind} call #{call.index} ({call.model})"
+                )
             item = script[pos]
             if which == "chat":
                 self._chat_pos += 1

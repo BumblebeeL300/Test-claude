@@ -256,7 +256,8 @@ class ClaimCheck(BaseModel):
 class VerificationReport(BaseModel):
     claims: list[ClaimCheck] = Field(default_factory=list)
     groundedness: float | None = Field(
-        default=None, description="supported=1, partial=0.5, unsupported=0, averaged; None if no claims"
+        default=None,
+        description="supported=1, partial=0.5, unsupported=0, averaged; None if no claims",
     )
     supported: int = 0
     partial: int = 0

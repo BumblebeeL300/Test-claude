@@ -172,9 +172,7 @@ class AgenticRetriever:
         text = strip_think(result.content)[0].strip()
         return text or None
 
-    async def reflect(
-        self, question: str, tried: list[str], hits: list[Hit]
-    ) -> Reflection | None:
+    async def reflect(self, question: str, tried: list[str], hits: list[Hit]) -> Reflection | None:
         evidence = "\n\n".join(
             f"[{i}] {h.chunk.location}\n{h.chunk.text[:500]}" for i, h in enumerate(hits, start=1)
         )
@@ -266,8 +264,11 @@ class AgenticRetriever:
             if reflection is None:
                 break
             follow_ups = _dedupe_queries(
-                [q for q in reflection.follow_up_queries if " ".join(tokenize(q)) not in
-                 {" ".join(tokenize(t)) for t in tried}],
+                [
+                    q
+                    for q in reflection.follow_up_queries
+                    if " ".join(tokenize(q)) not in {" ".join(tokenize(t)) for t in tried}
+                ],
                 2,
             )
             yield TraceStep(

@@ -6,7 +6,7 @@ from typing import Any
 
 
 def is_mock(client: Any) -> bool:
-    """True when ``client`` is the offline mock backend (``client.mock`` / ``client.config.mock``)."""
+    """True when ``client`` is the offline mock backend (``client.mock`` or its config)."""
     flag = getattr(client, "mock", None)
     if isinstance(flag, bool):
         return flag

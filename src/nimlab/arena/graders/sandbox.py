@@ -34,7 +34,7 @@ __all__ = ["SandboxResult", "extract_code", "run_python_tests", "scrubbed_env"]
 
 OUTPUT_CAP = 20_000
 
-_HARNESS = r'''
+_HARNESS = r"""
 import json, sys, signal, traceback
 NONCE = {nonce!r}
 TEST_TIMEOUT = {test_timeout!r}
@@ -79,6 +79,9 @@ def _guarded(fn):
         if _HAS_ALARM:
             signal.setitimer(signal.ITIMER_REAL, 0)
 
+def _exc_text(exc, limit=300):
+    return "".join(traceback.format_exception_only(type(exc), exc)).strip()[:limit]
+
 def _emit(payload):
     out = sys.__stdout__
     out.write("\n" + NONCE + json.dumps(payload) + "\n")
@@ -94,7 +97,7 @@ except _Timeout:
     _emit({{"load_error": "timeout while loading the solution", "results": []}})
     sys.exit(0)
 except BaseException as exc:
-    _emit({{"load_error": "".join(traceback.format_exception_only(type(exc), exc)).strip(), "results": []}})
+    _emit({{"load_error": _exc_text(exc), "results": []}})
     sys.exit(0)
 
 for i, src in enumerate(tests):
@@ -107,9 +110,9 @@ for i, src in enumerate(tests):
     except AssertionError as exc:
         results.append({{"ok": False, "error": "assertion failed " + str(exc)[:200]}})
     except BaseException as exc:
-        results.append({{"ok": False, "error": "".join(traceback.format_exception_only(type(exc), exc)).strip()[:300]}})
+        results.append({{"ok": False, "error": _exc_text(exc)}})
 _emit({{"load_error": None, "results": results}})
-'''
+"""
 
 
 @dataclass
@@ -166,7 +169,9 @@ def extract_code(text: str, entrypoint: str | None = None) -> str:
     blocks = [(lang.lower(), body) for lang, body in _FENCE.findall(text)]
     py = [b for lang, b in blocks if lang in ("python", "py", "python3", "")]
     if entrypoint:
-        pat = re.compile(rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(entrypoint)}\b", re.MULTILINE)
+        pat = re.compile(
+            rf"^\s*(?:async\s+)?(?:def|class)\s+{re.escape(entrypoint)}\b", re.MULTILINE
+        )
         for body in reversed(py):
             if pat.search(body):
                 return body
@@ -188,10 +193,10 @@ async def _kill_group(proc: asyncio.subprocess.Process) -> None:
         await asyncio.wait_for(proc.wait(), timeout=5)
 
 
-def _read_capped(path: Path) -> str:
+def _read_capped(path: Path, cap: int = OUTPUT_CAP) -> str:
     try:
         with path.open("rb") as fh:
-            return fh.read(OUTPUT_CAP).decode("utf-8", errors="replace")
+            return fh.read(cap).decode("utf-8", errors="replace")
     except OSError:
         return ""
 
@@ -250,14 +255,17 @@ async def run_python_tests(
                 await _kill_group(proc)
                 raise
         result.returncode = proc.returncode
-        stdout, result.stderr = _read_capped(out_path), _read_capped(err_path)
+        # the verdict line is last, so read everything the file-size rlimit lets through
+        stdout = _read_capped(out_path, 2 << 20)
+        result.stderr = _read_capped(err_path)
         payload = None
         for line in reversed(stdout.splitlines()):
             if line.startswith(nonce):
                 with contextlib.suppress(ValueError):
                     payload = json.loads(line[len(nonce) :])
                 break
-        result.stdout = "\n".join(ln for ln in stdout.splitlines() if not ln.startswith(nonce))
+        visible = "\n".join(ln for ln in stdout.splitlines() if not ln.startswith(nonce))
+        result.stdout = visible[:OUTPUT_CAP]
         if payload is not None:
             result.load_error = payload.get("load_error")
             result.details = payload.get("results", [])

@@ -135,7 +135,9 @@ def parse_guard_output(raw: str, stage: Stage = "query") -> tuple[bool | None, l
                 rating = _rating(norm[key])
                 if rating is not None:
                     cats = _split_categories(
-                        norm.get("safetycategories") or norm.get("categories") or norm.get("violations")
+                        norm.get("safetycategories")
+                        or norm.get("categories")
+                        or norm.get("violations")
                     )
                     return rating, ([] if rating else cats)
     # Fallbacks for non-JSON text.
@@ -148,7 +150,9 @@ def parse_guard_output(raw: str, stage: Stage = "query") -> tuple[bool | None, l
         chosen = ratings[want] == "safe"
     else:
         head = text.strip().lower()[:200]
-        chosen = _rating(head) if re.match(r"\W*(un)?safe\b|\W*(harmful|unharmful)\b", head) else None
+        chosen = (
+            _rating(head) if re.match(r"\W*(un)?safe\b|\W*(harmful|unharmful)\b", head) else None
+        )
     codes = re.findall(r"\bS\d{1,2}\b", text)
     named = re.search(r"categories[\"'\s:=]+([^\n}]+)", text, re.IGNORECASE)
     cats = _split_categories(",".join(codes) if codes else (named.group(1) if named else None))

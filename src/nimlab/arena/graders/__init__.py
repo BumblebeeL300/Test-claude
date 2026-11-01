@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import basic, checks, code, judge, jsonschema  # noqa: F401  (register built-ins)
+from . import basic, checks, code, jsonschema, judge  # noqa: F401  (register built-ins)
 from .base import (
     GradeContext,
     Grader,
@@ -13,8 +13,8 @@ from .base import (
     grader_class,
     register_grader,
 )
-from .judge import JudgeVerdict
 from .jsonschema import validate_json_schema
+from .judge import JudgeVerdict
 from .sandbox import SandboxResult, extract_code, run_python_tests
 
 __all__ = [

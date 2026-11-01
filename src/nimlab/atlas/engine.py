@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 import re
 import time
 from collections.abc import AsyncIterator, Callable, Sequence
@@ -61,6 +62,24 @@ class _Prepared:
     duplicates: int
     reused: dict[str, np.ndarray]
     todo: list[Chunk]
+
+
+def _prepare_root(path: str | Path) -> tuple[Path, str | None]:
+    """``(root, prefix)``; ``prefix`` is the resolved directory path (None for a single file)."""
+    root = Path(os.path.expanduser(path))
+    return root, (str(root.resolve()).rstrip("/") + "/") if root.is_dir() else None
+
+
+def _read_sources(root: Path, recursive: bool) -> list[tuple[str, str, bytes | Exception]]:
+    """Blocking part of ingest: walk ``root`` and read every supported file."""
+    sources: list[tuple[str, str, bytes | Exception]] = []
+    for file_path, name in discover_files(root, recursive=recursive):
+        key = str(file_path.resolve())
+        try:
+            sources.append((key, name, file_path.read_bytes()))
+        except OSError as exc:
+            sources.append((key, name, LoaderError(f"cannot read {file_path}: {exc}")))
+    return sources
 
 
 def _pieces(text: str) -> list[str]:
@@ -147,18 +166,10 @@ class Atlas:
         re-chunked and only their *new* chunks are embedded. ``prune=True`` also removes documents
         that were ingested from this directory but no longer exist on disk.
         """
-        root = Path(path).expanduser()
-        found = discover_files(root, recursive=recursive)
-        sources: list[tuple[str, str, bytes | Exception]] = []
-        for file_path, name in found:
-            key = str(file_path.resolve())
-            try:
-                sources.append((key, name, file_path.read_bytes()))
-            except OSError as exc:
-                sources.append((key, name, LoaderError(f"cannot read {file_path}: {exc}")))
+        root, prefix = await asyncio.to_thread(_prepare_root, path)
+        sources = await asyncio.to_thread(_read_sources, root, recursive)
         report = await self._ingest_sources(collection, sources, force=force, on_file=on_file)
-        if prune and root.is_dir():
-            prefix = str(root.resolve()).rstrip("/") + "/"
+        if prune and prefix is not None:
             alive = {key for key, _, _ in sources}
             for doc in self.store.list_documents(collection):
                 if doc.path.startswith(prefix) and doc.path not in alive:
@@ -210,7 +221,9 @@ class Atlas:
                 finish(FileReport(path=key, name=name, status="error", message=str(data)))
                 continue
             if media_type_for(name) is None:
-                finish(FileReport(path=key, name=name, status="skipped", message="unsupported type"))
+                finish(
+                    FileReport(path=key, name=name, status="skipped", message="unsupported type")
+                )
                 continue
             raw_hash = hashlib.sha256(data).hexdigest()
             existing = self.store.get_document(collection, key)
@@ -314,12 +327,14 @@ class Atlas:
                 )
             )
         ordered = [reports[key] for key, _, _ in sources if key in reports]
-        return IngestReport(collection=collection, files=ordered, elapsed_s=time.perf_counter() - t0)
+        return IngestReport(
+            collection=collection, files=ordered, elapsed_s=time.perf_counter() - t0
+        )
 
     async def _embed_chunks(
         self, prepared: list[_Prepared]
     ) -> tuple[dict[tuple[str, str], np.ndarray], dict[str, str]]:
-        """Embed all pending chunks. Returns ``({(doc_key, chunk_hash): vector}, {doc_key: error})``."""
+        """Embed pending chunks: ``({(doc_key, chunk_hash): vector}, {doc_key: error})``."""
         items = [(p.key, c) for p in prepared for c in p.todo]
         vectors: dict[tuple[str, str], np.ndarray] = {}
         failed: dict[str, str] = {}
@@ -560,9 +575,9 @@ class Atlas:
                 hyde_text = await self.agent.hyde(question)
                 if hyde_text:
                     yield step("hyde", "Generated a hypothetical answer for embedding (HyDE)")
-            result = await self.retriever.retrieve(
-                question, collection, k=k, hyde_text=hyde_text
-            )
+                else:
+                    warnings.append("HyDE generation failed; searching with the plain query")
+            result = await self.retriever.retrieve(question, collection, k=k, hyde_text=hyde_text)
             hits = result.hits
             warnings.extend(result.warnings)
             yield step(
@@ -625,7 +640,9 @@ class Atlas:
             )
             if not verdict.safe:
                 warnings.append("The generated answer was withheld by the safety guard.")
-                yield finish(refusal_text("answer", verdict.categories), sources=sources, blocked=True)
+                yield finish(
+                    refusal_text("answer", verdict.categories), sources=sources, blocked=True
+                )
                 return
             if stream_tokens:
                 for piece in _pieces(text):
@@ -670,7 +687,9 @@ class Atlas:
                     if not verdict.safe:
                         warnings.append("The revised answer was withheld by the safety guard.")
                         yield finish(
-                            refusal_text("answer", verdict.categories), sources=sources, blocked=True
+                            refusal_text("answer", verdict.categories),
+                            sources=sources,
+                            blocked=True,
                         )
                         return
 

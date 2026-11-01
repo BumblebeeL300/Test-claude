@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Leaderboard reports: a self-contained HTML page (inline CSS + SVG) and a rich terminal table."""
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ __all__ = ["render_elo_table", "render_html", "render_terminal", "write_html"]
 
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 _N_BUCKETS = 9
+_DASH = chr(0x2013)  # en dash for "no value"
 
 
 # ------------------------------------------------------------------------------ formatting
@@ -32,14 +34,14 @@ def vendor_of(model: str) -> str:
 
 def fmt_seconds(value: float | None) -> str:
     if value is None:
-        return "–"
+        return _DASH
     if value < 1:
         return f"{value * 1000:.0f} ms"
     return f"{value:.2f} s"
 
 
 def fmt_pct(value: float | None) -> str:
-    return "–" if value is None else f"{value * 100:.1f}"
+    return _DASH if value is None else f"{value * 100:.1f}"
 
 
 def bucket(value: float) -> int:
@@ -73,9 +75,7 @@ def _ticks(lo: float, hi: float, target: int = 6) -> list[float]:
 
 
 def elo_svg(lb: Leaderboard) -> str:
-    rated = sorted(
-        (s for s in lb.standings if s.elo is not None), key=lambda s: -(s.elo or 0.0)
-    )
+    rated = sorted((s for s in lb.standings if s.elo is not None), key=lambda s: -(s.elo or 0.0))
     if not rated:
         return '<p class="muted">No pairwise data: run at least two models to compute Elo.</p>'
     lo = min(s.elo_lo if s.elo_lo is not None else s.elo for s in rated)  # type: ignore[type-var]
@@ -96,7 +96,9 @@ def elo_svg(lb: Leaderboard) -> str:
         f'aria-label="Elo ratings with 95% confidence intervals for {len(rated)} models">'
     ]
     for t in _ticks(lo, hi):
-        out.append(f'<line class="grid" x1="{x(t):.1f}" y1="{top}" x2="{x(t):.1f}" y2="{height - bottom}"/>')
+        out.append(
+            f'<line class="grid" x1="{x(t):.1f}" y1="{top}" x2="{x(t):.1f}" y2="{height - bottom}"/>'
+        )
         out.append(
             f'<text class="t-muted" x="{x(t):.1f}" y="{height - bottom + 18}" text-anchor="middle">{t:g}</text>'
         )
@@ -113,7 +115,9 @@ def elo_svg(lb: Leaderboard) -> str:
             f'<text class="t-strong" x="{plot_l - 10}" y="{cy + 4:.1f}" text-anchor="end">'
             f"{_esc(_clip(short_name(s.model), 36))}</text>"
         )
-        out.append(f'<line class="ci" x1="{x(a):.1f}" y1="{cy:.1f}" x2="{x(b):.1f}" y2="{cy:.1f}"/>')
+        out.append(
+            f'<line class="ci" x1="{x(a):.1f}" y1="{cy:.1f}" x2="{x(b):.1f}" y2="{cy:.1f}"/>'
+        )
         for edge in (a, b):
             out.append(
                 f'<line class="ci" x1="{x(edge):.1f}" y1="{cy - 5:.1f}" x2="{x(edge):.1f}" y2="{cy + 5:.1f}"/>'
@@ -175,7 +179,9 @@ def scatter_svg(lb: Leaderboard) -> tuple[str, bool]:
     y_step = nice_step(y_hi - y_lo, 5)
     yv = math.ceil(y_lo / y_step) * y_step
     while yv <= y_hi + 1e-9:
-        out.append(f'<line class="grid" x1="{ml}" y1="{py(yv):.1f}" x2="{width - mr}" y2="{py(yv):.1f}"/>')
+        out.append(
+            f'<line class="grid" x1="{ml}" y1="{py(yv):.1f}" x2="{width - mr}" y2="{py(yv):.1f}"/>'
+        )
         out.append(
             f'<text class="t-muted" x="{ml - 8}" y="{py(yv) + 4:.1f}" text-anchor="end">{yv * 100:.0f}</text>'
         )
@@ -192,11 +198,15 @@ def scatter_svg(lb: Leaderboard) -> tuple[str, bool]:
     else:
         xt = _ticks(x_lo, x_hi, 6)
     for v in xt:
-        out.append(f'<line class="grid" x1="{px(v):.1f}" y1="{mt}" x2="{px(v):.1f}" y2="{height - mb}"/>')
+        out.append(
+            f'<line class="grid" x1="{px(v):.1f}" y1="{mt}" x2="{px(v):.1f}" y2="{height - mb}"/>'
+        )
         out.append(
             f'<text class="t-muted" x="{px(v):.1f}" y="{height - mb + 18}" text-anchor="middle">{fmt_seconds(v)}</text>'
         )
-    out.append(f'<line class="axis" x1="{ml}" y1="{height - mb}" x2="{width - mr}" y2="{height - mb}"/>')
+    out.append(
+        f'<line class="axis" x1="{ml}" y1="{height - mb}" x2="{width - mr}" y2="{height - mb}"/>'
+    )
     out.append(
         f'<text class="t-muted" x="{(ml + width - mr) / 2:.0f}" y="{height - 4}" text-anchor="middle">'
         f"Median latency per item{' (log scale)' if log_x else ''}</text>"
@@ -214,8 +224,18 @@ def scatter_svg(lb: Leaderboard) -> tuple[str, bool]:
         )
         out.append(f'<path class="front" d="{path}"/>')
 
-    placed: list[tuple[float, float, float, float]] = []
-    for s in sorted(pts, key=lambda s: s.pareto):  # frontier points drawn last (on top)
+    placed: list[Box] = [
+        (
+            px(p.latency_p50_s or 0) - 8,
+            py(p.overall or 0) - 8,
+            px(p.latency_p50_s or 0) + 8,
+            py(p.overall or 0) + 8,
+        )
+        for p in pts
+    ]
+    for s in sorted(
+        pts, key=lambda s: not s.pareto
+    ):  # frontier labels get first pick of the space  # frontier points drawn last (on top)
         cx, cy = px(s.latency_p50_s or 0), py(s.overall or 0)
         name = _clip(short_name(s.model), 28)
         w = len(name) * 6.6
@@ -238,31 +258,48 @@ def scatter_svg(lb: Leaderboard) -> tuple[str, bool]:
     return "".join(out), log_x
 
 
+Box = tuple[float, float, float, float]
+
+
+def _overlap(a: Box, b: Box) -> float:
+    w = min(a[2], b[2]) - max(a[0], b[0])
+    h = min(a[3], b[3]) - max(a[1], b[1])
+    return w * h if w > 0 and h > 0 else 0.0
+
+
 def _place_label(
-    cx: float,
-    cy: float,
-    w: float,
-    placed: list[tuple[float, float, float, float]],
-    bounds: tuple[float, float, float, float],
+    cx: float, cy: float, w: float, placed: list[Box], bounds: Box
 ) -> tuple[float, float, str]:
-    """Pick a non-overlapping spot (right, left, above, below) for a point label."""
+    """Pick a spot for a point label that avoids other labels and dots (falls back to least overlap)."""
     left, top, right, bottom = bounds
-    h = 14.0
-    options = [
-        (cx + 11, cy + 4, "start", (cx + 11, cy - 10, cx + 11 + w, cy + 4)),
-        (cx - 11, cy + 4, "end", (cx - 11 - w, cy - 10, cx - 11, cy + 4)),
-        (cx, cy - 12, "middle", (cx - w / 2, cy - 12 - h + 4, cx + w / 2, cy - 12 + 4)),
-        (cx, cy + 22, "middle", (cx - w / 2, cy + 22 - h + 4, cx + w / 2, cy + 26)),
+    h = 13.0
+    gap = 10.0
+    # (dx, dy of the text baseline anchor, text-anchor); preference order
+    spots = [
+        (gap, 4.0, "start"),
+        (gap, -gap, "start"),
+        (gap, gap + h, "start"),
+        (-gap, 4.0, "end"),
+        (-gap, -gap, "end"),
+        (-gap, gap + h, "end"),
+        (0.0, -gap - 4, "middle"),
+        (0.0, gap + h + 2, "middle"),
     ]
-    for x, y, anchor, box in options:
-        inside = box[0] >= left - 4 and box[2] <= right + 4 and box[1] >= top - 4 and box[3] <= bottom + 4
-        clash = any(not (box[2] < p[0] or box[0] > p[2] or box[3] < p[1] or box[1] > p[3]) for p in placed)
-        if inside and not clash:
-            placed.append(box)
-            return x, y, anchor
-    x, y, anchor, box = options[0]
-    placed.append(box)
-    return x, y, anchor
+    best: tuple[float, float, float, str, Box] | None = None
+    for dx, dy, anchor in spots:
+        x, y = cx + dx, cy + dy
+        x0 = x if anchor == "start" else x - w if anchor == "end" else x - w / 2
+        box: Box = (x0, y - h + 2, x0 + w, y + 3)
+        cost = sum(_overlap(box, p) for p in placed)
+        if box[0] < left or box[2] > right + 8 or box[1] < top - 4 or box[3] > bottom:
+            cost += 1000.0  # outside the plot area
+        if best is None or cost < best[0]:
+            best = (cost, x, y, anchor, box)
+        if cost == 0:
+            break
+    assert best is not None
+    placed.append(best[4])
+    return best[1], best[2], best[3]
 
 
 # ------------------------------------------------------------------------------ HTML
@@ -319,7 +356,7 @@ def build_context(lb: Leaderboard, *, title: str | None = None) -> dict[str, Any
         elif s.elo is not None:
             elo_text = f"{s.elo:.0f}"
         else:
-            elo_text = "–"
+            elo_text = _DASH
         rows.append(
             {
                 "rank": s.rank,
@@ -333,7 +370,7 @@ def build_context(lb: Leaderboard, *, title: str | None = None) -> dict[str, Any
                 "elo_text": elo_text,
                 "latency": fmt_seconds(s.latency_p50_s),
                 "ttft": fmt_seconds(s.ttft_p50_s),
-                "tps": f"{s.tokens_per_s:.0f}" if s.tokens_per_s else "–",
+                "tps": f"{s.tokens_per_s:.0f}" if s.tokens_per_s else _DASH,
                 "cost": cost,
                 "cost_title": cost_title,
                 "errors": s.n_errors,
@@ -364,15 +401,17 @@ def build_context(lb: Leaderboard, *, title: str | None = None) -> dict[str, Any
     scatter, log_x = scatter_svg(lb)
     if lb.elo_source == "battles":
         elo_note = (
-            "Bradley–Terry ratings fitted to judge-decided pairwise battles (each answer pair "
+            "Bradley-Terry ratings fitted to judge-decided pairwise battles (each answer pair "
             "judged in both positions to cancel position bias). Dots are the maximum-likelihood "
             "rating, bars the 95% bootstrap interval."
         )
         if lb.position_bias is not None:
-            elo_note += f" Judge picked slot A in {lb.position_bias * 100:.0f}% of decisive verdicts."
+            elo_note += (
+                f" Judge picked slot A in {lb.position_bias * 100:.0f}% of decisive verdicts."
+            )
     elif lb.elo_source == "scores":
         elo_note = (
-            "Bradley–Terry ratings fitted to per-item head-to-head comparisons of the graded "
+            "Bradley-Terry ratings fitted to per-item head-to-head comparisons of the graded "
             "scores (higher score wins, near-equal scores tie). Dots are the maximum-likelihood "
             "rating, bars the 95% bootstrap interval. Run `nimlab arena battle` for judge-based Elo."
         )
@@ -426,20 +465,38 @@ def _score_style(v: float | None) -> str:
     return "green" if v >= 0.8 else "yellow" if v >= 0.5 else "red"
 
 
+_SHORT_SUITE = {
+    "math_reasoning": "math",
+    "coding": "code",
+    "factual_qa": "facts",
+    "instruction_following": "instr",
+    "json_compliance": "json",
+    "summarization": "summ",
+}
+
+
 def render_terminal(lb: Leaderboard) -> Table:
     """A rich table: rank, model, overall, per-suite scores, Elo, speed and cost."""
-    title = f"Arena leaderboard • run {lb.run_id}" + (" • SIMULATED (mock)" if lb.mock else "")
-    table = Table(title=title, title_justify="left", header_style="bold")
+    title = f"Arena leaderboard \u2022 run {lb.run_id}" + (
+        " \u2022 SIMULATED (mock)" if lb.mock else ""
+    )
+    table = Table(
+        title=title,
+        title_justify="left",
+        header_style="bold",
+        caption="* = on the quality/latency Pareto frontier \u2022 scores 0-100 \u2022 latency in seconds",
+        caption_justify="left",
+    )
     table.add_column("#", justify="right")
-    table.add_column("Model", overflow="fold", no_wrap=False)
+    table.add_column("Model", overflow="fold", min_width=22)
     table.add_column("Overall", justify="right")
     for s in lb.suites:
-        table.add_column(s.replace("_", " "), justify="right", overflow="fold")
-    table.add_column("Elo ±CI", justify="right")
-    table.add_column("p50", justify="right")
-    table.add_column("TTFT", justify="right")
-    table.add_column("tok/s", justify="right")
-    table.add_column("Cost", justify="center")
+        table.add_column(_SHORT_SUITE.get(s, s[:8]), justify="right", no_wrap=True)
+    table.add_column("Elo\u00b1CI", justify="right", no_wrap=True)
+    table.add_column("p50", justify="right", no_wrap=True)
+    table.add_column("TTFT", justify="right", no_wrap=True)
+    table.add_column("tok/s", justify="right", no_wrap=True)
+    table.add_column("$", justify="center", no_wrap=True)
     for st in lb.standings:
         table.add_row(*_terminal_row(st, lb))
     return table
@@ -448,7 +505,7 @@ def render_terminal(lb: Leaderboard) -> Table:
 def _terminal_row(st: ModelStanding, lb: Leaderboard) -> list[Any]:
     name = Text(st.model)
     if st.pareto:
-        name.append("  *", style="bold cyan")
+        name.append(" *", style="bold cyan")
     cells: list[Any] = [str(st.rank), name]
     cells.append(Text(fmt_pct(st.overall), style=f"bold {_score_style(st.overall)}"))
     for s in lb.suites:
@@ -457,11 +514,11 @@ def _terminal_row(st: ModelStanding, lb: Leaderboard) -> list[Any]:
     if st.elo is not None and st.elo_lo is not None and st.elo_hi is not None:
         cells.append(f"{st.elo:.0f} ±{(st.elo_hi - st.elo_lo) / 2:.0f}")
     else:
-        cells.append("–")
+        cells.append(_DASH)
     cells += [
         fmt_seconds(st.latency_p50_s),
         fmt_seconds(st.ttft_p50_s),
-        f"{st.tokens_per_s:.0f}" if st.tokens_per_s else "–",
+        f"{st.tokens_per_s:.0f}" if st.tokens_per_s else _DASH,
         ("$" * st.cost_tier) if st.cost_tier else "?",
     ]
     return cells
@@ -469,9 +526,11 @@ def _terminal_row(st: ModelStanding, lb: Leaderboard) -> list[Any]:
 
 def render_elo_table(lb: Leaderboard, run: Any = None) -> Table:
     """Rich table of Elo ratings with confidence intervals (and battle record if ``run`` given)."""
-    source = {"battles": "judge battles", "scores": "per-item scores", "none": "no data"}[lb.elo_source]
+    source = {"battles": "judge battles", "scores": "per-item scores", "none": "no data"}[
+        lb.elo_source
+    ]
     table = Table(
-        title=f"Elo (Bradley–Terry, 95% bootstrap CI) • {source} • {lb.elo_games} games",
+        title=f"Elo (Bradley-Terry, 95% bootstrap CI) • {source} • {lb.elo_games} games",
         title_justify="left",
         header_style="bold",
     )
@@ -493,7 +552,7 @@ def render_elo_table(lb: Leaderboard, run: Any = None) -> Table:
             str(i),
             s.model,
             f"{s.elo:.0f}",
-            f"{s.elo_lo:.0f} – {s.elo_hi:.0f}" if s.elo_lo is not None else "–",
+            f"{s.elo_lo:.0f} to {s.elo_hi:.0f}" if s.elo_lo is not None else _DASH,
             str(s.elo_games),
         ]
         if record:

@@ -49,7 +49,9 @@ def _is_type(value: Any, name: str) -> bool:
 def _check_format(value: str, fmt: str) -> bool:
     try:
         if fmt == "date":
-            return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value)) and bool(date.fromisoformat(value))
+            return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value)) and bool(
+                date.fromisoformat(value)
+            )
         if fmt == "date-time":
             datetime.fromisoformat(value.replace("Z", "+00:00"))
             return True
@@ -155,9 +157,8 @@ def _validate(inst: Any, schema: Any, root: dict[str, Any], path: str, errs: lis
 
     for sub in schema.get("allOf", []):
         _validate(inst, sub, root, path, errs)
-    if "anyOf" in schema:
-        if not any(_sub_ok(inst, s, root, path) for s in schema["anyOf"]):
-            errs.append(f"{path}: does not match any allowed alternative (anyOf)")
+    if "anyOf" in schema and not any(_sub_ok(inst, s, root, path) for s in schema["anyOf"]):
+        errs.append(f"{path}: does not match any allowed alternative (anyOf)")
     if "oneOf" in schema:
         n = sum(1 for s in schema["oneOf"] if _sub_ok(inst, s, root, path))
         if n != 1:
@@ -240,9 +241,13 @@ class JsonSchemaGrader(Grader):
             return GradeResult(score=0.0, passed=False, detail=f"no valid JSON: {exc}")
         errors = validate_json_schema(value, params.schema_)
         if errors:
-            shown = "; ".join(errors[:4]) + (f" (+{len(errors) - 4} more)" if len(errors) > 4 else "")
+            shown = "; ".join(errors[:4]) + (
+                f" (+{len(errors) - 4} more)" if len(errors) > 4 else ""
+            )
             return GradeResult(
-                score=0.0, passed=False, detail=f"schema violations: {shown}",
+                score=0.0,
+                passed=False,
+                detail=f"schema violations: {shown}",
                 extracted=json.dumps(value)[:200],
             )
         return GradeResult(

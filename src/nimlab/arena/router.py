@@ -142,38 +142,220 @@ class RoutingDecision(BaseModel):
 
 # ------------------------------------------------------------------------------ keywords
 
+
+def _any(*alternatives: str) -> str:
+    """Whole-word alternation regex."""
+    return r"\b(" + "|".join(alternatives) + r")\b"
+
+
+_COUNT = r"(\d+|one|two|three|four|five|six|seven|eight|nine|ten)"
 _KEYWORDS: dict[str, list[tuple[str, float]]] = {
     "math_reasoning": [
-        (r"\b(calculate|compute|solve|equation|probability|derivative|integral|factorial|prime)\b", 2),
-        (r"\b(percent(age)?|ratio|fraction|remainder|average|median|sum of|product of|how many|how much)\b", 1.5),
-        (r"\b(area|perimeter|volume|speed|km/h|interest|angle|triangle|algebra|geometry)\b", 1),
-        (r"\d+\s*[-+*/^x×÷]\s*\d+", 1.5),
+        (
+            _any(
+                "calculate",
+                "compute",
+                "solve",
+                "equation",
+                "probability",
+                "derivative",
+                "integral",
+                "factorial",
+                "prime",
+            ),
+            2,
+        ),
+        (
+            _any(
+                "percent(age)?",
+                "ratio",
+                "fraction",
+                "remainder",
+                "average",
+                "median",
+                "sum of",
+                "product of",
+                "how many",
+                "how much",
+            ),
+            1.5,
+        ),
+        (
+            _any(
+                "area",
+                "perimeter",
+                "volume",
+                "speed",
+                "km/h",
+                "interest",
+                "angle",
+                "triangle",
+                "algebra",
+                "geometry",
+            ),
+            1,
+        ),
+        (r"\d+\s*[-+*/^x\xd7\xf7]\s*\d+", 1.5),
         (r"\d+\s*%", 1),
     ],
     "coding": [
         (r"```|\bdef \w+\(|\bfunction\s+\w*\(|=>|\bimport \w+|#include|;\s*$", 2),
-        (r"\b(python|javascript|typescript|java|c\+\+|rust|golang|kotlin|swift|sql|bash|regex|html|css)\b", 2),
-        (r"\b(function|class|method|bug|compile|stack ?trace|exception|algorithm|code|script|unit tests?|refactor|implement|debug|segfault|api|library|snippet)\b", 1.5),
+        (
+            _any(
+                "python",
+                "javascript",
+                "typescript",
+                "java",
+                r"c\+\+",
+                "rust",
+                "golang",
+                "kotlin",
+                "swift",
+                "sql",
+                "bash",
+                "regex",
+                "html",
+                "css",
+            ),
+            2,
+        ),
+        (
+            _any(
+                "function",
+                "class",
+                "method",
+                "bug",
+                "compile",
+                "stack ?trace",
+                "exception",
+                "algorithm",
+                "code",
+                "script",
+                "unit tests?",
+                "refactor",
+                "implement",
+                "debug",
+                "segfault",
+                "api",
+                "library",
+                "snippet",
+            ),
+            1.5,
+        ),
     ],
     "factual_qa": [
         (r"^\s*(who|what|when|where|which|how (tall|many|long|far|old|big))\b", 1.5),
-        (r"\b(capital of|invented|discovered|founded|born in|in what year|largest|smallest|longest|tallest|first (person|woman|man)|how many (bones|people|countries))\b", 2),
+        (
+            _any(
+                "capital of",
+                "invented",
+                "discovered",
+                "founded",
+                "born in",
+                "in what year",
+                "largest",
+                "smallest",
+                "longest",
+                "tallest",
+                "first (person|woman|man)",
+                "how many (bones|people|countries)",
+            ),
+            2,
+        ),
     ],
     "instruction_following": [
-        (r"\b(exactly|at least|at most|no more than|fewer than|less than|more than)\b.{0,30}\b(words?|sentences?|bullets?|paragraphs?|lines?|items?)\b", 3),
-        (r"\b(all caps|capital letters|uppercase|lowercase|title case|bullet points?|numbered list|double angle|without (using|any)|do not (use|include)|don't use|end (your|with)|start (with|each))\b", 2),
-        (r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten) (words?|sentences?|paragraphs?|bullets?)\b", 2),
+        (
+            _any(
+                "exactly",
+                "at least",
+                "at most",
+                "no more than",
+                "fewer than",
+                "less than",
+                "more than",
+            )
+            + r".{0,30}"
+            + _any("words?", "sentences?", "bullets?", "paragraphs?", "lines?", "items?"),
+            3,
+        ),
+        (
+            _any(
+                "all caps",
+                "capital letters",
+                "uppercase",
+                "lowercase",
+                "title case",
+                "bullet points?",
+                "numbered list",
+                "double angle",
+                "without (using|any)",
+                "do not (use|include)",
+                "don't use",
+                "end (your|with)",
+                "start (with|each)",
+            ),
+            2,
+        ),
+        (_COUNT + r" " + _any("words?", "sentences?", "paragraphs?", "bullets?"), 2),
     ],
     "json_compliance": [
         (r"\bjson\b", 3),
-        (r"\b(schema|valid json|key[s]?|fields?|array of|object with|structured output|yaml|csv)\b", 1),
+        (
+            _any(
+                "schema",
+                "valid json",
+                "keys?",
+                "fields?",
+                "array of",
+                "object with",
+                "structured output",
+                "yaml",
+                "csv",
+            ),
+            1,
+        ),
     ],
     "summarization": [
-        (r"\b(summari[sz]e|summary|tl;?dr|condense|key points|main points|recap|synopsis|abstract|executive summary|boil .* down|shorten)\b", 3),
+        (
+            _any(
+                "summari[sz]e",
+                "summary",
+                "tl;?dr",
+                "condense",
+                "key points",
+                "main points",
+                "recap",
+                "synopsis",
+                "abstract",
+                "executive summary",
+                "boil .* down",
+                "shorten",
+            ),
+            3,
+        ),
     ],
     "general_chat": [
         (r"^\s*(hi|hello|hey|good (morning|evening))\b", 3),
-        (r"\b(thanks|thank you|recommend|advice|brainstorm|ideas?|opinion|help me|should i|tips|joke|poem|story|plan a|feel)\b", 1.5),
+        (
+            _any(
+                "thanks",
+                "thank you",
+                "recommend",
+                "advice",
+                "brainstorm",
+                "ideas?",
+                "opinion",
+                "help me",
+                "should i",
+                "tips",
+                "joke",
+                "poem",
+                "story",
+                "plan a",
+                "feel",
+            ),
+            1.5,
+        ),
     ],
 }
 _COMPILED = {
@@ -183,14 +365,16 @@ _COMPILED = {
 
 
 def keyword_scores(text: str) -> dict[str, float]:
-    """Heuristic evidence per category (0 = none). Long text with a task verb leans to summarization."""
+    """Heuristic evidence per category (0 = none); long text leans towards summarization."""
     scores = {c: 0.0 for c in CATEGORIES}
     for cat, rules in _COMPILED.items():
         for rx, weight in rules:
             if rx.search(text):
                 scores[cat] += weight
-    if len(text) > 700 and scores["summarization"] == 0 and not any(
-        scores[c] for c in ("coding", "json_compliance")
+    if (
+        len(text) > 700
+        and scores["summarization"] == 0
+        and not any(scores[c] for c in ("coding", "json_compliance"))
     ):
         scores["summarization"] += 1.0
     return scores
@@ -211,7 +395,9 @@ def prompt_from_messages(messages: list[dict[str, Any]]) -> tuple[str, bool]:
     """Text to classify (the last user message) and whether any message carries an image."""
     has_image = any(
         isinstance(m.get("content"), list)
-        and any(isinstance(p, dict) and p.get("type") in ("image_url", "image") for p in m["content"])
+        and any(
+            isinstance(p, dict) and p.get("type") in ("image_url", "image") for p in m["content"]
+        )
         for m in messages
     )
     for msg in reversed(messages):
@@ -474,7 +660,7 @@ class SmartRouter:
         profile: str | None = None,
         allow: Iterable[str] | None = None,
     ) -> tuple[str, Literal["leaderboard", "registry"], list[Candidate], list[str], str | None]:
-        """Pick a model for ``category``. Returns ``(model, source, candidates, reasons, run_id)``."""
+        """Pick a model; returns ``(model, source, candidates, reasons, run_id)``."""
         name, lam_lat, lam_cost = self.weights(profile)
         allowed = set(allow) if allow else self.allow
         lb = self.leaderboard
@@ -565,7 +751,9 @@ class SmartRouter:
         ]
         if not any(c.model == picked for c in candidates):
             info = self.registry.find(picked)
-            candidates.insert(0, Candidate(model=picked, cost_tier=info.cost_tier if info else None))
+            candidates.insert(
+                0, Candidate(model=picked, cost_tier=info.cost_tier if info else None)
+            )
         reason = (
             "no leaderboard data for the image/vision category"
             if category == "vision"
@@ -589,12 +777,17 @@ class SmartRouter:
         else:
             text, has_image = prompt_from_messages(prompt)
         if category is not None and category not in CATEGORY_ROLES:
-            raise ValueError(f"unknown category {category!r}; use one of {', '.join(CATEGORY_ROLES)}")
+            raise ValueError(
+                f"unknown category {category!r}; use one of {', '.join(CATEGORY_ROLES)}"
+            )
         if category is not None:
             cls = Classification(category=category, method="override", confidence=1.0)
         elif has_image:
             cls = Classification(
-                category="vision", method="vision", confidence=1.0, notes=["request contains an image"]
+                category="vision",
+                method="vision",
+                confidence=1.0,
+                notes=["request contains an image"],
             )
         else:
             cls = await self.classify(text)
@@ -632,13 +825,19 @@ def _unit(m: np.ndarray) -> np.ndarray:
 def _classification_reason(cls: Classification) -> str:
     if cls.method == "knn":
         near = cls.neighbors[0] if cls.neighbors else None
-        extra = f"; nearest exemplar: \"{near.text[:70]}\" (similarity {near.similarity:.2f})" if near else ""
+        extra = (
+            f'; nearest exemplar: "{near.text[:70]}" (similarity {near.similarity:.2f})'
+            if near
+            else ""
+        )
         return (
             f"Classified as '{cls.category}' by embedding kNN "
             f"(vote share {cls.confidence:.0%}){extra}."
         )
     if cls.method == "keywords":
-        hits = ", ".join(f"{c}={v:g}" for c, v in sorted(cls.keyword_scores.items(), key=lambda kv: -kv[1]))
+        hits = ", ".join(
+            f"{c}={v:g}" for c, v in sorted(cls.keyword_scores.items(), key=lambda kv: -kv[1])
+        )
         return f"Classified as '{cls.category}' by keyword heuristics ({hits})."
     if cls.method == "llm":
         return f"Classified as '{cls.category}' by the LLM classifier."

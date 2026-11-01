@@ -6,7 +6,7 @@ import abc
 from dataclasses import dataclass
 from typing import Any, ClassVar, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 __all__ = [
     "GradeContext",

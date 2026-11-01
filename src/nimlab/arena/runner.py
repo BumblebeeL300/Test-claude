@@ -102,9 +102,7 @@ class Runner:
         if hasattr(self.client, "register_suites"):
             self.client.register_suites(suites)
 
-        run = resume or (
-            self.store.new_run() if self.store else RunResult.new()
-        )
+        run = resume or (self.store.new_run() if self.store else RunResult.new())
         run.mock = bool(getattr(self.client, "mock", False))
         run.judge_model = self.settings.judge_model or run.judge_model
         run.models = list(dict.fromkeys([*run.models, *models]))
@@ -252,7 +250,7 @@ class Runner:
         t0 = time.perf_counter()
         kwargs = {"temperature": temperature, "max_tokens": max_tokens}
 
-        if self.settings.stream and hasattr(client, "stream_chat"):
+        if self.settings.stream and getattr(client, "stream_chat", None) is not None:
             parts: list[str] = []
             first: float | None = None
 

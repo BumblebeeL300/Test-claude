@@ -115,9 +115,7 @@ class Leaderboard(BaseModel):
         )
         for i, s in enumerate(standings, 1):
             s.rank = i
-        for model in pareto_frontier(
-            [(s.model, s.latency_p50_s, s.overall) for s in standings]
-        ):
+        for model in pareto_frontier([(s.model, s.latency_p50_s, s.overall) for s in standings]):
             next(s for s in standings if s.model == model).pareto = True
 
         categories = {

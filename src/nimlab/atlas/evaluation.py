@@ -147,9 +147,7 @@ async def run_eval(
             )
             try:
                 if answer:
-                    ans = await atlas.ask(
-                        item.question, collection, mode=mode, k=k, verify=verify
-                    )
+                    ans = await atlas.ask(item.question, collection, mode=mode, k=k, verify=verify)
                     sources = ans.sources
                     result.answer = ans.text
                     if ans.verification:

@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 
 from .sandbox import Sandbox, SandboxError, looks_binary
 
-__all__ = ["WorkspaceSummary", "summarize_workspace"]
+__all__ = ["WorkspaceSummary", "local_imports", "summarize_workspace"]
 
 _KEY_FILE_PRIORITY = (
     "readme.md",
@@ -105,6 +105,31 @@ def _outline(source: str, limit: int = 14) -> list[str]:
             out.append("...")
             break
     return out
+
+
+def local_imports(sandbox: Sandbox, source: str) -> list[str]:
+    """Workspace files imported by ``source`` (modules and packages)."""
+    try:
+        tree = ast.parse(source)
+    except (SyntaxError, ValueError):
+        return []
+    names: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            names.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+            names.append(node.module)
+    found: list[str] = []
+    for name in dict.fromkeys(names):
+        rel = name.replace(".", "/")
+        for prefix in ("", "src/"):
+            for candidate in (f"{prefix}{rel}.py", f"{prefix}{rel}/__init__.py"):
+                try:
+                    if sandbox.resolve(candidate).is_file():
+                        found.append(candidate)
+                except SandboxError:
+                    continue
+    return found
 
 
 def _is_test_file(path: str) -> bool:

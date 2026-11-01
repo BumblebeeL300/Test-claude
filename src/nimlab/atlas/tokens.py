@@ -7,12 +7,17 @@ from collections.abc import Iterable
 
 _TOKEN_RE = re.compile(r"[^\W_]+", re.UNICODE)
 
-STOPWORDS: frozenset[str] = frozenset(
-    """a an the of and or to in on for with is are was were be been being it its this that these
-    those as at by from but not no do does did can could should would will may might have has had
-    i you he she we they them his her our your their my me what which who whom how why when where
-    if then than so such into about over under there here also""".split()
-)
+# fmt: off
+STOPWORDS: frozenset[str] = frozenset((
+    "a", "an", "the", "of", "and", "or", "to", "in", "on", "for", "with", "is", "are", "was",
+    "were", "be", "been", "being", "it", "its", "this", "that", "these", "those", "as", "at",
+    "by", "from", "but", "not", "no", "do", "does", "did", "can", "could", "should", "would",
+    "will", "may", "might", "have", "has", "had", "i", "you", "he", "she", "we", "they", "them",
+    "his", "her", "our", "your", "their", "my", "me", "what", "which", "who", "whom", "how",
+    "why", "when", "where", "if", "then", "than", "so", "such", "into", "about", "over",
+    "under", "there", "here", "also",
+))
+# fmt: on
 
 
 def stem(token: str) -> str:

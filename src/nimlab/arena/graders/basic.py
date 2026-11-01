@@ -77,7 +77,9 @@ class ExactGrader(Grader):
                 flags = 0 if cs else re.IGNORECASE
                 hit = re.search(rf"(?<!\w){re.escape(norm)}(?!\w)", got, flags) is not None
             if hit:
-                return GradeResult(score=1.0, passed=True, detail=f"matched {want!r}", extracted=got)
+                return GradeResult(
+                    score=1.0, passed=True, detail=f"matched {want!r}", extracted=got
+                )
         return GradeResult(
             score=0.0,
             passed=False,
@@ -92,8 +94,8 @@ _NUMBER_RE = re.compile(
     r"""
     (?P<frac>(?<![\w.])(?P<fn>\d+)\s*/\s*(?P<fd>\d+)(?![\w.]))
     |
-    (?:(?<![\w.])(?P<sign>[-+\u2212]))?
-    \s?\$?
+    (?:(?<![\w.])(?P<sign>[-+\u2212])\s?)?
+    \$?
     (?P<num>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+)
     (?:[eE](?P<exp>[-+]?\d+))?
     """,

@@ -99,8 +99,9 @@ def _mm(
     wins = w.sum(axis=1) + 0.5 * prior
     p = np.ones(n) if start is None else start.copy()
     played = games.sum(axis=1) > 0
-    converged, it = False, 0
-    for it in range(1, max_iter + 1):
+    converged, iters = False, 0
+    for step in range(1, max_iter + 1):
+        iters = step
         denom = (games / (p[:, None] + p[None, :])).sum(axis=1) + prior / (p + 1.0)
         new = np.where(denom > 0, wins / np.where(denom > 0, denom, 1.0), 1.0)
         if played.any():  # fix the gauge: unit geometric mean (the virtual opponent is "average")
@@ -109,13 +110,15 @@ def _mm(
         p = new
         if converged:
             break
-    return p, it, converged
+    return p, iters, converged
 
 
 def _encode(
     outcomes: Sequence[Outcome], models: Sequence[str] | None
 ) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray]:
-    names = list(models) if models is not None else sorted({m for o in outcomes for m in (o.a, o.b)})
+    names = (
+        list(models) if models is not None else sorted({m for o in outcomes for m in (o.a, o.b)})
+    )
     idx = {m: i for i, m in enumerate(names)}
     keep = [o for o in outcomes if o.a in idx and o.b in idx and o.a != o.b]
     ia = np.array([idx[o.a] for o in keep], dtype=int)

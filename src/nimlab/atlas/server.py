@@ -52,7 +52,9 @@ class QueryRequest(BaseModel):
 # --------------------------------------------------------------------------- multipart
 
 
-def parse_multipart(content_type: str, body: bytes) -> tuple[dict[str, str], list[tuple[str, bytes]]]:
+def parse_multipart(
+    content_type: str, body: bytes
+) -> tuple[dict[str, str], list[tuple[str, bytes]]]:
     """Minimal ``multipart/form-data`` parser: ``(fields, [(filename, bytes)])``.
 
     Implemented on the standard library so the server needs no extra dependency.
@@ -238,7 +240,9 @@ def create_app(
         return {"deleted": name}
 
     @app.post("/ingest", response_model=IngestReport)
-    async def ingest(request: Request, collection: str | None = None, force: bool = False) -> IngestReport:
+    async def ingest(
+        request: Request, collection: str | None = None, force: bool = False
+    ) -> IngestReport:
         ctype = request.headers.get("content-type", "")
         declared = request.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > MAX_UPLOAD_BYTES:
@@ -261,8 +265,9 @@ def create_app(
                 files = [(str(d["name"]), str(d["text"]).encode("utf-8")) for d in docs]
             except (ValueError, KeyError, TypeError) as exc:
                 raise HTTPException(
-                    400, 'JSON body must look like {"collection": "...", "documents": '
-                    '[{"name": "a.md", "text": "..."}]}'
+                    400,
+                    'JSON body must look like {"collection": "...", "documents": '
+                    '[{"name": "a.md", "text": "..."}]}',
                 ) from exc
         else:
             raise HTTPException(415, "send multipart/form-data (files) or application/json")
@@ -280,7 +285,9 @@ def create_app(
             from .models import FileReport
 
             report.files.append(
-                FileReport(path=f"upload://{name}", name=name, status="skipped", message="unsupported type")
+                FileReport(
+                    path=f"upload://{name}", name=name, status="skipped", message="unsupported type"
+                )
             )
         return report
 
@@ -315,14 +322,23 @@ def create_app(
         async def events() -> AsyncIterator[str]:
             try:
                 async for ev in a.ask_stream(
-                    q, collection, mode=mode, k=k, verify=verify, revise=revise, guard=guard, hyde=hyde
+                    q,
+                    collection,
+                    mode=mode,
+                    k=k,
+                    verify=verify,
+                    revise=revise,
+                    guard=guard,
+                    hyde=hyde,
                 ):
                     if ev.type == "token":
                         yield _sse("token", {"text": ev.text})
                     elif ev.type == "trace" and ev.step is not None:
                         yield _sse("trace", ev.step.model_dump(mode="json"))
                     elif ev.type == "sources" and ev.sources is not None:
-                        yield _sse("sources", {"sources": [s.model_dump(mode="json") for s in ev.sources]})
+                        yield _sse(
+                            "sources", {"sources": [s.model_dump(mode="json") for s in ev.sources]}
+                        )
                     elif ev.type == "final" and ev.answer is not None:
                         yield _sse("final", ev.answer.model_dump(mode="json"))
             except (AtlasError, NIMError) as exc:
@@ -341,7 +357,9 @@ def create_app(
             html = UI_PATH.read_text(encoding="utf-8")
         except OSError as exc:  # pragma: no cover - packaging problem
             raise HTTPException(500, f"UI asset missing: {exc}") from exc
-        return HTMLResponse(html, headers={"Content-Security-Policy": CSP, "Cache-Control": "no-cache"})
+        return HTMLResponse(
+            html, headers={"Content-Security-Policy": CSP, "Cache-Control": "no-cache"}
+        )
 
     return app
 

@@ -3,7 +3,8 @@
 ``POST /v1/chat/completions`` accepts any OpenAI client. ``model: "nimlab/auto"`` (optionally
 ``nimlab/auto:speed|quality|economy|balanced``) routes the request with :class:`SmartRouter`;
 any other model id is passed straight through to NIM. The model that actually served the request
-is reported in the ``x-nimlab-routed-model`` response header (and ``x-nimlab-category`` when routed).
+is reported in the ``x-nimlab-routed-model`` response header (plus ``x-nimlab-category`` when
+routed).
 """
 
 from __future__ import annotations
@@ -79,7 +80,9 @@ class ChatCompletionRequest(BaseModel):
         return kw
 
 
-def _error(status: int, message: str, kind: str, headers: dict[str, str] | None = None) -> JSONResponse:
+def _error(
+    status: int, message: str, kind: str, headers: dict[str, str] | None = None
+) -> JSONResponse:
     body = {"error": {"message": message, "type": kind, "code": status}}
     return JSONResponse(body, status_code=status, headers=headers)
 
@@ -209,7 +212,9 @@ def create_app(
                     "id": mid,
                     "object": "model",
                     "created": 0,
-                    "owned_by": "nimlab" if mid == AUTO_MODEL else (mid.split("/")[0] if "/" in mid else "nim"),
+                    "owned_by": "nimlab"
+                    if mid == AUTO_MODEL
+                    else (mid.split("/")[0] if "/" in mid else "nim"),
                 }
                 for mid in ids
             ],

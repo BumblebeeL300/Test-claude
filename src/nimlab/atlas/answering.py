@@ -51,7 +51,7 @@ def build_answer_messages(
 # --------------------------------------------------------------------------- citations
 
 _CODE_RE = re.compile(r"```.*?```|`[^`\n]+`", re.DOTALL)
-_CITE_RE = re.compile(r"(?<![\w)])\[(\d+(?:\s*[,\-–]\s*\d+)*)\](?!\()")
+_CITE_RE = re.compile(r"(?<![\w)])\[(\d+(?:\s*[,\-\N{EN DASH}]\s*\d+)*)\](?!\()")
 _MAX_RANGE = 12
 
 
@@ -73,7 +73,7 @@ def expand_marker(body: str) -> list[int]:
     """``"1, 3"`` -> ``[1, 3]``; ``"2-4"`` -> ``[2, 3, 4]``."""
     nums: list[int] = []
     for part in re.split(r"\s*,\s*", body.strip()):
-        rng = re.split(r"\s*[\-–]\s*", part)
+        rng = re.split(r"\s*[\-\N{EN DASH}]\s*", part)
         if len(rng) == 2:
             lo, hi = int(rng[0]), int(rng[1])
             if lo <= hi and hi - lo < _MAX_RANGE:

@@ -127,7 +127,9 @@ class BattleEngine:
             except Exception as exc:
                 if attempt > self.max_retries or not is_transient(exc):
                     raise
-                await asyncio.sleep(self.backoff_s * 2 ** (attempt - 1) * (0.5 + random.random() / 2))
+                await asyncio.sleep(
+                    self.backoff_s * 2 ** (attempt - 1) * (0.5 + random.random() / 2)
+                )
         winner = first[0] if verdict.winner == "A" else second[0] if verdict.winner == "B" else None
         return SlotVerdict(
             slot_a=first[0],
@@ -171,7 +173,7 @@ class BattleEngine:
         seed: int = 0,
         on_progress: Callable[[int, int, BattleRecord], None] | None = None,
     ) -> list[BattleRecord]:
-        """Battle all pairs of ``models`` on the items of ``suite`` using answers stored in ``run``."""
+        """Battle all pairs of ``models`` on ``suite`` using the answers stored in ``run``."""
         answers = {r.key: r.output for r in run.items if r.scored and r.output.strip()}
         pairs = list(itertools.combinations(dict.fromkeys(models), 2))
         if max_pairs is not None and len(pairs) > max_pairs:
@@ -190,9 +192,12 @@ class BattleEngine:
             async with sem:
                 try:
                     rec = await self.compare(
-                        suite, item,
-                        a, answers[(a, suite.name, item.id)],
-                        b, answers[(b, suite.name, item.id)],
+                        suite,
+                        item,
+                        a,
+                        answers[(a, suite.name, item.id)],
+                        b,
+                        answers[(b, suite.name, item.id)],
                     )
                 except NIMAuthError:
                     raise

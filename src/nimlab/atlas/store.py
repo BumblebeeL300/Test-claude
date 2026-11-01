@@ -19,6 +19,7 @@ from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -224,12 +225,14 @@ class AtlasStore:
                 n_chunks = conn.execute(
                     "SELECT COUNT(*) FROM chunks WHERE collection=?", (name,)
                 ).fetchone()[0]
-                if row["embed_model"] and embed_model and row["embed_model"] != embed_model:
-                    if n_chunks:
-                        raise StoreError(
-                            f"collection {name!r} was embedded with {row['embed_model']!r}, not "
-                            f"{embed_model!r}; run reindex (or use a new collection)"
-                        )
+                mismatch = bool(
+                    row["embed_model"] and embed_model and row["embed_model"] != embed_model
+                )
+                if mismatch and n_chunks:
+                    raise StoreError(
+                        f"collection {name!r} was embedded with {row['embed_model']!r}, not "
+                        f"{embed_model!r}; run reindex (or use a new collection)"
+                    )
                 if embed_model and (not row["embed_model"] or not n_chunks):
                     conn.execute(
                         "UPDATE collections SET embed_model=?, dim=CASE WHEN ?=0 THEN NULL "
@@ -362,9 +365,7 @@ class AtlasStore:
         if any(int(c.vector.shape[0]) != dim for c in chunks):
             raise StoreError("chunk vectors have inconsistent dimensions")
         with self._tx() as conn:
-            col = conn.execute(
-                "SELECT dim FROM collections WHERE name=?", (collection,)
-            ).fetchone()
+            col = conn.execute("SELECT dim FROM collections WHERE name=?", (collection,)).fetchone()
             if col is None:
                 raise StoreError(f"unknown collection {collection!r}")
             # Count chunks that survive this replacement to decide whether the dim is binding.
@@ -504,7 +505,7 @@ class AtlasStore:
             self._invalidate()
 
     # ------------------------------------------------------------------ stats
-    def stats(self) -> dict[str, object]:
+    def stats(self) -> dict[str, Any]:
         with self._lock:
             size = 0
             if self.path != ":memory:":

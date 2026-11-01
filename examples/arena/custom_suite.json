@@ -1,0 +1,50 @@
+{
+  "name": "support_triage",
+  "title": "Support ticket triage",
+  "description": "A tiny custom suite: classify support tickets and answer with a strict label. Copy it as a starting point for your own evals.",
+  "category": "instruction_following",
+  "version": "1",
+  "system": "You are a support triage assistant. Answer with exactly one lowercase label and nothing else.",
+  "temperature": 0.0,
+  "max_tokens": 20,
+  "grader": { "type": "exact", "expected": "billing" },
+  "items": [
+    {
+      "id": "double-charge",
+      "prompt": "Ticket: \"I was charged twice for my subscription this month.\"\nLabels: billing, bug, feature-request, account.\nReply with the label only.",
+      "reference": "billing"
+    },
+    {
+      "id": "crash-on-export",
+      "prompt": "Ticket: \"The app crashes every time I press Export to PDF.\"\nLabels: billing, bug, feature-request, account.\nReply with the label only.",
+      "grader": { "type": "exact", "expected": "bug" },
+      "reference": "bug"
+    },
+    {
+      "id": "dark-mode",
+      "prompt": "Ticket: \"Could you add a dark mode to the dashboard?\"\nLabels: billing, bug, feature-request, account.\nReply with the label only.",
+      "grader": { "type": "exact", "expected": "feature-request" },
+      "reference": "feature-request"
+    },
+    {
+      "id": "password-reset",
+      "prompt": "Ticket: \"I cannot log in and the reset email never arrives.\"\nLabels: billing, bug, feature-request, account.\nReply with the label only.",
+      "grader": { "type": "exact", "expected": ["account", "bug"] },
+      "reference": "account"
+    },
+    {
+      "id": "reply-length",
+      "prompt": "Write a one-sentence apology to a customer whose order arrived late. Use between 8 and 20 words and include the word 'sorry'.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          { "type": "word_count", "min": 8, "max": 20 },
+          { "type": "includes", "text": "sorry" },
+          { "type": "sentence_count", "exactly": 1 }
+        ]
+      },
+      "max_tokens": 80,
+      "reference": "We are truly sorry that your order arrived later than we promised."
+    }
+  ]
+}

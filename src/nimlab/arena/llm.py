@@ -106,7 +106,9 @@ def default_models(registry: ModelRegistry | None = None, limit: int = 4) -> lis
     return out[:limit]
 
 
-def make_client(*, mock: bool | None = None, config: NIMConfig | None = None, suites: Any = None) -> Any:
+def make_client(
+    *, mock: bool | None = None, config: NIMConfig | None = None, suites: Any = None
+) -> Any:
     """A client for Arena: the offline simulator in mock mode, else the real :class:`NIMClient`.
 
     Mock mode is on when ``mock=True``, ``NIMLAB_MOCK`` is truthy, or no ``NVIDIA_API_KEY`` is set.

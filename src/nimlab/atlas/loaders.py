@@ -90,6 +90,7 @@ def parse_markdown(text: str) -> tuple[str | None, list[Section]]:
     """Split Markdown into heading-delimited sections. Fenced code never produces headings."""
     lines = text.splitlines()
     title, i = _front_matter_title(lines)
+    body_start = i
     stack: list[tuple[int, str]] = []
     buf: list[str] = []
     sections: list[Section] = []
@@ -135,7 +136,7 @@ def parse_markdown(text: str) -> tuple[str | None, list[Section]]:
         if (
             line.strip()
             and i + 1 < n
-            and (i == 0 or not lines[i - 1].strip())
+            and (i == body_start or not lines[i - 1].strip())
             and not _LISTISH_RE.match(line)
             and not line.startswith("    ")
         ):
@@ -185,7 +186,7 @@ def _tidy_text(raw: str) -> str:
         if in_fence:
             out.append(line.rstrip())
             continue
-        line = re.sub(r"[ \t ]+", " ", line).strip()
+        line = re.sub(r"[ \t\N{NO-BREAK SPACE}]+", " ", line).strip()
         if not line:
             if not blank and out:
                 out.append("")
@@ -325,7 +326,7 @@ def parse_html(text: str) -> tuple[str | None, list[Section]]:
 
 # --------------------------------------------------------------------------- pdf
 
-_BULLET_RE = re.compile(r"^([-*•●]|\d+[.)])\s")
+_BULLET_RE = re.compile(r"^([-*\N{BULLET}\N{BLACK CIRCLE}]|\d+[.)])\s")
 
 
 def reflow_pdf_text(text: str) -> str:
@@ -368,7 +369,9 @@ def parse_pdf(data: bytes) -> tuple[str | None, list[Section]]:
         title: str | None = None
         try:
             meta_title = reader.metadata.title if reader.metadata else None
-            title = meta_title.strip() if isinstance(meta_title, str) and meta_title.strip() else None
+            title = (
+                meta_title.strip() if isinstance(meta_title, str) and meta_title.strip() else None
+            )
         except Exception:  # metadata is optional and often malformed
             title = None
         sections: list[Section] = []

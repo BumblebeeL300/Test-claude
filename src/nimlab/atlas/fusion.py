@@ -108,9 +108,7 @@ def truncate_at_boundary(text: str, limit: int) -> str:
     return cut.rstrip() + " ..."
 
 
-def pack_context(
-    texts: Sequence[str], budget_chars: int, max_items: int
-) -> list[tuple[int, str]]:
+def pack_context(texts: Sequence[str], budget_chars: int, max_items: int) -> list[tuple[int, str]]:
     """Choose which passages fit a character budget.
 
     Walks the (best-first) passages; a passage that no longer fits is skipped so that smaller,

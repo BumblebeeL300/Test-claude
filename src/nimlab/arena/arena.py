@@ -79,7 +79,9 @@ class Arena:
         """Bundled suites plus any found in ``suites_dirs``."""
         return list_suites(self.suites_dirs)
 
-    def resolve_suites(self, spec: str | list[str] | None = "all", limit: int | None = None) -> list[Suite]:
+    def resolve_suites(
+        self, spec: str | list[str] | None = "all", limit: int | None = None
+    ) -> list[Suite]:
         return resolve_suites(spec, extra_dirs=self.suites_dirs, limit=limit)
 
     # ------------------------------------------------------------------ runs
@@ -164,7 +166,12 @@ class Arena:
             backoff_s=self.settings.backoff_s,
         )
         records = await engine.run(
-            current, the_suite, models, max_items=max_items, max_pairs=max_pairs, on_progress=on_battle
+            current,
+            the_suite,
+            models,
+            max_items=max_items,
+            max_pairs=max_pairs,
+            on_progress=on_battle,
         )
         fresh = {(r.suite, r.item_id, frozenset((r.model_a, r.model_b))) for r in records}
         kept: list[BattleRecord] = [

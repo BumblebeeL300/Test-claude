@@ -145,7 +145,11 @@ def _excludes(text: str, p: dict[str, Any]) -> tuple[bool, str]:
 def _starts_with(text: str, p: dict[str, Any]) -> tuple[bool, str]:
     want = str(p["text"])
     got = text.lstrip()
-    ok = got.startswith(want) if p.get("case_sensitive", True) else got.lower().startswith(want.lower())
+    ok = (
+        got.startswith(want)
+        if p.get("case_sensitive", True)
+        else got.lower().startswith(want.lower())
+    )
     return ok, f"starts with {want!r}"
 
 

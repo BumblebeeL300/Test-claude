@@ -10,9 +10,9 @@ import pytest
 # The suite runs with --import-mode=importlib, which does not put test directories on sys.path.
 sys.path.insert(0, str(Path(__file__).parent))
 
-from forge_fakes import FakeClient  # noqa: E402
+from forge_fakes import FakeClient
 
-from nimlab.forge import Sandbox  # noqa: E402
+from nimlab.forge import Sandbox
 
 FIZZBUZZ_BUGGY = '''\
 def fizzbuzz(n: int) -> str:
@@ -26,7 +26,7 @@ def fizzbuzz(n: int) -> str:
     return str(n)
 '''
 
-FIZZBUZZ_TESTS = '''\
+FIZZBUZZ_TESTS = """\
 import pytest
 
 from fizzbuzz import fizzbuzz
@@ -51,9 +51,9 @@ def test_fizzbuzz_15():
 @pytest.mark.parametrize("n", [30, 45, 60])
 def test_multiples_of_15(n):
     assert fizzbuzz(n) == "FizzBuzz"
-'''
+"""
 
-FIZZBUZZ_PATCH = '''\
+FIZZBUZZ_PATCH = """\
 <<<<<<< SEARCH
     if n % 3 == 0:
         return "Fizz"
@@ -69,12 +69,16 @@ FIZZBUZZ_PATCH = '''\
     if n % 5 == 0:
         return "Buzz"
 >>>>>>> REPLACE
-'''
+"""
 
 PLAN_JSON = {
     "goal": "Implement fizzbuzz(n) with a pytest suite",
     "steps": [
-        {"id": 1, "description": "Write tests for plain numbers, 3, 5 and 15", "files": ["test_fizzbuzz.py"]},
+        {
+            "id": 1,
+            "description": "Write tests for plain numbers, 3, 5 and 15",
+            "files": ["test_fizzbuzz.py"],
+        },
         {"id": 2, "description": "Implement fizzbuzz", "files": ["fizzbuzz.py"]},
     ],
     "test_strategy": "pytest with parametrized multiples of 15",
