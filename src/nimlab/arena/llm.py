@@ -85,7 +85,9 @@ def is_transient(exc: BaseException) -> bool:
         return status is None or status in (408, 409, 425, 429) or status >= 500
     if isinstance(exc, NIMError):  # timeouts and connection errors
         return True
-    return isinstance(exc, (asyncio.TimeoutError, httpx.TransportError, ConnectionError))
+    return isinstance(
+        exc, (asyncio.TimeoutError, TimeoutError, httpx.TransportError, ConnectionError)
+    )
 
 
 def pick(registry: ModelRegistry | None, role: Role) -> str:

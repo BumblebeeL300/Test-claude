@@ -10,9 +10,9 @@ import pytest
 # The suite runs with --import-mode=importlib, which does not put test directories on sys.path.
 sys.path.insert(0, str(Path(__file__).parent))
 
-from arena_fakes import ScriptedClient, make_suite  # noqa: E402
+from arena_fakes import ScriptedClient, make_suite
 
-from nimlab.arena.suites import Suite  # noqa: E402
+from nimlab.arena.suites import Suite
 
 
 @pytest.fixture

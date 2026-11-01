@@ -425,3 +425,21 @@ class TestRobustness:
         out = clip(text, 50)
         assert out.startswith("A") and out.endswith("B") and "omitted" in out
         assert clip("short", 50) == "short"
+
+
+class TestPytestMisuse:
+    async def test_unknown_test_path_is_reported_as_a_usage_error(
+        self, tools: WorkspaceTools, ws: Path
+    ) -> None:
+        seed(ws, "test_a.py", "def test_a():\n    pass\n")
+        out = await tools.call("run_tests", {"path": "tests_that_do_not_exist"})
+        assert not out.ok
+        assert "could not run" in out.output and "not found: tests_that_do_not_exist" in out.output
+        assert "Create test files" not in out.output
+
+    async def test_keyword_matching_nothing_means_no_tests(
+        self, tools: WorkspaceTools, ws: Path
+    ) -> None:
+        seed(ws, "test_a.py", "def test_a():\n    pass\n")
+        out = await tools.call("run_tests", {"keyword": "zzz_nomatch"})
+        assert not out.ok and "No tests were found" in out.output

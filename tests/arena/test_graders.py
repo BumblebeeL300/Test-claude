@@ -29,6 +29,13 @@ from nimlab.arena.graders.checks import CHECKS, count_words, run_check
 from nimlab.arena.graders.sandbox import extract_code, scrubbed_env
 from nimlab.core.errors import NIMResponseError
 
+HOME = os.path.expanduser("~")
+ALLOWED_ENV = {"PATH", "LANG", "HOME", "TMPDIR", "PYTHONHASHSEED", "PYTHONIOENCODING", "LC_CTYPE"}
+
+
+def path_exists(path: str) -> bool:
+    return os.path.exists(path)
+
 
 async def grade(kind: str, output: str, **params: Any) -> GradeResult:
     return await get_grader(kind).grade(GradeContext(output=output, params=params))
@@ -39,8 +46,15 @@ async def grade(kind: str, output: str, **params: Any) -> GradeResult:
 
 def test_registry_has_all_builtin_graders_and_aliases() -> None:
     assert set(available_graders()) >= {
-        "exact", "numeric", "regex", "contains_all", "checks", "json_schema", "code_exec", "llm_judge",
-    }  # fmt: skip
+        "exact",
+        "numeric",
+        "regex",
+        "contains_all",
+        "checks",
+        "json_schema",
+        "code_exec",
+        "llm_judge",
+    }
     assert get_grader("contains-all").name == "contains_all"
     assert get_grader("numeric-tolerance").name == "numeric"
     assert get_grader("programmatic_checks").name == "checks"
@@ -224,11 +238,26 @@ def test_individual_checks(spec: dict, text: str, ok: bool) -> None:
 
 def test_every_check_type_is_covered_by_the_table_above() -> None:
     assert set(CHECKS) == {
-        "word_count", "char_count", "sentence_count", "paragraph_count", "line_count",
-        "bullet_count", "only_bullets", "numbered_list", "all_caps", "all_lowercase", "includes",
-        "excludes", "starts_with", "ends_with", "regex", "no_commas", "in_order",
-        "max_words_per_paragraph", "json_parses",
-    }  # fmt: skip
+        "word_count",
+        "char_count",
+        "sentence_count",
+        "paragraph_count",
+        "line_count",
+        "bullet_count",
+        "only_bullets",
+        "numbered_list",
+        "all_caps",
+        "all_lowercase",
+        "includes",
+        "excludes",
+        "starts_with",
+        "ends_with",
+        "regex",
+        "no_commas",
+        "in_order",
+        "max_words_per_paragraph",
+        "json_parses",
+    }
 
 
 async def test_checks_grader_partial_credit() -> None:
@@ -408,8 +437,8 @@ async def test_sandbox_scrubs_environment(monkeypatch: pytest.MonkeyPatch) -> No
         "assert 'AWS_SECRET_ACCESS_KEY' not in SEEN",
         "assert 'NIMLAB_TEST_SECRET' not in SEEN",
         "assert not any('secret' in v.lower() or 'hunter2' in v for v in SEEN.values())",
-        "assert set(SEEN) <= {'PATH', 'LANG', 'HOME', 'TMPDIR', 'PYTHONHASHSEED', 'PYTHONIOENCODING', 'LC_CTYPE'}",
-        f"assert SEEN['HOME'] != {os.path.expanduser('~')!r}",
+        f"assert set(SEEN) <= {ALLOWED_ENV!r}",
+        f"assert SEEN['HOME'] != {HOME!r}",
     ]
     res = await run_python_tests(code, tests, timeout_s=10)
     assert res.ok, res.details
@@ -442,7 +471,7 @@ async def test_sandbox_cleans_up_its_temp_directory() -> None:
     code = "import os\nprint('CWD=' + os.getcwd())\n"
     res = await run_python_tests(code, ["assert True"], timeout_s=10)
     cwd = next(ln for ln in res.stdout.splitlines() if ln.startswith("CWD=")).removeprefix("CWD=")
-    assert not os.path.exists(cwd)
+    assert not path_exists(cwd)
 
 
 async def test_solution_cannot_forge_the_verdict_by_printing() -> None:

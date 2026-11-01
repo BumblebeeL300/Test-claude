@@ -190,9 +190,16 @@ class TestCounts:
         assert "time limit" in rep.condensed()
 
     def test_usage_error_marks_crash(self) -> None:
-        rep = parse_pytest_output("", exit_code=4, stderr="ERROR: usage: pytest [options]")
-        assert rep.crashed and not rep.ok
-        assert "usage: pytest" in rep.output_tail
+        rep = parse_pytest_output(
+            "\nno tests ran in 0.00s\n", exit_code=4, stderr="ERROR: file or directory not found: x"
+        )
+        assert rep.crashed and not rep.ok and not rep.no_tests
+        assert rep.signature.startswith("CRASH:")
+        assert "file or directory not found: x" in rep.output_tail
+        text = rep.condensed()
+        assert (
+            "could not run" in text and "not found: x" in text and "Create test files" not in text
+        )
 
     def test_empty_output_is_handled(self) -> None:
         rep = parse_pytest_output("", exit_code=1)

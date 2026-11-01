@@ -74,9 +74,19 @@ def test_suites_json_show_and_custom_dirs(tmp_path: Path) -> None:
 
 def test_run_benchmarks_models_and_persists(runs: str) -> None:
     out = invoke(
-        "--mock", "run", "--suite", "math_reasoning,factual_qa", "--models", MODELS, "--concurrency", "6",
-        "--limit", "4", "--runs-dir", runs,
-    ).output  # fmt: skip
+        "--mock",
+        "run",
+        "--suite",
+        "math_reasoning,factual_qa",
+        "--models",
+        MODELS,
+        "--concurrency",
+        "6",
+        "--limit",
+        "4",
+        "--runs-dir",
+        runs,
+    ).output
     assert "Mock mode" in out and "Arena leaderboard" in out and "SIMULATED" in out
     for model in MODELS.split(","):
         assert model in out
@@ -91,9 +101,19 @@ def test_run_benchmarks_models_and_persists(runs: str) -> None:
 def test_run_accepts_mock_flag_after_the_command_and_html_out(runs: str, tmp_path: Path) -> None:
     html = tmp_path / "lb.html"
     out = invoke(
-        "run", "--mock", "--suite", "instruction_following", "--models", MODELS, "--limit", "3",
-        "--runs-dir", runs, "--html-out", str(html),
-    ).output  # fmt: skip
+        "run",
+        "--mock",
+        "--suite",
+        "instruction_following",
+        "--models",
+        MODELS,
+        "--limit",
+        "3",
+        "--runs-dir",
+        runs,
+        "--html-out",
+        str(html),
+    ).output
     assert html.is_file() and "Overall ranking" in html.read_text(encoding="utf-8")
     assert str(html) in out
 
@@ -138,9 +158,19 @@ def test_run_errors_are_friendly(runs: str) -> None:
 def test_battle_prints_elo_with_confidence_intervals(runs: str) -> None:
     models = "meta/llama-3.1-405b-instruct,meta/llama-3.1-8b-instruct,meta/llama-3.2-1b-instruct"
     out = invoke(
-        "--mock", "battle", "--models", models, "--suite", "summarization", "--max-items", "5", "--runs-dir", runs,
-        "--judge-model", "meta/llama-3.3-70b-instruct",
-    ).output  # fmt: skip
+        "--mock",
+        "battle",
+        "--models",
+        models,
+        "--suite",
+        "summarization",
+        "--max-items",
+        "5",
+        "--runs-dir",
+        runs,
+        "--judge-model",
+        "meta/llama-3.3-70b-instruct",
+    ).output
     assert "Elo" in out and "95% CI" in out and "W-T-L" in out and "judge battles" in out
     assert "position bias" in out
     run = RunStore(runs).latest()
@@ -226,7 +256,7 @@ def test_route_options(runs: str) -> None:
             "--runs-dir",
             runs,
             "--json",
-        ).output  # fmt: skip
+        ).output
     )
     assert (
         data["category"] == "coding" and data["latency_weight"] == 0.5 and data["cost_weight"] == 0

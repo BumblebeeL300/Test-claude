@@ -11,13 +11,17 @@ from arena_fakes import ScriptedClient, make_suite
 from pydantic import BaseModel
 
 from nimlab.arena.graders import JudgeVerdict
-from nimlab.arena.results import RunResult, RunStore
+from nimlab.arena.results import RunStore
 from nimlab.arena.runner import Runner, RunSettings, build_messages
 from nimlab.arena.suites import Suite
 from nimlab.core.errors import NIMAuthError, NIMRateLimitError, NIMResponseError
 
 PROMPTS = {"What is 2+2?": "Answer: 4", "3 squared?": "Answer: 9", "4 squared?": "Answer: 16"}
 FAST = RunSettings(concurrency=4, backoff_s=0.0)
+
+
+def leftover_temp_files(directory: Path) -> list[Path]:
+    return list(directory.glob(".*tmp"))
 
 
 def runner(client: Any, store: RunStore | None = None, **kw: Any) -> Runner:
@@ -178,7 +182,7 @@ async def test_results_are_persisted_as_json_and_reloadable(
     assert RunStore(runs_dir).load(run.run_id).model_dump() == run.model_dump()
     assert RunStore(runs_dir).load("latest").run_id == run.run_id
     assert RunStore(runs_dir).load(str(path)).run_id == run.run_id
-    assert not list(runs_dir.glob(".*tmp"))  # atomic writes leave no temp files
+    assert not leftover_temp_files(runs_dir)  # atomic writes leave no temp files
 
 
 async def test_resume_only_queries_missing_and_errored_items(

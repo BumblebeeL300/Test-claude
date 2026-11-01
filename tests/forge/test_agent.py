@@ -59,7 +59,6 @@ async def test_executes_tools_and_pairs_ids(ws: Path) -> None:
     assert [c["id"] for m in assistant for c in m["tool_calls"]] == [
         m["tool_call_id"] for m in tool_msgs
     ]
-    assert all(m["name"] for m in tool_msgs)
     assert json.loads(assistant[0]["tool_calls"][0]["function"]["arguments"]) == {
         "path": "a.py",
         "content": "x = 1\n",

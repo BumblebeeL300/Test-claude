@@ -159,7 +159,7 @@ async def run_tool_loop(
             recent.append(key)
             repeats = sum(1 for k in recent[-6:] if k == key)
             text = outcome.output + (_REPEAT_HINT.format(n=repeats) if repeats >= 3 else "")
-            messages.append({"role": "tool", "tool_call_id": cid, "name": name, "content": text})
+            messages.append({"role": "tool", "tool_call_id": cid, "content": text})
             if repeats >= 5:
                 result.ended_reason = "stuck"
         if result.ended_reason == "stuck":

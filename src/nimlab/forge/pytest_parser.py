@@ -95,6 +95,8 @@ class PytestReport(BaseModel):
     def summary_line(self) -> str:
         if self.timed_out:
             return "pytest timed out"
+        if self.crashed:
+            return "could not run"
         if self.no_tests:
             return "no tests collected"
         parts = [
@@ -115,6 +117,9 @@ class PytestReport(BaseModel):
         """Fingerprint of *which* things fail (and how), independent of timing and counts."""
         if self.timed_out:
             return "TIMEOUT"
+        if self.crashed:
+            last = "\n".join(self.output_tail.splitlines()[-3:])
+            return "CRASH:" + hashlib.sha256(last.encode("utf-8")).hexdigest()[:12]
         if self.no_tests:
             return "NO_TESTS"
         if not self.failures:
@@ -133,6 +138,11 @@ class PytestReport(BaseModel):
             tail = "\n".join(self.output_tail.splitlines()[-15:])
             note = "The test run exceeded the time limit; look for infinite loops."
             return f"{head}\n{note}\n{tail}".strip()
+        if self.crashed and not self.failures:
+            lines = [ln for ln in self.output_tail.splitlines() if _meaningful(ln)]
+            return f"{head}\nPytest failed before running any test (check paths and options):\n" + (
+                "\n".join(lines[-12:])
+            )
         if self.no_tests and not self.failures:
             return (
                 f"{head}\nNo tests were found. Create test files named test_*.py containing "
@@ -151,6 +161,13 @@ class PytestReport(BaseModel):
         if len(text) > max_chars:
             text = text[: max_chars - 40].rstrip() + "\n... [report truncated]"
         return text
+
+
+_NOISE = ("PytestDeprecationWarning", "warnings.warn(", "The event loop scope", "Future versions")
+
+
+def _meaningful(line: str) -> bool:
+    return bool(line.strip()) and not any(n in line for n in _NOISE)
 
 
 def _render_failure(fail: FailureInfo, max_detail: int) -> str:
@@ -282,7 +299,11 @@ def parse_pytest_output(
         stderr = stderr.replace(prefix, "")
     lines = stdout.replace("\r\n", "\n").split("\n")
     report = PytestReport(exit_code=exit_code, timed_out=timed_out)
-    report.output_tail = "\n".join((stdout.strip() or stderr.strip()).splitlines()[-40:])
+    if exit_code in (3, 4):  # usage/internal error: the explanation is on stderr
+        raw_tail = (stdout.strip() + "\n" + stderr.strip()).strip()
+    else:
+        raw_tail = stdout.strip() or stderr.strip()
+    report.output_tail = "\n".join(raw_tail.splitlines()[-40:])
 
     # Final counts line, searched from the bottom: "4 failed, 4 passed in 0.02s", "no tests ran".
     for line in reversed(lines):
@@ -321,6 +342,7 @@ def parse_pytest_output(
         report.no_tests = True
     if exit_code in (3, 4) or (exit_code not in (0, 1, 2, 5, None) and report.total == 0):
         report.crashed = True
+        report.no_tests = False
 
     sections = _split_sections(lines)
 

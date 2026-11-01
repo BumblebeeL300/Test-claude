@@ -50,6 +50,7 @@ class FakeClient:
         self.rerank_calls = 0
         self.embed_error: Exception | None = None
         self.rerank_error: Exception | None = None
+        self.finish_reason = "stop"
 
     # -- chat
     def _next_text(self, model: str, messages: list[dict[str, Any]]) -> str:
@@ -64,7 +65,7 @@ class FakeClient:
         self.chat_calls.append({"model": model, "messages": messages, **kw})
         text = self._next_text(model, messages)
         self.usage.record(model, Usage(prompt_tokens=10, completion_tokens=5), 0.0)
-        return ChatResult(model=model, content=text, finish_reason=kw.get("finish", "stop"))
+        return ChatResult(model=model, content=text, finish_reason=self.finish_reason)
 
     async def stream_chat(
         self, model: str, messages: list[dict[str, Any]], **kw: Any

@@ -180,9 +180,16 @@ def test_sampling_tools_and_extra_params_are_forwarded(
         {"type": "function", "function": {"name": "get_weather", "parameters": {"type": "object"}}}
     ]
     chat(
-        api, "meta/llama-3.3-70b-instruct", temperature=0.7, max_tokens=33, top_p=0.9, seed=4, tools=tools,
-        tool_choice="auto", response_format={"type": "json_object"},
-    )  # fmt: skip
+        api,
+        "meta/llama-3.3-70b-instruct",
+        temperature=0.7,
+        max_tokens=33,
+        top_p=0.9,
+        seed=4,
+        tools=tools,
+        tool_choice="auto",
+        response_format={"type": "json_object"},
+    )
     kw = client_double.kwargs[-1]
     assert kw["temperature"] == 0.7 and kw["max_tokens"] == 33
     assert kw["tools"] == tools and kw["tool_choice"] == "auto"
@@ -212,9 +219,14 @@ def test_tool_calls_are_returned_in_openai_format(
 
 def test_streaming_uses_openai_chunk_format(api: TestClient) -> None:
     with api.stream(
-        "POST", "/v1/chat/completions",
-        json={"model": AUTO_MODEL, "stream": True, "messages": [{"role": "user", "content": "Write a python function"}]},
-    ) as r:  # fmt: skip
+        "POST",
+        "/v1/chat/completions",
+        json={
+            "model": AUTO_MODEL,
+            "stream": True,
+            "messages": [{"role": "user", "content": "Write a python function"}],
+        },
+    ) as r:
         assert r.status_code == 200
         assert r.headers["content-type"].startswith("text/event-stream")
         assert r.headers["x-nimlab-routed-model"] == CODER
@@ -237,9 +249,10 @@ def test_streaming_uses_openai_chunk_format(api: TestClient) -> None:
 
 def test_streaming_passthrough_model(api: TestClient) -> None:
     with api.stream(
-        "POST", "/v1/chat/completions",
+        "POST",
+        "/v1/chat/completions",
         json={"model": FASTM, "stream": True, "messages": [{"role": "user", "content": "hi"}]},
-    ) as r:  # fmt: skip
+    ) as r:
         assert r.headers["x-nimlab-routed-model"] == FASTM and "x-nimlab-category" not in r.headers
         events = sse_events("".join(r.iter_text()))
     assert json.loads(events[1])["choices"][0]["delta"]["content"] == "Hel"
@@ -261,9 +274,10 @@ def test_mid_stream_errors_are_reported_in_band(
 ) -> None:
     client_double.mid_stream_error = NIMResponseError("connection lost")
     with api.stream(
-        "POST", "/v1/chat/completions",
+        "POST",
+        "/v1/chat/completions",
         json={"model": FASTM, "stream": True, "messages": [{"role": "user", "content": "hi"}]},
-    ) as r:  # fmt: skip
+    ) as r:
         events = sse_events("".join(r.iter_text()))
     assert events[-1] == "[DONE]"
     err = json.loads(events[-2])
@@ -306,7 +320,7 @@ def test_router_explain_endpoint(api: TestClient) -> None:
     body = r.json()
     assert body["model"] == CODER and body["category"] == "coding" and body["classifier"] == "knn"
     assert body["source"] == "leaderboard" and body["profile"] == "balanced"
-    assert [c["model"] for c in body["candidates"]][0] == CODER
+    assert body["candidates"][0]["model"] == CODER
     assert all(k in body["candidates"][0] for k in ("quality", "latency_s", "cost_tier", "utility"))
     assert any("utility = quality" in reason for reason in body["reasons"])
     assert body["explanation"].startswith(f"Routed to {CODER}")
@@ -348,8 +362,13 @@ def test_default_app_runs_fully_offline_in_mock_mode(tmp_path) -> None:
         assert r.status_code == 200 and r.headers["x-nimlab-routed-model"]
         assert r.json()["choices"][0]["message"]["content"]
         with tc.stream(
-            "POST", "/v1/chat/completions",
-            json={"model": AUTO_MODEL, "stream": True, "messages": [{"role": "user", "content": "hello"}]},
-        ) as s:  # fmt: skip
+            "POST",
+            "/v1/chat/completions",
+            json={
+                "model": AUTO_MODEL,
+                "stream": True,
+                "messages": [{"role": "user", "content": "hello"}],
+            },
+        ) as s:
             events = sse_events("".join(s.iter_text()))
         assert events[-1] == "[DONE]" and len(events) > 3
