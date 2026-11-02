@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{ title }}</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #6f6e68;
+  --hair: #e4e3de; --track: #e8eef7; --accent: #2a78d6; --gray: #9a998f; --warn-bg: #fff6df; --warn-ink: #6b4a00;
+  --h0: #cde2fb; --h1: #9ec5f4; --h2: #6da7ec; --h3: #5598e7; --h4: #3987e5; --h5: #2a78d6; --h6: #256abf; --h7: #184f95; --h8: #0d366b;
+  --t0: #0b0b0b; --t1: #0b0b0b; --t2: #0b0b0b; --t3: #0b0b0b; --t4: #0b0b0b; --t5: #fff; --t6: #fff; --t7: #fff; --t8: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #121211; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #9a998f;
+    --hair: #2e2e2b; --track: #22303f; --accent: #3987e5; --gray: #77766d; --warn-bg: #2d2412; --warn-ink: #f2cf85;
+    --h0: #1d2a3d; --h1: #1f3a5c; --h2: #184f95; --h3: #1c5cab; --h4: #256abf; --h5: #2a78d6; --h6: #3987e5; --h7: #5598e7; --h8: #86b6ef;
+    --t0: #f0efec; --t1: #f0efec; --t2: #f0efec; --t3: #fff; --t4: #fff; --t5: #fff; --t6: #0b0b0b; --t7: #0b0b0b; --t8: #0b0b0b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #9a998f;
+  --hair: #2e2e2b; --track: #22303f; --accent: #3987e5; --gray: #77766d; --warn-bg: #2d2412; --warn-ink: #f2cf85;
+  --h0: #1d2a3d; --h1: #1f3a5c; --h2: #184f95; --h3: #1c5cab; --h4: #256abf; --h5: #2a78d6; --h6: #3987e5; --h7: #5598e7; --h8: #86b6ef;
+  --t0: #f0efec; --t1: #f0efec; --t2: #f0efec; --t3: #fff; --t4: #fff; --t5: #fff; --t6: #0b0b0b; --t7: #0b0b0b; --t8: #0b0b0b;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 1.1rem; margin: 0 0 4px; }
+.sub, .note, caption { color: var(--ink-2); }
+.sub { margin: 0 0 16px; overflow-wrap: anywhere; }
+.muted { color: var(--ink-3); }
+.banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0 0 16px; }
+.kpi, .card { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; }
+.kpi { padding: 12px 14px; min-width: 0; }
+.kpi .l { color: var(--ink-2); font-size: 0.82rem; }
+.kpi .v { font-size: 1.35rem; font-weight: 650; overflow-wrap: anywhere; line-height: 1.25; }
+.kpi .s { color: var(--ink-3); font-size: 0.82rem; }
+.card { padding: 16px; margin: 0 0 16px; }
+.card > .note { margin: 0 0 12px; font-size: 0.9rem; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+caption { text-align: left; font-size: 0.82rem; padding-bottom: 6px; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--hair); }
+th { color: var(--ink-2); font-weight: 600; font-size: 0.8rem; }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+td.num { font-variant-numeric: tabular-nums; }
+td.model { text-align: left; font-weight: 600; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
+td.model small { display: block; font-weight: 400; color: var(--ink-3); }
+tbody tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; font-size: 0.72rem; padding: 1px 7px; border-radius: 999px; background: var(--track); color: var(--ink-2); margin-left: 6px; font-weight: 500; vertical-align: 1px; }
+.bar { display: inline-block; width: 84px; height: 8px; border-radius: 4px; background: var(--track); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.cost b { color: var(--ink); font-weight: 600; }
+.cost span { color: var(--hair); }
+.heat td.c { text-align: center; font-variant-numeric: tabular-nums; border-bottom: 2px solid var(--surface); border-left: 2px solid var(--surface); min-width: 64px; cursor: default; }
+.heat td.c.best { font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.heat td.c.na { color: var(--ink-3); background: transparent; }
+.h0 { background: var(--h0); color: var(--t0); } .h1 { background: var(--h1); color: var(--t1); }
+.h2 { background: var(--h2); color: var(--t2); } .h3 { background: var(--h3); color: var(--t3); }
+.h4 { background: var(--h4); color: var(--t4); } .h5 { background: var(--h5); color: var(--t5); }
+.h6 { background: var(--h6); color: var(--t6); } .h7 { background: var(--h7); color: var(--t7); }
+.h8 { background: var(--h8); color: var(--t8); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 0.82rem; color: var(--ink-2); margin: 10px 0 0; }
+.legend .sw { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.ramp { display: inline-flex; height: 8px; width: 120px; border-radius: 4px; overflow: hidden; vertical-align: middle; margin: 0 6px; }
+.ramp i { flex: 1; }
+.chart { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 520px; font-family: inherit; }
+svg text { fill: var(--ink-2); font-size: 12px; }
+svg .t-strong { fill: var(--ink); font-weight: 600; }
+svg .t-muted { fill: var(--ink-3); }
+svg .halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+svg .grid { stroke: var(--hair); stroke-width: 1; }
+svg .axis { stroke: var(--ink-3); stroke-width: 1; }
+svg .ci { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+svg .dot { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+svg .dot.off { fill: var(--gray); }
+svg .front { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.55; }
+svg .hit { fill: transparent; cursor: pointer; }
+svg .hit:hover + .dot, svg .hit:focus + .dot { stroke: var(--ink); }
+svg .hit:focus { outline: none; }
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--surface); padding: 6px 10px; border-radius: 8px; font-size: 0.82rem; line-height: 1.35; max-width: 300px; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+#tip b { display: block; font-size: 0.98rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.foot { color: var(--ink-3); font-size: 0.82rem; margin-top: 24px; }
+.foot code { background: var(--track); padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 560px) {
+  .wrap { padding: 16px 16px 40px; }
+  h1 { font-size: 1.35rem; }
+  .card { padding: 12px; }
+  th, td { padding: 6px 8px; }
+}
+@media (forced-colors: active) {
+  .bar > i, svg .dot { forced-color-adjust: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>{{ title }}</h1>
+  <p class="sub">Run <code>{{ run_id }}</code>{% if created %} &middot; {{ created }}{% endif %} &middot; {{ n_models }} model{{ '' if n_models == 1 else 's' }} &middot; {{ n_suites }} suite{{ '' if n_suites == 1 else 's' }}{% if judge_model %} &middot; judge <code>{{ judge_model }}</code>{% endif %}</p>
+  {% if mock %}<div class="banner" role="note"><strong>Simulated data.</strong> This run used the offline mock backend, so scores, latencies and Elo ratings come from a deterministic simulation and say nothing about real models.</div>{% endif %}
+
+  <section class="kpis" aria-label="Highlights">
+    {% for k in kpis %}
+    <div class="kpi"><div class="l">{{ k.label }}</div><div class="v">{{ k.value }}</div><div class="s">{{ k.sub }}</div></div>
+    {% endfor %}
+  </section>
+
+  <section class="card" id="ranking" aria-labelledby="h-ranking">
+    <h2 id="h-ranking">Overall ranking</h2>
+    <p class="note">Overall is the mean of the per-suite scores (each suite counts equally). Latency and tokens/s are medians over scored items; time-to-first-token is measured on the streamed response.</p>
+    <div class="scroll">
+      <table>
+        <caption class="sr">Models ranked by overall score</caption>
+        <thead><tr>
+          <th>#</th><th class="l">Model</th><th class="l">Overall</th><th>Elo (95% CI)</th>
+          <th>Latency p50</th><th>TTFT p50</th><th>Tokens/s</th><th>Cost tier</th><th>Errors</th>
+        </tr></thead>
+        <tbody>
+        {% for r in rows %}
+          <tr>
+            <td class="num">{{ r.rank }}</td>
+            <td class="model" title="{{ r.model }}">{{ r.short }}{% if r.pareto %}<span class="pill" title="On the quality vs latency Pareto frontier">Pareto</span>{% endif %}{% if r.vendor %}<small>{{ r.vendor }}</small>{% endif %}</td>
+            <td class="l num">{% if r.overall is not none %}<span class="bar" aria-hidden="true"><i style="width:{{ r.overall_pct }}%"></i></span>{{ r.overall_text }}{% else %}<span class="muted">n/a</span>{% endif %}</td>
+            <td class="num">{{ r.elo_text }}</td>
+            <td class="num">{{ r.latency }}</td>
+            <td class="num">{{ r.ttft }}</td>
+            <td class="num">{{ r.tps }}</td>
+            <td class="cost" title="{{ r.cost_title }}">{{ r.cost|safe }}</td>
+            <td class="num">{{ r.errors }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="heatmap" aria-labelledby="h-heat">
+    <h2 id="h-heat">Scores by suite</h2>
+    <p class="note">Mean item score per suite, 0&ndash;100. The best model in each suite is underlined.</p>
+    <div class="scroll">
+      <table class="heat">
+        <thead><tr><th class="l">Model</th>{% for s in suites %}<th title="{{ s.category }}">{{ s.label }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for r in heat %}
+          <tr>
+            <td class="model" title="{{ r.model }}">{{ r.short }}</td>
+            {% for c in r.cells %}
+              {% if c.value is none %}<td class="c na">&ndash;</td>
+              {% else %}<td class="c h{{ c.bucket }}{{ ' best' if c.best else '' }}" tabindex="0" data-tip data-v="{{ c.text }}" data-l="{{ r.short }} &middot; {{ c.suite }}">{{ c.text }}</td>{% endif %}
+            {% endfor %}
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="legend"><span>Low</span><span class="ramp" aria-hidden="true">{% for i in range(9) %}<i class="h{{ i }}"></i>{% endfor %}</span><span>High</span></div>
+  </section>
+
+  <section class="card" id="elo" aria-labelledby="h-elo">
+    <h2 id="h-elo">Elo ratings with confidence intervals</h2>
+    <p class="note">{{ elo_note }}</p>
+    <div class="chart">{{ elo_svg|safe }}</div>
+  </section>
+
+  <section class="card" id="frontier" aria-labelledby="h-front">
+    <h2 id="h-front">Quality vs latency</h2>
+    <p class="note">Each point is a model: overall score against median latency{% if log_x %} (log scale){% endif %}. Models on the Pareto frontier (no other model is both faster and better) are highlighted and connected.</p>
+    <div class="chart">{{ scatter_svg|safe }}</div>
+    <div class="legend">
+      <span><svg class="sw" width="14" height="14" viewBox="0 0 14 14" style="min-width:0;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--accent)"/></svg>Pareto-optimal</span>
+      <span><svg class="sw" width="14" height="14" viewBox="0 0 14 14" style="min-width:0;width:14px" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="var(--gray)"/></svg>Dominated</span>
+    </div>
+  </section>
+
+  <p class="foot">Generated by <code>nimlab arena report</code>. Scores come from the graders configured in each suite; Elo is a Bradley&ndash;Terry fit ({{ elo_games }} games, {{ n_boot }} bootstrap resamples). Cost tier is the registry's relative price class, 1 (cheapest) to 5.</p>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+  function show(el, x, y) {
+    tip.textContent = '';
+    var b = document.createElement('b'); b.textContent = el.getAttribute('data-v') || '';
+    tip.appendChild(b);
+    tip.appendChild(document.createTextNode(el.getAttribute('data-l') || ''));
+    tip.style.display = 'block';
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 14)) + 'px';
+    tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y + 14)) + 'px';
+  }
+  function hide() { tip.style.display = 'none'; }
+  document.addEventListener('pointermove', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  });
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect(); show(el, r.left, r.bottom);
+  });
+  document.addEventListener('focusout', hide);
+  document.addEventListener('pointerleave', hide);
+})();
+</script>
+</body>
+</html>

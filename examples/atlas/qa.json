@@ -1,0 +1,72 @@
+{
+  "name": "Mossgrove handbook QA",
+  "description": "Questions over examples/atlas_corpus with the source files that contain the answer.",
+  "items": [
+    {
+      "id": "heartbeat",
+      "question": "How often do robots send heartbeats, and how many missed heartbeats mark a robot as lost?",
+      "sources": ["architecture.md"],
+      "keywords": ["2 seconds", "3 missed", "6 seconds"]
+    },
+    {
+      "id": "latency",
+      "question": "What is the end-to-end latency budget from sensor reading to motor command?",
+      "sources": ["architecture.md"],
+      "keywords": ["80 ms"]
+    },
+    {
+      "id": "first-pr",
+      "question": "Which label should my first pull request ticket have, and how many approvals does firmware code need?",
+      "sources": ["onboarding.md"],
+      "keywords": ["good-first-issue", "two approvals"]
+    },
+    {
+      "id": "sev1",
+      "question": "What first-response time is required for a Sev1 incident?",
+      "sources": ["incident_runbook.md"],
+      "keywords": ["5 minutes"]
+    },
+    {
+      "id": "allocator-restart",
+      "question": "How do I restart the Hive allocator when the task queue is stuck above 500?",
+      "sources": ["incident_runbook.md"],
+      "keywords": ["kubectl rollout restart", "hive-allocator"]
+    },
+    {
+      "id": "api-key",
+      "question": "Which HTTP header carries the Hive API key and how often must keys be rotated?",
+      "sources": ["api_guide.md"],
+      "keywords": ["X-Hive-Key", "90 days"]
+    },
+    {
+      "id": "rate-limit",
+      "question": "What is the API rate limit and what does the server send when I exceed it?",
+      "sources": ["api_guide.md"],
+      "keywords": ["600 requests", "429", "Retry-After"]
+    },
+    {
+      "id": "webhook-signature",
+      "question": "How are webhook deliveries signed and how many times does Hive retry?",
+      "sources": ["api_guide.md"],
+      "keywords": ["HMAC-SHA256", "8 attempts"]
+    },
+    {
+      "id": "aisle-lock",
+      "question": "What does the term aisle lock mean?",
+      "sources": ["glossary.md", "architecture.md"],
+      "keywords": ["lock_epoch"]
+    },
+    {
+      "id": "multi-hop-oncall",
+      "question": "What do I have to complete before joining the primary on-call rotation, and who gets paged if the primary does not acknowledge?",
+      "sources": ["onboarding.md", "incident_runbook.md"],
+      "keywords": ["shadow", "hive-secondary"]
+    },
+    {
+      "id": "multi-hop-safety",
+      "question": "What does Wayfinder do when it cannot find a path, and what is the hardware circuit that cuts motor power?",
+      "sources": ["architecture.md", "glossary.md"],
+      "keywords": ["recovery", "Bumper"]
+    }
+  ]
+}

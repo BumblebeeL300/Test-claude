@@ -57,3 +57,16 @@ def configure_logging(level: int | str | None = None) -> None:
     )
     setattr(handler, _HANDLER_MARK, True)
     logger.addHandler(handler)
+
+
+def reset_logging() -> None:
+    """Undo :func:`configure_logging`: drop our stderr handler and reset the ``nimlab`` level.
+
+    ``configure_logging`` mutates process-global state (a handler on the ``nimlab`` logger), so
+    anything that runs the CLI in-process more than once (tests, notebooks) can call this to get
+    a clean slate.
+    """
+    logger = _logging.getLogger("nimlab")
+    for handler in [h for h in logger.handlers if getattr(h, _HANDLER_MARK, False)]:
+        logger.removeHandler(handler)
+    logger.setLevel(_logging.NOTSET)

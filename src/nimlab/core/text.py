@@ -276,10 +276,8 @@ def chunk_text(text: str, max_chars: int = 1200, overlap: int = 150) -> list[str
         chunks.append(cur)
         tail = _overlap_tail(cur, overlap)
         # make room for the carried overlap; drop it if the unit would not fit alongside
-        if tail and len(tail) + 1 + len(unit) <= max_chars:
-            cur = f"{tail} {unit}"
-        else:
-            cur = unit
+        fits = bool(tail) and len(tail) + 1 + len(unit) <= max_chars
+        cur = f"{tail} {unit}" if fits else unit
     if cur:
         chunks.append(cur)
     return chunks

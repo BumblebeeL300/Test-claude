@@ -1,0 +1,247 @@
+{
+  "name": "instruction_following",
+  "title": "Instruction following",
+  "description": "Prompts with verifiable constraints (length, casing, bullets, required and forbidden words), checked programmatically.",
+  "category": "instruction_following",
+  "version": "1",
+  "system": "Follow the user's formatting instructions exactly. Do not add commentary.",
+  "temperature": 0.0,
+  "max_tokens": 300,
+  "items": [
+    {
+      "id": "tagline-eight-words",
+      "prompt": "Write a tagline for a reusable water bottle that is exactly 8 words long. Output only the tagline.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "word_count",
+            "exactly": 8
+          },
+          {
+            "type": "line_count",
+            "exactly": 1
+          }
+        ]
+      },
+      "reference": "Stay hydrated anywhere with one reusable bottle forever"
+    },
+    {
+      "id": "ocean-all-caps",
+      "prompt": "Describe the ocean in two or three sentences, written entirely in CAPITAL LETTERS.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "all_caps"
+          },
+          {
+            "type": "sentence_count",
+            "min": 2,
+            "max": 3
+          }
+        ]
+      },
+      "reference": "THE OCEAN COVERS MORE THAN SEVENTY PERCENT OF THE EARTH. IT STORES HEAT AND SHAPES THE WEATHER."
+    },
+    {
+      "id": "walking-bullets",
+      "prompt": "List exactly 4 benefits of walking every day as markdown bullet points that start with '- '. Write nothing except the bullets.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "bullet_count",
+            "exactly": 4
+          },
+          {
+            "type": "only_bullets"
+          }
+        ]
+      },
+      "reference": "- Improves heart health\n- Boosts mood\n- Strengthens leg muscles\n- Helps control weight"
+    },
+    {
+      "id": "autumn-paragraph",
+      "prompt": "Write a short paragraph about autumn that includes the words 'harvest' and 'wind' but never uses the words 'leaf', 'leaves' or 'orange'.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "includes",
+            "texts": [
+              "harvest",
+              "wind"
+            ]
+          },
+          {
+            "type": "excludes",
+            "texts": [
+              "leaf",
+              "leaves",
+              "orange"
+            ]
+          },
+          {
+            "type": "sentence_count",
+            "min": 2
+          }
+        ]
+      },
+      "reference": "Autumn arrives with a cool wind and the smell of woodsmoke. Farmers bring in the last of the harvest while the days grow short."
+    },
+    {
+      "id": "coffee-two-sentences",
+      "prompt": "Write exactly two sentences about coffee. The first sentence must begin with the word 'Morning' and the whole response must end with a question mark.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "sentence_count",
+            "exactly": 2
+          },
+          {
+            "type": "starts_with",
+            "text": "Morning"
+          },
+          {
+            "type": "ends_with",
+            "text": "?"
+          }
+        ]
+      },
+      "reference": "Morning coffee is a ritual for millions of people. Would you start your day without it?"
+    },
+    {
+      "id": "lighthouse-title",
+      "prompt": "Write a title wrapped in double angle brackets, like <<Title Here>>, on the first line, followed by a description of a lighthouse. The whole response must be between 40 and 70 words.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "regex",
+            "pattern": "^<<[^<>\\n]+>>",
+            "flags": ""
+          },
+          {
+            "type": "word_count",
+            "min": 40,
+            "max": 70
+          }
+        ]
+      },
+      "reference": "<<Guardian of the Rocks>>\nThe white lighthouse stands on a cliff above the grey sea, its tall tower scarred by decades of storms. Every night its great lamp sweeps the water, warning ships away from the jagged rocks below. The keeper climbs the winding stairs at dusk, polishes the lens, and watches the horizon until dawn returns."
+    },
+    {
+      "id": "rain-poem",
+      "prompt": "Write a three-line poem about rain. Use only lowercase letters and do not use any commas.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "line_count",
+            "exactly": 3
+          },
+          {
+            "type": "all_lowercase"
+          },
+          {
+            "type": "no_commas"
+          }
+        ]
+      },
+      "reference": "soft rain on the roof\nthe garden drinks in silence\nstreets shine like mirrors"
+    },
+    {
+      "id": "api-explainer",
+      "prompt": "Explain what an API is in fewer than 50 words, and use the word 'contract' somewhere in your answer.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "word_count",
+            "max": 49
+          },
+          {
+            "type": "includes",
+            "text": "contract"
+          }
+        ]
+      },
+      "reference": "An API is a contract between programs: it defines which requests one piece of software can make to another, and what responses to expect, without exposing how the work is done internally."
+    },
+    {
+      "id": "tea-steps",
+      "prompt": "Give a numbered list of exactly 5 steps for brewing tea, numbered '1.' to '5.', and finish with a final line that says exactly: Enjoy!",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "numbered_list",
+            "exactly": 5
+          },
+          {
+            "type": "ends_with",
+            "text": "Enjoy!"
+          }
+        ]
+      },
+      "reference": "1. Boil fresh water.\n2. Warm the teapot.\n3. Add one teaspoon of leaves per cup.\n4. Pour the water and steep for three minutes.\n5. Strain into cups.\nEnjoy!"
+    },
+    {
+      "id": "teamwork-paragraphs",
+      "prompt": "Write exactly 3 paragraphs about teamwork, separated by blank lines. Each paragraph must contain at most 25 words.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "paragraph_count",
+            "exactly": 3
+          },
+          {
+            "type": "max_words_per_paragraph",
+            "max": 25
+          }
+        ]
+      },
+      "reference": "Teamwork turns individual strengths into shared results.\n\nClear communication prevents most misunderstandings before they begin.\n\nCelebrating small wins keeps everyone motivated through long projects."
+    },
+    {
+      "id": "yes-hyphens",
+      "prompt": "Reply with the word 'yes' repeated exactly 5 times, separated by single hyphens, and nothing else.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "regex",
+            "pattern": "^yes(-yes){4}$",
+            "flags": "i"
+          }
+        ]
+      },
+      "reference": "yes-yes-yes-yes-yes"
+    },
+    {
+      "id": "ordered-words",
+      "prompt": "Write one sentence that uses the words 'quiet', 'river' and 'lantern' in exactly that order.",
+      "grader": {
+        "type": "checks",
+        "checks": [
+          {
+            "type": "in_order",
+            "words": [
+              "quiet",
+              "river",
+              "lantern"
+            ]
+          },
+          {
+            "type": "sentence_count",
+            "exactly": 1
+          }
+        ]
+      },
+      "reference": "In the quiet dusk we followed the river by the light of a single lantern."
+    }
+  ]
+}

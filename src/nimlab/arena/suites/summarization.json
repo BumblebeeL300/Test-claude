@@ -1,0 +1,104 @@
+{
+  "name": "summarization",
+  "title": "Summarization",
+  "description": "Short passages to summarize under a length constraint; scored by an LLM judge against a rubric and usable for pairwise battles.",
+  "category": "summarization",
+  "version": "1",
+  "system": "You write accurate, tightly worded summaries and obey length limits exactly.",
+  "temperature": 0.2,
+  "max_tokens": 200,
+  "open_ended": true,
+  "battle_rubric": "Prefer the summary that is more faithful to the passage, covers more of its key points, and respects the requested length. Penalise invented details and filler.",
+  "items": [
+    {
+      "id": "tidal-power",
+      "prompt": "Summarize the passage in at most two sentences.\n\nPassage:\nThe coastal town of Marwick has spent six years building a tidal turbine array in the narrow channel between its harbour and the open sea. The first four turbines began feeding the grid in March and already cover about a fifth of the town's electricity. Engineers say output is highly predictable because tides follow the moon, unlike wind or sun. The main difficulty has been barnacles and kelp, which clog the blades and forced two shutdowns for cleaning. The council plans to add eight more turbines by 2028, funded partly by a regional green bond, and hopes neighbouring towns will copy the design.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: four turbines supply about a fifth of the town's power; output is predictable; biofouling caused shutdowns; eight more planned by 2028."
+      },
+      "reference": "Marwick's four tidal turbines now supply roughly a fifth of its electricity with highly predictable output, though barnacles and kelp have forced two cleaning shutdowns. The council plans eight more turbines by 2028."
+    },
+    {
+      "id": "quarterly-memo",
+      "prompt": "Write a one-sentence summary of this internal memo.\n\nPassage:\nTeam, a quick update on third-quarter results. Revenue reached 4.2 million dollars, up 11 percent on the previous quarter, driven mostly by subscription renewals in the education segment. Customer churn fell from 3.1 to 2.4 percent after we introduced onboarding calls. However, hardware margins slipped two points because of higher component costs, and the new warehouse in Leeds opened six weeks late. For the fourth quarter we will prioritise renegotiating supplier contracts and extending onboarding calls to the small-business tier.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: revenue 4.2M up 11 percent; churn down after onboarding calls; hardware margin fell and warehouse opened late; Q4 priorities are supplier contracts and extending onboarding."
+      },
+      "reference": "Third-quarter revenue grew 11 percent to 4.2 million and churn dropped thanks to onboarding calls, but hardware margins and the delayed Leeds warehouse were setbacks, so Q4 will focus on supplier contracts and wider onboarding."
+    },
+    {
+      "id": "printing-press",
+      "prompt": "Summarize the passage for a ten-year-old in no more than 40 words.\n\nPassage:\nBefore the fifteenth century, books in Europe were copied by hand, usually by monks, and a single volume could take months to finish. Johannes Gutenberg's printing press, developed around 1440 in Mainz, used movable metal type that could be rearranged and reused. Printers could now produce hundreds of identical pages in a day. Book prices fell sharply, literacy rose, and ideas spread across borders faster than rulers could control them. Historians link the press to the Reformation and to the growth of modern science.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: books were hand-copied before; Gutenberg's press with movable type around 1440; books became cheap and ideas spread; link to Reformation and science."
+      },
+      "reference": "Long ago, people copied books by hand, which was slow. Around 1440 Gutenberg built a press with reusable metal letters, so books became cheap and ideas spread quickly, helping science and big changes in religion."
+    },
+    {
+      "id": "sleep-study",
+      "prompt": "Summarize the findings in two sentences or fewer.\n\nPassage:\nResearchers followed 1,200 teenagers for two school years, tracking sleep with wrist sensors. Students who slept less than seven hours on school nights were twice as likely to report low mood and scored on average eight percent lower on end-of-year maths tests. Moving the school start time from 7:45 to 8:45 added about 50 minutes of sleep and reduced late arrivals by a third. The authors caution that the study cannot prove causation because families who prioritise sleep may differ in other ways, and they call for randomised trials.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: under seven hours of sleep linked to low mood and lower maths scores; later start added 50 minutes and fewer late arrivals; correlation not causation, trials needed."
+      },
+      "reference": "Teenagers sleeping under seven hours had worse mood and lower maths scores, and a one-hour later school start added about 50 minutes of sleep and fewer late arrivals. The authors warn the study cannot prove causation and urge randomised trials."
+    },
+    {
+      "id": "bridge-closure",
+      "prompt": "Summarize this local news item in one sentence.\n\nPassage:\nThe Alder Street bridge will close to all traffic from 3 June for an estimated nine weeks while crews replace corroded steel supports. Inspectors found the damage during a routine check in April and judged the structure safe only for light vehicles until repairs begin. Buses on routes 12 and 40 will be diverted via Mill Road, adding about ten minutes to journeys, and a free shuttle will run between the two station platforms. Cyclists and pedestrians can still cross using a temporary footbridge. The 2.3 million dollar project is paid for from the state infrastructure fund.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: bridge closed from 3 June for about nine weeks to replace corroded supports; buses diverted adding ten minutes, shuttle provided; pedestrians use temporary footbridge; 2.3M state-funded."
+      },
+      "reference": "The Alder Street bridge closes on 3 June for roughly nine weeks of 2.3 million dollar state-funded repairs, with buses diverted via Mill Road and pedestrians and cyclists using a temporary footbridge."
+    },
+    {
+      "id": "octopus-intelligence",
+      "prompt": "Give a two-sentence summary of the passage.\n\nPassage:\nOctopuses have around 500 million neurons, a number comparable to a dog, yet nearly two thirds of them sit in the arms rather than the central brain. Each arm can taste, touch and make simple decisions on its own. In laboratory tests octopuses unscrew jars, navigate mazes and recognise individual human keepers. Their lifespan is short, often only one or two years, so they cannot learn from parents; scientists consider this a puzzle, since complex learning usually evolves alongside long childhoods and social groups.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: about 500M neurons, mostly in the arms; arms act semi-independently; problem solving in labs; short life and no parental teaching is puzzling."
+      },
+      "reference": "Octopuses have about 500 million neurons, most located in semi-independent arms, and they solve problems such as opening jars and mazes. Because they live only a year or two without parental teaching, their intelligence puzzles scientists."
+    },
+    {
+      "id": "remote-work-policy",
+      "prompt": "Summarize the policy change for employees in at most 35 words.\n\nPassage:\nEffective 1 September, the company moves from a fully flexible remote policy to a hybrid model. Employees whose roles can be performed remotely must be in the office on Tuesdays and Thursdays; the other days remain flexible. Teams may request a different pair of anchor days if the whole team agrees. Employees who live more than 90 minutes from an office are exempt and will instead attend a quarterly on-site week. Managers will track attendance through badge data, and the commuting stipend will rise from 40 to 60 dollars a month.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: hybrid from 1 September; office Tuesdays and Thursdays; teams may choose other anchor days; far-away employees exempt with quarterly on-site week; stipend rises to 60 dollars."
+      },
+      "reference": "From 1 September employees must be in the office on Tuesdays and Thursdays (teams can pick other days, distant staff attend quarterly), and the commuting stipend rises to 60 dollars a month."
+    },
+    {
+      "id": "coral-bleaching",
+      "prompt": "Summarize the passage in two sentences.\n\nPassage:\nCoral bleaching occurs when stressed corals expel the symbiotic algae that give them colour and most of their food. The main trigger is sea water only one or two degrees warmer than the local summer maximum for several weeks. Bleached coral is not dead and can recover if temperatures fall, but repeated events leave little time to regrow, and mass die-offs have increased since the 1980s. Local measures such as reducing runoff and overfishing can improve resilience, yet scientists agree that limiting global warming is the decisive factor for the survival of most reefs.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: bleaching is expulsion of algae triggered by slightly warmer water; recovery possible but repeated events cause die-offs; local measures help but limiting warming is decisive."
+      },
+      "reference": "Coral bleaches when slightly warmer water makes it expel its colourful algae; it can recover, but repeated heatwaves cause mass die-offs. Local protection helps, but limiting global warming matters most for reefs."
+    },
+    {
+      "id": "pothole-app",
+      "prompt": "Summarize the announcement in one sentence of at most 30 words.\n\nPassage:\nThe city has launched a smartphone app that lets residents photograph potholes and drop a pin on the map. Each report is automatically checked against existing ones to avoid duplicates and is assigned to a repair crew, with a status that residents can follow. During a three-month trial in two districts, the median time to fix a pothole fell from 19 days to 6. The app is free, works in four languages and will be available citywide next month, replacing the old telephone hotline that will close at the end of the year.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: app to report potholes with photo and pin; trial cut repair time from 19 to 6 days; citywide next month; hotline closing."
+      },
+      "reference": "A new free city app lets residents report potholes with a photo, cutting trial repair times from 19 to 6 days, and will replace the phone hotline after a citywide launch next month."
+    },
+    {
+      "id": "sourdough",
+      "prompt": "Summarize the passage in no more than two sentences.\n\nPassage:\nA sourdough starter is a living mixture of flour, water, wild yeast and lactic acid bacteria. The yeast produces the gas that makes bread rise, while the bacteria create acids that give the loaf its tang and help it keep longer. To stay healthy, a starter must be fed regularly: discard most of it and replace it with fresh flour and water. Kept in the refrigerator it needs feeding only once a week, but at room temperature it needs feeding daily. A bubbly, doubled starter that smells pleasantly sour is ready to bake with.",
+      "grader": {
+        "type": "llm_judge",
+        "rubric": "Score the summary on: (1) faithfulness - states nothing that the passage does not support; (2) coverage - includes the key points listed below; (3) concision - respects the requested length and contains no filler. Key points: starter is flour, water, yeast and bacteria; yeast makes bread rise and bacteria give tang; regular feeding needed (weekly fridge, daily room temperature); signs it is ready."
+      },
+      "reference": "A sourdough starter is a living culture of wild yeast and bacteria that makes bread rise and gives it its tang, and it must be fed regularly: weekly if refrigerated, daily at room temperature. It is ready to use when bubbly, doubled and pleasantly sour."
+    }
+  ]
+}

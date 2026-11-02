@@ -1,0 +1,130 @@
+{
+  "name": "factual_qa",
+  "title": "Factual Q&A",
+  "description": "Short, well-established factual questions with unambiguous answers.",
+  "category": "factual_qa",
+  "version": "1",
+  "system": "Answer factual questions accurately and concisely.",
+  "temperature": 0.0,
+  "max_tokens": 120,
+  "items": [
+    {
+      "id": "tungsten-symbol",
+      "prompt": "What is the chemical symbol for tungsten? Reply with only the symbol.",
+      "grader": {
+        "type": "exact",
+        "expected": "W",
+        "case_sensitive": true
+      },
+      "reference": "W"
+    },
+    {
+      "id": "fastest-rotation",
+      "prompt": "Which planet in our solar system has the shortest day, meaning the fastest rotation?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\bjupiter\\b"
+      },
+      "reference": "Jupiter has the shortest day, rotating once in about 10 hours."
+    },
+    {
+      "id": "berlin-wall",
+      "prompt": "In what year did the Berlin Wall fall? Reply with only the year.",
+      "grader": {
+        "type": "exact",
+        "expected": [
+          "1989"
+        ]
+      },
+      "reference": "1989"
+    },
+    {
+      "id": "solitude-author",
+      "prompt": "Who wrote the novel One Hundred Years of Solitude?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "garc[ií]a\\s+m[aá]rquez"
+      },
+      "reference": "Gabriel García Márquez wrote it."
+    },
+    {
+      "id": "australia-capital",
+      "prompt": "What is the capital city of Australia?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "contains_all",
+        "required": [
+          "Canberra"
+        ],
+        "forbidden": [
+          "Sydney is the capital",
+          "Melbourne is the capital"
+        ],
+        "whole_word": true
+      },
+      "reference": "The capital of Australia is Canberra."
+    },
+    {
+      "id": "largest-bone",
+      "prompt": "What is the largest bone in the human body?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\bfemur\\b|thigh\\s?bone"
+      },
+      "reference": "The femur (thigh bone) is the largest bone."
+    },
+    {
+      "id": "atomic-26",
+      "prompt": "Which chemical element has atomic number 26? Reply with only the element name.",
+      "grader": {
+        "type": "exact",
+        "expected": "iron"
+      },
+      "reference": "Iron"
+    },
+    {
+      "id": "ohm-unit",
+      "prompt": "What is the SI unit of electrical resistance?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\bohms?\\b"
+      },
+      "reference": "The ohm is the SI unit of electrical resistance."
+    },
+    {
+      "id": "sistine-ceiling",
+      "prompt": "Who painted the ceiling of the Sistine Chapel?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "michelangelo"
+      },
+      "reference": "Michelangelo painted the Sistine Chapel ceiling."
+    },
+    {
+      "id": "longest-european-river",
+      "prompt": "What is the longest river in Europe?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\bvolga\\b"
+      },
+      "reference": "The Volga is the longest river in Europe."
+    },
+    {
+      "id": "heptagon-sides",
+      "prompt": "How many sides does a heptagon have?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\b(7|seven)\\b"
+      },
+      "reference": "A heptagon has seven sides."
+    },
+    {
+      "id": "indian-ocean",
+      "prompt": "Which ocean lies between Africa and Australia?\n\nAnswer in one short sentence.",
+      "grader": {
+        "type": "regex",
+        "pattern": "\\bindian\\b"
+      },
+      "reference": "The Indian Ocean."
+    }
+  ]
+}
