@@ -178,3 +178,78 @@ class FakeClient:
         if callable(item) and not isinstance(item, (BaseModel, Exception)):
             item = item(call)
         return item
+
+
+# --- shared FizzBuzz scenario (imported by conftest.py and the scripted tests) ---
+FIZZBUZZ_BUGGY = '''\
+def fizzbuzz(n: int) -> str:
+    """Return the FizzBuzz word for ``n``."""
+    if n % 3 == 0:
+        return "Fizz"
+    if n % 5 == 0:
+        return "Buzz"
+    if n % 15 == 0:
+        return "FizzBuzz"
+    return str(n)
+'''
+
+FIZZBUZZ_TESTS = """\
+import pytest
+
+from fizzbuzz import fizzbuzz
+
+
+def test_plain_number():
+    assert fizzbuzz(1) == "1"
+
+
+def test_fizz():
+    assert fizzbuzz(9) == "Fizz"
+
+
+def test_buzz():
+    assert fizzbuzz(10) == "Buzz"
+
+
+def test_fizzbuzz_15():
+    assert fizzbuzz(15) == "FizzBuzz"
+
+
+@pytest.mark.parametrize("n", [30, 45, 60])
+def test_multiples_of_15(n):
+    assert fizzbuzz(n) == "FizzBuzz"
+"""
+
+FIZZBUZZ_PATCH = """\
+<<<<<<< SEARCH
+    if n % 3 == 0:
+        return "Fizz"
+    if n % 5 == 0:
+        return "Buzz"
+    if n % 15 == 0:
+        return "FizzBuzz"
+=======
+    if n % 15 == 0:
+        return "FizzBuzz"
+    if n % 3 == 0:
+        return "Fizz"
+    if n % 5 == 0:
+        return "Buzz"
+>>>>>>> REPLACE
+"""
+
+PLAN_JSON = {
+    "goal": "Implement fizzbuzz(n) with a pytest suite",
+    "steps": [
+        {
+            "id": 1,
+            "description": "Write tests for plain numbers, 3, 5 and 15",
+            "files": ["test_fizzbuzz.py"],
+        },
+        {"id": 2, "description": "Implement fizzbuzz", "files": ["fizzbuzz.py"]},
+    ],
+    "test_strategy": "pytest with parametrized multiples of 15",
+    "risks": ["multiples of 15 must be checked before 3 and 5"],
+}
+
+APPROVE_JSON = {"verdict": "approve", "summary": "Looks correct and well tested.", "issues": []}

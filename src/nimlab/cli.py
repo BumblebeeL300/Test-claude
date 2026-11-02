@@ -77,6 +77,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def _root(
+    ctx: typer.Context,
     mock: Annotated[
         bool, typer.Option("--mock", help="Use the offline mock backend (sets NIMLAB_MOCK=1).")
     ] = False,
@@ -87,7 +88,18 @@ def _root(
 ) -> None:
     configure_logging()
     if mock:
+        # Scope the override to this invocation: put the environment back when the command ends,
+        # so running the CLI in-process (tests, notebooks) cannot leak mock mode into later work.
+        previous = os.environ.get("NIMLAB_MOCK")
         os.environ["NIMLAB_MOCK"] = "1"
+
+        def _restore() -> None:
+            if previous is None:
+                os.environ.pop("NIMLAB_MOCK", None)
+            else:
+                os.environ["NIMLAB_MOCK"] = previous
+
+        ctx.call_on_close(_restore)
 
 
 def probe_connectivity(config: NIMConfig, timeout: float = 8.0) -> tuple[bool, str]:

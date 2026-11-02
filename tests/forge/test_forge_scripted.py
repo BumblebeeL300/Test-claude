@@ -11,9 +11,19 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from forge_fakes import FakeCall, FakeClient, calls, say, tc
+from forge_fakes import (
+    APPROVE_JSON,
+    FIZZBUZZ_BUGGY,
+    FIZZBUZZ_PATCH,
+    FIZZBUZZ_TESTS,
+    PLAN_JSON,
+    FakeCall,
+    FakeClient,
+    calls,
+    say,
+    tc,
+)
 
-from conftest import APPROVE_JSON, FIZZBUZZ_BUGGY, FIZZBUZZ_PATCH, FIZZBUZZ_TESTS, PLAN_JSON
 from nimlab.core import NIMAuthError, NIMJSONError, NIMResponseError
 from nimlab.forge import Forge, ForgeConfig, ForgeEvent, ForgeReport, apply_patch_text
 from nimlab.forge.context import TRANSITIONS, State

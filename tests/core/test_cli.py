@@ -66,13 +66,32 @@ def test_doctor_with_key_never_prints_it(monkeypatch: pytest.MonkeyPatch) -> Non
     assert " set" in result.output and "real NIM calls" in result.output
 
 
-def test_global_mock_flag_sets_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_global_mock_flag_sets_env_for_the_command_only(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-x")
-    monkeypatch.setenv("NIMLAB_MOCK", "0")  # registered so teardown restores the env
+    monkeypatch.setenv("NIMLAB_MOCK", "0")
     result = invoke("--mock", "doctor", "--offline")
     assert result.exit_code == 0
-    assert os.environ["NIMLAB_MOCK"] == "1"
-    assert "NIMLAB_MOCK / --mock" in result.output
+    assert "NIMLAB_MOCK / --mock" in result.output  # the command saw NIMLAB_MOCK=1
+    assert os.environ["NIMLAB_MOCK"] == "0"  # ...and the previous value is back afterwards
+
+
+def test_global_mock_flag_does_not_leak_when_previously_unset() -> None:
+    assert "NIMLAB_MOCK" not in os.environ
+    assert invoke("--mock", "doctor", "--offline").exit_code == 0
+    assert "NIMLAB_MOCK" not in os.environ
+
+
+def test_cli_logging_handler_can_be_reset() -> None:
+    import logging
+
+    from nimlab.core.logging import reset_logging
+
+    assert invoke("doctor", "--offline").exit_code == 0
+    logger = logging.getLogger("nimlab")
+    assert any(getattr(h, "_nimlab_handler", False) for h in logger.handlers)
+    reset_logging()
+    assert not any(getattr(h, "_nimlab_handler", False) for h in logger.handlers)
+    assert logger.level == logging.NOTSET
 
 
 def test_doctor_connectivity_ok(respx_mock: respx.MockRouter) -> None:
