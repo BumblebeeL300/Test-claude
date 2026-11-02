@@ -317,7 +317,7 @@ def test_real_importlib_discovery(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_plugin_names_contract() -> None:
-    assert PLUGIN_NAMES == ("council", "atlas", "forge", "arena")
+    assert PLUGIN_NAMES == ("council", "atlas", "forge", "arena", "studio")
 
 
 def test_doctor_lists_unloaded_apps() -> None:

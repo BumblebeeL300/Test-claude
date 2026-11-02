@@ -1,0 +1,31 @@
+.at { --accent: var(--c-atlas); display: grid; grid-template-columns: 330px minmax(0, 1fr); min-height: 100%; }
+.at-tray { padding: 22px 20px; display: grid; align-content: start; gap: 12px; border-right: 1px solid var(--hair); background: color-mix(in srgb, var(--panel) 45%, transparent); }
+.drop { position: relative; border-radius: 18px; padding: 16px; display: grid; gap: 14px; border: 2px dashed color-mix(in srgb, var(--accent) 45%, var(--hair-2)); background: color-mix(in srgb, var(--accent) 5%, var(--panel)); cursor: pointer; transition: .3s var(--ease-spring); overflow: hidden; }
+.drop:hover, .drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); transform: scale(1.015); box-shadow: 0 0 40px -12px var(--accent); }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; padding: 10px; border-radius: 10px; background: var(--ink); border: 1px solid var(--hair); box-shadow: inset 0 2px 8px rgba(0,0,0,.35); }
+.slot { height: 30px; border-radius: 3px; border: 1px solid var(--hair); background: transparent; transition: .5s; }
+.slot.full { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, transparent) 0 22%, color-mix(in srgb, var(--accent) 10%, var(--raised)) 22%); border-color: color-mix(in srgb, var(--accent) 50%, transparent); box-shadow: 0 0 10px -4px var(--accent); animation: slot-in .6s var(--ease-spring) both; animation-delay: calc(var(--i) * 40ms); }
+@keyframes slot-in { from { transform: translateY(-14px); opacity: 0; } }
+.drop.over .slot:not(.full) { border-color: var(--accent); animation: pulse 1s infinite; }
+.drop-t { display: grid; justify-items: center; text-align: center; gap: 4px; font-size: 12.5px; color: var(--dim); } .drop-t svg { width: 26px; height: 26px; color: var(--accent); } .drop-t b { color: var(--text); font-size: 15px; letter-spacing: -.02em; }
+.scan { position: absolute; left: 0; right: 0; height: 2px; top: 0; background: var(--accent); box-shadow: 0 0 16px 4px var(--accent); opacity: 0; } .drop.busy .scan { opacity: 1; animation: scan 1s ease-in-out infinite alternate; } @keyframes scan { to { top: 100%; } }
+.shelf { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; } .shelf .f { display: flex; gap: 8px; align-items: center; color: var(--dim); } .shelf .f svg { width: 15px; height: 15px; color: var(--accent); flex: none; } .shelf .f span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .shelf b { color: var(--accent); }
+.at-main { padding: 24px clamp(18px, 3vw, 44px) 50px; display: grid; gap: 14px; align-content: start; max-width: 980px; width: 100%; }
+.at-main .q { font: 600 clamp(20px, 2.6vw, 30px)/1.25 var(--font-ui); letter-spacing: -.035em; background: none; border: 0; border-bottom: 2px solid var(--hair-2); border-radius: 0; padding: 6px 0 12px; min-height: 54px; }
+.at-main .q:focus { box-shadow: none; border-bottom-color: var(--accent); }
+.q-ctl { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; } .q-ctl .field { min-width: 190px; height: 34px; font-size: 13px; } .ctl.row { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; } .ctl { display: grid; gap: 6px; } .grow { flex: 1; }
+.at-out { display: grid; gap: 18px; margin-top: 8px; }
+.ans-card { padding: 22px 24px; border-radius: 20px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--hair)); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--raised)), var(--panel)); box-shadow: var(--shadow); }
+.ans-h { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; } .ans-h > .label { color: var(--accent); letter-spacing: .3em; }
+.ans { font: 450 clamp(16px, 1.6vw, 19px)/1.65 var(--font-ui); letter-spacing: -.01em; min-height: 3em; }
+.caret { display: inline-block; width: 9px; height: 1.1em; background: var(--accent); vertical-align: -.2em; margin-left: 2px; animation: blink 1s steps(2) infinite; } @keyframes blink { 50% { opacity: 0; } }
+.cite { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; margin: 0 2px; border-radius: 6px; vertical-align: super; line-height: 1; font: 700 10px var(--font-mono); background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); transition: .2s var(--ease-spring); position: relative; top: -.1em; }
+button.cite:hover { background: var(--accent); color: var(--on-signal); transform: translateY(-2px) scale(1.15); } .cite.static { vertical-align: baseline; top: 0; margin: 0; }
+.gauge { position: relative; width: 120px; height: 74px; margin-top: -6px; } .gauge svg { width: 100%; } .g-v { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; line-height: 1; } .g-v b { font-size: 24px; } .g-v .label { font-size: 8px; margin-top: 3px; }
+.srcs { display: grid; gap: 8px; } .srcs:empty { display: none; }
+.src { border-radius: 12px; border: 1px solid var(--hair); background: var(--panel); overflow: hidden; transition: border-color .3s; } .src.open { border-color: color-mix(in srgb, var(--accent) 55%, var(--hair)); }
+.src-h { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; text-align: left; } .src-n { font: 600 12.5px var(--font-mono); } .src-s { color: var(--dim); font-size: 12.5px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.src .chev { width: 16px; height: 16px; color: var(--dim); transition: transform .3s; } .src.open .chev { transform: rotate(90deg); }
+.src-b { display: none; margin: 0; padding: 4px 18px 16px 52px; font: 450 14px/1.6 var(--font-ui); color: var(--dim); border-left: 0; } .src.open .src-b { display: block; animation: screen-in .35s var(--ease-out) both; }
+.src-b::before { content: "\201C"; color: var(--accent); font-size: 22px; margin-right: 4px; vertical-align: -.2em; }
+@media (max-width: 900px) { .at { grid-template-columns: 1fr; } .at-tray { border-right: 0; border-bottom: 1px solid var(--hair); } }

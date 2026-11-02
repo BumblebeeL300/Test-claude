@@ -207,6 +207,7 @@ class VerifyPhase(Phase):
             failed=report.failed,
             errors=report.errors,
             iteration=ctx.iterations,
+            failing=[f.nodeid for f in report.failures][:20],
         )
         if report.ok:
             if ctx.max_tests_seen and report.total < ctx.max_tests_seen:
