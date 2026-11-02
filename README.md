@@ -54,6 +54,7 @@ flowchart TD
 | **Atlas** | Agentic RAG with citation checks: hybrid BM25 + dense retrieval (RRF), reranking, MMR, HyDE, multi-hop, claim verification, NemoGuard. FastAPI server and web UI | `nimlab atlas` | [docs/atlas.md](docs/atlas.md) |
 | **Forge** | Autonomous TDD coding agent: plan, implement, test and debug, review, in a sandboxed workspace | `nimlab forge` | [docs/forge.md](docs/forge.md) |
 | **Arena** | Eval suites and graders, time-to-first-token, Bradley-Terry Elo, HTML leaderboard, a smart router and an OpenAI-compatible routing proxy | `nimlab arena` | [docs/arena.md](docs/arena.md) |
+| **Studio** | Desktop app for all four apps: native window, run streaming, project browser, Keychain key storage, macOS packaging | `nimlab studio` | [docs/studio.md](docs/studio.md) |
 
 ## Quickstart
 
@@ -108,6 +109,22 @@ nimlab arena serve                          # OpenAI-compatible proxy on http://
 
 Runtime data (`.nimlab/`, `.forge/`, `*.db`) is git-ignored. Python examples live in
 [`examples/`](examples/).
+
+## NIM Lab Studio (desktop app)
+
+One window for all four apps: build projects with Forge and watch the tests go green, run a Council,
+ask Atlas about your documents, benchmark and route with Arena. No key needed to try it: without
+`NVIDIA_API_KEY` Studio runs in a clearly marked simulation mode; paste a key in the app (it is kept in
+the macOS Keychain, or a 0600 file elsewhere) to go live.
+
+```bash
+pip install -e '.[desktop]'     # optional: native window (pywebview) and Keychain (keyring)
+nimlab studio                   # native window; falls back to your browser
+nimlab studio --browser         # always the browser
+```
+
+It serves a token-protected API on `127.0.0.1` only. A macOS `.app`/`.dmg` is built from
+[`packaging/macos`](packaging/macos/README.md) (not yet tested on a Mac). See [docs/studio.md](docs/studio.md).
 
 ## Model roles and overrides
 
