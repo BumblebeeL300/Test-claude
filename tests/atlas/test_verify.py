@@ -101,6 +101,11 @@ def test_meta_sentences_without_citations_are_skipped_but_cited_ones_kept():
     assert len(split_claims("Overall, the budget is 250 EUR per rotation [1].")) == 1
 
 
+def test_fenced_code_blocks_are_not_claims():
+    text = "Run this to watch heartbeats [1].\n\n```\nnats sub robot.*.heartbeat now\n```\n"
+    assert [c.plain for c in split_claims(text)] == ["Run this to watch heartbeats."]
+
+
 def test_short_fragments_are_ignored():
     assert split_claims("Yes. OK then.") == []
 

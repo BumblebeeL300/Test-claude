@@ -84,6 +84,8 @@ def split_claims(answer: str) -> list[Claim]:
         line = _TRAILING_CITE_RE.sub(lambda m: f" {m.group(2).strip()}{m.group(1)} ", line)
         for sentence in split_sentences(line):
             text = unmask_code(sentence, saved).strip()
+            if text.startswith("```"):  # a fenced code block is content, not a claim
+                continue
             plain = normalize_ws(re.sub(r"(\*\*|__|(?<!\w)\*|\*(?!\w))", "", strip_citations(text)))
             cited = list(dict.fromkeys(find_citations(text)))
             if len(tokenize(plain)) < 3 or plain.endswith(("?", ":")):
