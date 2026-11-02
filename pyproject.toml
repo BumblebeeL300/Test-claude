@@ -8,7 +8,6 @@ version = "0.1.0"
 description = "NIM Lab: a monorepo of apps built on NVIDIA NIM (council, atlas, forge, arena) with a shared async core."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
 dependencies = [
     "httpx>=0.27",
     "pydantic>=2.6",
@@ -46,18 +45,26 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 addopts = ["-ra", "--import-mode=importlib"]
 filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+markers = [
+    "live: calls the real NVIDIA NIM API (needs NVIDIA_API_KEY and NIMLAB_LIVE=1; skipped otherwise)",
+]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests"]
+# Newer ruff versions also reformat the code samples in Markdown; keep the hand-aligned docs as is.
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "RUF"]
 ignore = ["B008", "RUF012"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["B011", "RUF001", "RUF002", "RUF003"]
+# Tests use blocking pathlib/subprocess calls inside async tests on purpose (tiny temp dirs).
+"tests/**" = ["B011", "RUF001", "RUF002", "RUF003", "ASYNC240", "ASYNC251"]
+# Embedded HTML/CSS/JS template with long lines.
+"src/nimlab/arena/report.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"

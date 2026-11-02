@@ -10,8 +10,6 @@ import pytest
 from nimlab.core import NIMClient, NIMConfig
 from nimlab.forge import Forge, ForgeReport
 
-# ruff: noqa: ASYNC240
-
 
 async def test_full_run_in_mock_mode_completes_and_reports(
     mock_client: NIMClient, ws: Path

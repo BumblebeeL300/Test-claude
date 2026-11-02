@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Leaderboard reports: a self-contained HTML page (inline CSS + SVG) and a rich terminal table."""
 
 from __future__ import annotations

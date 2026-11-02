@@ -1,7 +1,5 @@
 """Sandbox: path confinement, env scrubbing, timeouts, output caps and the command allowlist."""
 
-# ruff: noqa: ASYNC240, ASYNC251
-
 from __future__ import annotations
 
 import json

@@ -19,6 +19,7 @@ from forge_fakes import (
 
 from nimlab.forge import Sandbox
 
+
 @pytest.fixture
 def ws(tmp_path: Path) -> Path:
     """An empty workspace directory."""

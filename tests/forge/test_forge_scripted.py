@@ -1,7 +1,5 @@
 """End-to-end Forge runs against a scripted FakeClient (real pytest, temp workspaces, offline)."""
 
-# ruff: noqa: ASYNC240
-
 from __future__ import annotations
 
 import asyncio

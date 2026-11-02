@@ -1,7 +1,5 @@
 """WorkspaceTools: the coder's tool surface, and its tolerance for bad calls."""
 
-# ruff: noqa: ASYNC240
-
 from __future__ import annotations
 
 import json

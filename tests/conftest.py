@@ -42,7 +42,9 @@ def _reset_global_state() -> None:
 
 
 @pytest.fixture(autouse=True)
-def _isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.TempPathFactory) -> Iterator[None]:
+def _isolated_env(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.TempPathFactory
+) -> Iterator[None]:
     for key in list(os.environ):
         if _is_nimlab_env(key):
             monkeypatch.delenv(key, raising=False)

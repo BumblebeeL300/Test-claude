@@ -1,7 +1,5 @@
 """The coder's tool loop: id pairing, robustness to nonsense, repeat guard, compaction."""
 
-# ruff: noqa: ASYNC240
-
 from __future__ import annotations
 
 import json
