@@ -29,7 +29,7 @@ __all__ = [
 
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 NODE_W, ROW_H, HEAD_H, LCD_H = 232, 24, 34, 70
-COL_GAP, ROW_GAP = 90, 36
+COL_GAP, ROW_GAP = 64, 30
 
 
 @dataclass(frozen=True)
@@ -75,7 +75,9 @@ def slugify(text: str) -> str:
 
 def check_id(pipeline_id: str) -> str:
     if not _SLUG.match(pipeline_id):
-        raise PipelineError(f"invalid pipeline id {pipeline_id!r}: use lowercase letters, digits, '-' or '_'")
+        raise PipelineError(
+            f"invalid pipeline id {pipeline_id!r}: use lowercase letters, digits, '-' or '_'"
+        )
     return pipeline_id
 
 
@@ -91,7 +93,9 @@ def _scan(directory: Path, source: str) -> list[PipelineInfo]:
         except PipelineError:
             continue
         out.append(
-            PipelineInfo(path.stem, p.name, p.title or p.name, p.description, source, len(p.nodes), path)
+            PipelineInfo(
+                path.stem, p.name, p.title or p.name, p.description, source, len(p.nodes), path
+            )
         )
     return out
 
@@ -128,9 +132,7 @@ def load_pipeline(ref: str | Path, directory: Path | None = None) -> Pipeline:
     return Pipeline.load(info.path)
 
 
-def save_user_pipeline(
-    pipeline_id: str, pipeline: Pipeline, directory: Path | None = None
-) -> Path:
+def save_user_pipeline(pipeline_id: str, pipeline: Pipeline, directory: Path | None = None) -> Path:
     check_id(pipeline_id)
     return pipeline.save((directory or user_dir()) / f"{pipeline_id}.json")
 
@@ -176,11 +178,18 @@ def new_pipeline(name: str) -> Pipeline:
             "title": name.strip() or "New pipeline",
             "description": "Describe what this pipeline does.",
             "nodes": [
-                {"id": "question", "type": "input", "params": {"type": "string", "default": "What is a patch bay?"}},
+                {
+                    "id": "question",
+                    "type": "input",
+                    "params": {"type": "string", "default": "What is a patch bay?"},
+                },
                 {
                     "id": "answer",
                     "type": "prompt",
-                    "params": {"template": "Answer in two sentences.\n\nQuestion: {{question}}", "role": "chat"},
+                    "params": {
+                        "template": "Answer in two sentences.\n\nQuestion: {{question}}",
+                        "role": "chat",
+                    },
                 },
                 {"id": "result", "type": "output", "params": {"name": "answer"}},
             ],

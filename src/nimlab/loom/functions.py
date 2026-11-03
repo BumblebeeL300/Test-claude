@@ -157,7 +157,8 @@ def _numbered(value: Any, **_: Any) -> str:
 
 def builtin_functions() -> dict[str, Callable[..., Any]]:
     return {
-        "flatten": _flatten, "pluck": _pluck, "flatten_field": _flatten_field, "get_field": _get_field,
+        "flatten": _flatten, "pluck": _pluck, "get_field": _get_field,
+        "flatten_field": _flatten_field,
         "unique": _unique, "sort": _sort, "top_k": _top_k, "count": _count,
         "join_lines": _join_lines, "split_lines": _split_lines, "sentences": _sentences,
         "word_count": _word_count, "truncate": _truncate, "to_json": _to_json,

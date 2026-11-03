@@ -183,7 +183,9 @@ def apply_defaults(node_type: NodeType, params: dict[str, Any]) -> dict[str, Any
     for key, spec in node_type.params.items():
         if key not in out and "default" in spec:
             default = spec["default"]
-            out[key] = list(default) if isinstance(default, list) else (
-                dict(default) if isinstance(default, dict) else default
+            out[key] = (
+                list(default)
+                if isinstance(default, list)
+                else (dict(default) if isinstance(default, dict) else default)
             )
     return out

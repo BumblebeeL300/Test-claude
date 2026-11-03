@@ -125,8 +125,20 @@ async def test_dependent_nodes_wait_for_each_other() -> None:
 async def test_diamond_runs_middle_in_parallel_then_joins() -> None:
     fake = FakeClient(delay=0.05)
     pipe = make(
-        [inp(), prompt("l", "left {{q}}"), prompt("r", "right {{q}}"), prompt("m", "mix {{l}} {{r}}"), out()],
-        [("q.value", "l.q"), ("q.value", "r.q"), ("l.text", "m.l"), ("r.text", "m.r"), ("m.text", "out.value")],
+        [
+            inp(),
+            prompt("l", "left {{q}}"),
+            prompt("r", "right {{q}}"),
+            prompt("m", "mix {{l}} {{r}}"),
+            out(),
+        ],
+        [
+            ("q.value", "l.q"),
+            ("q.value", "r.q"),
+            ("l.text", "m.l"),
+            ("r.text", "m.r"),
+            ("m.text", "out.value"),
+        ],
     )
     result = await run_pipeline(pipe, client=fake)
     assert result.ok and fake.max_active == 2
@@ -175,7 +187,9 @@ def branchy(condition: str) -> Any:
     "n, taken, skipped",
     [(5, "big:5", ["small"]), (1, "small:1", ["big", "after_big", "big_only"])],
 )
-async def test_branch_takes_one_side_and_skips_the_other(fake: FakeClient, n, taken, skipped) -> None:
+async def test_branch_takes_one_side_and_skips_the_other(
+    fake: FakeClient, n, taken, skipped
+) -> None:
     events: list[dict[str, Any]] = []
     result = await run_pipeline(branchy("value > 3"), {"n": n}, client=fake, on_event=events.append)
     assert result.ok and result.outputs["result"] == taken
@@ -188,7 +202,9 @@ async def test_branch_takes_one_side_and_skips_the_other(fake: FakeClient, n, ta
 
 async def test_branch_condition_error_fails_the_node(fake: FakeClient) -> None:
     result = await run_pipeline(branchy("value['x']"), {"n": 1}, client=fake, validate=False)
-    assert not result.ok and result.failed_node == "b" and "condition failed" in (result.error or "")
+    assert (
+        not result.ok and result.failed_node == "b" and "condition failed" in (result.error or "")
+    )
 
 
 async def test_branch_condition_rejects_attribute_access(fake: FakeClient) -> None:
@@ -207,7 +223,15 @@ async def test_join_collects_only_live_inputs(fake: FakeClient) -> None:
             {"id": "j", "type": "join", "params": {"separator": "+"}},
             out(),
         ],
-        [("n.value", "b.value"), ("b.then", "x.v"), ("b.else", "y.v"), ("x.text", "j.in"), ("y.text", "j.in"), ("z.text", "j.in"), ("j.text", "out.value")],
+        [
+            ("n.value", "b.value"),
+            ("b.then", "x.v"),
+            ("b.else", "y.v"),
+            ("x.text", "j.in"),
+            ("y.text", "j.in"),
+            ("z.text", "j.in"),
+            ("j.text", "out.value"),
+        ],
     )
     result = await run_pipeline(pipe, client=fake)
     assert result.outputs["out"] == "Y1+Z"
@@ -237,7 +261,10 @@ def map_pipeline(items: list[str], **map_params: Any) -> Any:
                 "id": "m",
                 "type": "map",
                 "params": {
-                    "step": {"type": "prompt", "params": {"template": "{{topic}}: {{item}} #{{index}}"}},
+                    "step": {
+                        "type": "prompt",
+                        "params": {"template": "{{topic}}: {{item}} #{{index}}"},
+                    },
                     **map_params,
                 },
             },
@@ -291,12 +318,26 @@ async def test_map_limits_item_count(fake: FakeClient) -> None:
 async def test_map_with_a_json_step() -> None:
     fake = FakeClient()
     fake.json_reply = {"tags": ["x", "y"]}
-    schema = {"type": "object", "properties": {"tags": {"type": "array", "items": {"type": "string"}}}, "required": ["tags"]}
+    schema = {
+        "type": "object",
+        "properties": {"tags": {"type": "array", "items": {"type": "string"}}},
+        "required": ["tags"],
+    }
     pipe = make(
         [
             {"id": "items", "type": "input", "params": {"type": "list", "default": ["p", "q"]}},
-            {"id": "m", "type": "map", "params": {"step": {"type": "json", "params": {"template": "{{item}}", "schema": schema}}}},
-            {"id": "flat", "type": "python_fn", "params": {"fn": "flatten_field", "args": {"field": "tags"}}},
+            {
+                "id": "m",
+                "type": "map",
+                "params": {
+                    "step": {"type": "json", "params": {"template": "{{item}}", "schema": schema}}
+                },
+            },
+            {
+                "id": "flat",
+                "type": "python_fn",
+                "params": {"fn": "flatten_field", "args": {"field": "tags"}},
+            },
             out(),
         ],
         [("items.value", "m.items"), ("m.results", "flat.value"), ("flat.result", "out.value")],
@@ -310,13 +351,29 @@ async def test_text_nodes(fake: FakeClient) -> None:
     pipe = make(
         [
             inp("t", "Order #1234 and #5678 shipped"),
-            {"id": "ids", "type": "regex", "params": {"pattern": "#(\\d+)", "mode": "findall", "group": 1}},
+            {
+                "id": "ids",
+                "type": "regex",
+                "params": {"pattern": "#(\\d+)", "mode": "findall", "group": 1},
+            },
             {"id": "first", "type": "regex", "params": {"pattern": "#(\\d+)", "group": 1}},
             {"id": "cnt", "type": "python_fn", "params": {"fn": "count"}},
-            {"id": "fmt", "type": "template", "params": {"template": "{{ids | join}} / {{first}} / {{n}}"}},
+            {
+                "id": "fmt",
+                "type": "template",
+                "params": {"template": "{{ids | join}} / {{first}} / {{n}}"},
+            },
             out(),
         ],
-        [("t.value", "ids.text"), ("t.value", "first.text"), ("ids.matches", "cnt.value"), ("ids.matches", "fmt.ids"), ("first.match", "fmt.first"), ("cnt.result", "fmt.n"), ("fmt.text", "out.value")],
+        [
+            ("t.value", "ids.text"),
+            ("t.value", "first.text"),
+            ("ids.matches", "cnt.value"),
+            ("ids.matches", "fmt.ids"),
+            ("first.match", "fmt.first"),
+            ("cnt.result", "fmt.n"),
+            ("fmt.text", "out.value"),
+        ],
     )
     result = await run_pipeline(pipe, client=fake)
     assert result.outputs["out"] == "1234, 5678 / 1234 / 2"
@@ -325,7 +382,11 @@ async def test_text_nodes(fake: FakeClient) -> None:
 async def test_chunk_embed_dedupe_and_rerank(fake: FakeClient) -> None:
     pipe = make(
         [
-            {"id": "texts", "type": "input", "params": {"type": "list", "default": ["apple pie", "apple tart", "banana split"]}},
+            {
+                "id": "texts",
+                "type": "input",
+                "params": {"type": "list", "default": ["apple pie", "apple tart", "banana split"]},
+            },
             {"id": "e", "type": "embed", "params": {"dedupe_threshold": 0.9}},
             {"id": "q", "type": "input", "params": {"type": "string", "default": "banana"}},
             {"id": "r", "type": "rerank", "params": {"top_n": 1}},
@@ -333,7 +394,14 @@ async def test_chunk_embed_dedupe_and_rerank(fake: FakeClient) -> None:
             out("best"),
             out("n"),
         ],
-        [("texts.value", "e.texts"), ("e.unique", "uniq.value"), ("e.count", "n.value"), ("q.value", "r.query"), ("texts.value", "r.passages"), ("r.ranked", "best.value")],
+        [
+            ("texts.value", "e.texts"),
+            ("e.unique", "uniq.value"),
+            ("e.count", "n.value"),
+            ("q.value", "r.query"),
+            ("texts.value", "r.passages"),
+            ("r.ranked", "best.value"),
+        ],
     )
     result = await run_pipeline(pipe, client=fake)
     assert result.outputs["uniq"] == ["apple pie", "banana split"] and result.outputs["n"] == 2
@@ -343,7 +411,12 @@ async def test_chunk_embed_dedupe_and_rerank(fake: FakeClient) -> None:
 async def test_chunk_node(fake: FakeClient) -> None:
     text = "\n\n".join(f"Paragraph number {i} has a few words in it." for i in range(10))
     pipe = make(
-        [inp("doc", text), {"id": "c", "type": "chunk", "params": {"max_chars": 120, "overlap": 10}}, out("chunks"), out("count")],
+        [
+            inp("doc", text),
+            {"id": "c", "type": "chunk", "params": {"max_chars": 120, "overlap": 10}},
+            out("chunks"),
+            out("count"),
+        ],
         [("doc.value", "c.text"), ("c.chunks", "chunks.value"), ("c.count", "count.value")],
     )
     result = await run_pipeline(pipe, client=fake)
@@ -352,14 +425,24 @@ async def test_chunk_node(fake: FakeClient) -> None:
 
 
 async def test_python_fn_only_runs_registered_functions(fake: FakeClient) -> None:
-    register_function("shout_test", lambda value, **kw: f"{value}{kw.get('mark', '!')}", replace=True)
+    register_function(
+        "shout_test", lambda value, **kw: f"{value}{kw.get('mark', '!')}", replace=True
+    )
     ok = make(
-        [inp(), {"id": "f", "type": "python_fn", "params": {"fn": "shout_test", "args": {"mark": "?"}}}, out()],
+        [
+            inp(),
+            {"id": "f", "type": "python_fn", "params": {"fn": "shout_test", "args": {"mark": "?"}}},
+            out(),
+        ],
         [("q.value", "f.value"), ("f.result", "out.value")],
     )
     assert (await run_pipeline(ok, client=fake)).outputs["out"] == "hello?"
     evil = make(
-        [inp(), {"id": "f", "type": "python_fn", "params": {"fn": "__import__('os').system"}}, out()],
+        [
+            inp(),
+            {"id": "f", "type": "python_fn", "params": {"fn": "__import__('os').system"}},
+            out(),
+        ],
         [("q.value", "f.value"), ("f.result", "out.value")],
     )
     with pytest.raises(PipelineError, match="not registered"):
@@ -370,7 +453,11 @@ async def test_http_get_is_disabled_by_default_and_allowlisted(fake: FakeClient)
     import httpx
 
     pipe = make(
-        [inp("u", "https://example.com/data"), {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}}, out("body")],
+        [
+            inp("u", "https://example.com/data"),
+            {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}},
+            out("body"),
+        ],
         [("u.value", "g.u"), ("g.body", "body.value")],
     )
     off = await run_pipeline(pipe, client=fake)
@@ -382,9 +469,17 @@ async def test_http_get_is_disabled_by_default_and_allowlisted(fake: FakeClient)
     http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
     ok = await run_pipeline(pipe, client=fake, http_allow=["example.com"], http_client=http)
     assert ok.ok and ok.outputs["body"] == "hello from example.com"
-    other = await run_pipeline(pipe, {"u": "https://evil.test/x"}, client=fake, http_allow=["example.com"], http_client=http)
+    other = await run_pipeline(
+        pipe,
+        {"u": "https://evil.test/x"},
+        client=fake,
+        http_allow=["example.com"],
+        http_client=http,
+    )
     assert not other.ok and "not on the allowlist" in (other.error or "")
-    scheme = await run_pipeline(pipe, {"u": "file:///etc/passwd"}, client=fake, http_allow=["example.com"], http_client=http)
+    scheme = await run_pipeline(
+        pipe, {"u": "file:///etc/passwd"}, client=fake, http_allow=["example.com"], http_client=http
+    )
     assert not scheme.ok and "only http" in (scheme.error or "")
     await http.aclose()
 
@@ -394,10 +489,16 @@ async def test_env_allowlist(monkeypatch: pytest.MonkeyPatch, fake: FakeClient) 
 
     monkeypatch.setenv("NIMLAB_LOOM_HTTP_ALLOW", "*.example.org")
     pipe = make(
-        [inp("u", "https://docs.example.org/x"), {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}}, out("body")],
+        [
+            inp("u", "https://docs.example.org/x"),
+            {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}},
+            out("body"),
+        ],
         [("u.value", "g.u"), ("g.body", "body.value")],
     )
-    http = httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, text="ok")))
+    http = httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, text="ok"))
+    )
     result = await run_pipeline(pipe, client=fake, http_client=http)
     assert result.ok
     await http.aclose()
@@ -407,7 +508,11 @@ async def test_json_node_validates_against_the_inline_schema() -> None:
     fake = FakeClient()
     schema = {"type": "object", "properties": {"n": {"type": "integer"}}, "required": ["n"]}
     pipe = make(
-        [inp(), {"id": "j", "type": "json", "params": {"template": "{{q}}", "schema": schema}}, out()],
+        [
+            inp(),
+            {"id": "j", "type": "json", "params": {"template": "{{q}}", "schema": schema}},
+            out(),
+        ],
         [("q.value", "j.q"), ("j.data", "out.value")],
     )
     fake.json_reply = {"n": 3}
@@ -426,7 +531,12 @@ async def test_council_and_atlas_nodes_in_mock_mode(tmp_path) -> None:
             out("verdict"),
             out("docs"),
         ],
-        [("q.value", "c.question"), ("c.answer", "verdict.value"), ("q.value", "a.question"), ("a.answer", "docs.value")],
+        [
+            ("q.value", "c.question"),
+            ("c.answer", "verdict.value"),
+            ("q.value", "a.question"),
+            ("a.answer", "docs.value"),
+        ],
     )
     result = await run_pipeline(pipe, mock=True)
     assert result.ok, result.error
@@ -471,7 +581,11 @@ async def test_retries_exhausted_fails_the_run(sleeps_loom: list[float]) -> None
     assert not result.ok and result.failed_node == "a" and result.error == "boom"
     assert result.nodes["a"].attempts == 2 and result.nodes["a"].status == "error"
     assert result.nodes["b"].status == "pending"  # never started
-    assert kinds(events, "node.error") == ["a"] and events[-1]["type"] == "run.done" and events[-1]["ok"] is False
+    assert (
+        kinds(events, "node.error") == ["a"]
+        and events[-1]["type"] == "run.done"
+        and events[-1]["ok"] is False
+    )
     with pytest.raises(Exception, match="boom"):
         result.raise_for_error()
 
@@ -521,7 +635,9 @@ async def test_failure_cancels_running_siblings() -> None:
 
 # ------------------------------------------------------------------ caching
 def cached_pipeline(template: str = "Echo {{q}}") -> Any:
-    return make([inp(), prompt("a", template), out()], [("q.value", "a.q"), ("a.text", "out.value")])
+    return make(
+        [inp(), prompt("a", template), out()], [("q.value", "a.q"), ("a.text", "out.value")]
+    )
 
 
 async def test_cache_hit_skips_the_model(tmp_path, fake: FakeClient) -> None:
@@ -540,8 +656,12 @@ async def test_cache_hit_skips_the_model(tmp_path, fake: FakeClient) -> None:
 async def test_cache_key_covers_config_and_inputs(tmp_path, fake: FakeClient) -> None:
     cache = tmp_path / "cache"
     await run_pipeline(cached_pipeline(), client=fake, cache=cache, stream=False)
-    await run_pipeline(cached_pipeline(), {"q": "other"}, client=fake, cache=cache, stream=False)  # new input
-    await run_pipeline(cached_pipeline("Changed {{q}}"), client=fake, cache=cache, stream=False)  # new config
+    await run_pipeline(
+        cached_pipeline(), {"q": "other"}, client=fake, cache=cache, stream=False
+    )  # new input
+    await run_pipeline(
+        cached_pipeline("Changed {{q}}"), client=fake, cache=cache, stream=False
+    )  # new config
     assert len(fake.calls) == 3
     await run_pipeline(cached_pipeline(), {"q": "other"}, client=fake, cache=cache, stream=False)
     assert len(fake.calls) == 3
@@ -552,14 +672,17 @@ async def test_cache_is_off_by_default_and_per_node(tmp_path, fake: FakeClient) 
     await run_pipeline(cached_pipeline(), client=fake, stream=False)
     assert len(fake.calls) == 2  # default: no cache
     pipe = make(
-        [inp(), prompt("a", "Echo {{q}}", cache=False), out()], [("q.value", "a.q"), ("a.text", "out.value")]
+        [inp(), prompt("a", "Echo {{q}}", cache=False), out()],
+        [("q.value", "a.q"), ("a.text", "out.value")],
     )
     for _ in range(2):
         await run_pipeline(pipe, client=fake, cache=tmp_path / "c", stream=False)
     assert len(fake.calls) == 4
 
 
-async def test_cache_default_directory_and_backend_separation(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_cache_default_directory_and_backend_separation(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
     mock_client, live_client = FakeClient(mock=True), FakeClient(mock=False)
     await run_pipeline(cached_pipeline(), client=mock_client, cache=True, stream=False)
@@ -583,3 +706,12 @@ async def test_corrupt_cache_entries_are_misses(tmp_path, fake: FakeClient) -> N
 async def test_owned_client_is_created_and_closed_in_mock_mode() -> None:
     result = await run_pipeline(cached_pipeline(), mock=True)
     assert result.ok and result.outputs["out"]
+
+
+async def test_regex_limits(fake: FakeClient) -> None:
+    pipe = make(
+        [inp("t", "abc"), {"id": "r", "type": "regex", "params": {"pattern": "a" * 600}}, out()],
+        [("t.value", "r.text"), ("r.match", "out.value")],
+    )
+    result = await run_pipeline(pipe, client=fake)
+    assert not result.ok and "too long" in (result.error or "")

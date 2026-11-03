@@ -11,7 +11,9 @@ BUNDLED = [i.id for i in list_pipelines(include_user=False)]
 
 
 def test_the_four_example_pipelines_ship() -> None:
-    assert {"research-brief", "support-triage", "doc-to-quiz", "translate-backcheck"} <= set(BUNDLED)
+    assert {"research-brief", "support-triage", "doc-to-quiz", "translate-backcheck"} <= set(
+        BUNDLED
+    )
     assert all(p.suffix == ".json" for p in bundled_dir().iterdir() if p.is_file())
 
 
@@ -30,13 +32,23 @@ async def test_runs_end_to_end_in_mock_mode(name: str) -> None:
 async def test_research_brief_fans_out_with_map() -> None:
     result = await run_pipeline("research-brief", {"topic": "tidal power"}, mock=True)
     assert len(result.outputs["questions"]) >= 3
-    assert result.nodes["answers"].status == "done" and len(result.nodes["answers"].outputs["results"]) == len(result.outputs["questions"])
+    assert result.nodes["answers"].status == "done" and len(
+        result.nodes["answers"].outputs["results"]
+    ) == len(result.outputs["questions"])
 
 
 async def test_support_triage_runs_exactly_one_responder() -> None:
     result = await run_pipeline("support-triage", mock=True)
-    ran = [n for n in ("billing_reply", "tech_reply", "general_reply") if result.nodes[n].status == "done"]
-    skipped = [n for n in ("billing_reply", "tech_reply", "general_reply") if result.nodes[n].status == "skipped"]
+    ran = [
+        n
+        for n in ("billing_reply", "tech_reply", "general_reply")
+        if result.nodes[n].status == "done"
+    ]
+    skipped = [
+        n
+        for n in ("billing_reply", "tech_reply", "general_reply")
+        if result.nodes[n].status == "skipped"
+    ]
     assert len(ran) == 1 and len(skipped) == 2
     assert result.outputs["reply"] == result.nodes[ran[0]].outputs["text"]
 

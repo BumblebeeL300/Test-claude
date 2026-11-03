@@ -84,7 +84,7 @@ class _Runtime:
 
     @property
     def runs(self) -> RunManager:
-        return self.state.runs  # type: ignore[no-any-return]
+        return self.state.runs
 
     def client(self) -> Any:
         return self.state.client()
@@ -144,7 +144,10 @@ async def node_types_route() -> list[dict[str, Any]]:
             fn = dict(desc["params"]["properties"]["fn"])
             fn["enum"] = list(functions)
             fn["x-docs"] = functions
-            desc["params"] = {**desc["params"], "properties": {**desc["params"]["properties"], "fn": fn}}
+            desc["params"] = {
+                **desc["params"],
+                "properties": {**desc["params"]["properties"], "fn": fn},
+            }
         if nt.name == "http_get":
             desc["enabled"] = bool(allow)
             desc["allow"] = allow
@@ -182,11 +185,15 @@ async def get_pipeline_route(pipeline_id: str, request: Request) -> dict[str, An
 
 
 @router.put("/pipelines/{pipeline_id}")
-async def put_pipeline_route(pipeline_id: str, body: dict[str, Any], request: Request) -> dict[str, Any]:
+async def put_pipeline_route(
+    pipeline_id: str, body: dict[str, Any], request: Request
+) -> dict[str, Any]:
     rt = _Runtime(request)
     _check_id(pipeline_id)
     if pipeline_id in _bundled_ids():
-        raise _bad(409, f"{pipeline_id!r} is a bundled pipeline and read-only; save it under another id")
+        raise _bad(
+            409, f"{pipeline_id!r} is a bundled pipeline and read-only; save it under another id"
+        )
     pipe = _pipeline_from(body)
     if len(pipe.to_json()) > MAX_PIPELINE_BYTES:
         raise _bad(413, "pipeline is too large")
@@ -214,8 +221,8 @@ async def delete_pipeline_route(pipeline_id: str, request: Request) -> dict[str,
 # --------------------------------------------------------------------------- lint & export
 @router.post("/lint")
 async def lint_route(body: dict[str, Any]) -> dict[str, Any]:
-    data = body.get("pipeline") if isinstance(body.get("pipeline"), dict) else body
-    return loom_lint.lint(data).to_dict()
+    inner = body.get("pipeline")
+    return loom_lint.lint(inner if isinstance(inner, dict) else body).to_dict()
 
 
 @router.post("/export")
@@ -288,7 +295,8 @@ async def run_route(body: dict[str, Any], request: Request) -> Any:
     if report.errors:
         return JSONResponse(
             {
-                "detail": "pipeline has errors: " + "; ".join(i.format() for i in report.errors[:3]),
+                "detail": "pipeline has errors: "
+                + "; ".join(i.format() for i in report.errors[:3]),
                 "issues": [i.to_dict() for i in report.issues],
             },
             status_code=422,

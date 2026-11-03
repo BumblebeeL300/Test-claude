@@ -29,7 +29,13 @@ def default_cache_dir() -> Path:
 def cache_key(node_type: str, params: dict[str, Any], inputs: dict[str, Any], backend: str) -> str:
     """Stable digest of everything that can change a node's result."""
     blob = json.dumps(
-        {"v": CACHE_VERSION, "type": node_type, "params": params, "inputs": inputs, "backend": backend},
+        {
+            "v": CACHE_VERSION,
+            "type": node_type,
+            "params": params,
+            "inputs": inputs,
+            "backend": backend,
+        },
         sort_keys=True,
         ensure_ascii=False,
         default=str,
@@ -63,7 +69,9 @@ class NodeCache:
         self.hits += 1
         return entry
 
-    def put(self, key: str, outputs: dict[str, Any], tokens: int = 0, model: str | None = None) -> None:
+    def put(
+        self, key: str, outputs: dict[str, Any], tokens: int = 0, model: str | None = None
+    ) -> None:
         payload = {
             "outputs": outputs,
             "tokens": tokens,

@@ -56,17 +56,23 @@ class FakeClient:
             raise RuntimeError("boom")
         async with self._track(text):
             return ChatResult(
-                model=model, content=self.reply(text), usage=Usage(prompt_tokens=4, completion_tokens=6)
+                model=model,
+                content=self.reply(text),
+                usage=Usage(prompt_tokens=4, completion_tokens=6),
             )
 
-    async def stream_chat(self, model: str, messages: list[dict[str, Any]], **kw: Any) -> AsyncIterator[str]:
+    async def stream_chat(
+        self, model: str, messages: list[dict[str, Any]], **kw: Any
+    ) -> AsyncIterator[str]:
         text = self._last(messages)
         self.calls.append(("stream", text))
         async with self._track(text):
             for word in self.reply(text).split(" "):
                 yield word + " "
 
-    async def chat_json(self, model: str, messages: list[dict[str, Any]], schema: Any, **kw: Any) -> Any:
+    async def chat_json(
+        self, model: str, messages: list[dict[str, Any]], schema: Any, **kw: Any
+    ) -> Any:
         text = self._last(messages)
         self.calls.append(("json", text))
         async with self._track(text):
@@ -78,9 +84,13 @@ class FakeClient:
         async with self._track("embed"):
             # one axis per distinct first word: identical first words are duplicates
             words = sorted({t.split()[0].lower() for t in texts if t.split()})
-            return [[1.0 if (t.split() or [""])[0].lower() == w else 0.0 for w in words] for t in texts]
+            return [
+                [1.0 if (t.split() or [""])[0].lower() == w else 0.0 for w in words] for t in texts
+            ]
 
-    async def rerank(self, model: str, query: str, passages: list[str], top_n: int | None = None) -> list[RerankResult]:
+    async def rerank(
+        self, model: str, query: str, passages: list[str], top_n: int | None = None
+    ) -> list[RerankResult]:
         self.calls.append(("rerank", query))
         async with self._track("rerank"):
             scored = sorted(

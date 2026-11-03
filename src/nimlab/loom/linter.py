@@ -15,13 +15,13 @@ from typing import Any
 
 from . import expr as _expr
 from . import template as _tpl
+from .datatypes import compat
 from .errors import ExprError
 from .functions import get_function
 from .jsonschema_lite import validate
 from .nodes import MAP_STEP_FORBIDDEN, http_allowlist
 from .registry import NodeType, get_node_type, node_types, ports_for
 from .schema import Edge, Node, Pipeline, find_cycle
-from .datatypes import compat
 
 __all__ = ["Issue", "LintReport", "lint"]
 
@@ -84,18 +84,27 @@ class _Linter:
         self.http_allow = http_allow
         self.types: dict[str, NodeType] = {}
 
-    def add(self, sev: str, code: str, msg: str, node: str | None = None, port: str | None = None) -> None:
+    def add(
+        self, sev: str, code: str, msg: str, node: str | None = None, port: str | None = None
+    ) -> None:
         self.issues.append(Issue(sev, code, msg, node, port))
 
     # ------------------------------------------------------------------ params
-    def check_params(self, node_id: str, ntype: NodeType, params: dict[str, Any], prefix: str = "") -> None:
+    def check_params(
+        self, node_id: str, ntype: NodeType, params: dict[str, Any], prefix: str = ""
+    ) -> None:
         for key in ntype.required:
             if key not in params or params[key] in (None, ""):
                 self.add("error", "param", f"{prefix}missing required parameter {key!r}", node_id)
         for key, value in params.items():
             spec = ntype.params.get(key)
             if spec is None:
-                self.add("warning", "param", f"{prefix}unknown parameter {key!r} for {ntype.name}", node_id)
+                self.add(
+                    "warning",
+                    "param",
+                    f"{prefix}unknown parameter {key!r} for {ntype.name}",
+                    node_id,
+                )
                 continue
             for problem in validate(value, {k: v for k, v in spec.items() if k != "default"}, key):
                 self.add("error", "param", f"{prefix}{problem}", node_id)
@@ -115,8 +124,17 @@ class _Linter:
                 for name in _tpl.filters_used(text):
                     if name not in _tpl.FILTERS:
                         self.add("error", "template", f"{prefix}unknown filter {name!r}", node_id)
-        if ntype.name == "python_fn" and params.get("fn") and get_function(str(params["fn"])) is None:
-            self.add("error", "unknown-function", f"{prefix}function {params['fn']!r} is not registered", node_id)
+        if (
+            ntype.name == "python_fn"
+            and params.get("fn")
+            and get_function(str(params["fn"])) is None
+        ):
+            self.add(
+                "error",
+                "unknown-function",
+                f"{prefix}function {params['fn']!r} is not registered",
+                node_id,
+            )
         if ntype.name == "http_get" and not self.http_allow:
             self.add(
                 "warning", "http-disabled",
@@ -132,7 +150,12 @@ class _Linter:
         try:
             st = get_node_type(str(step.get("type") or ""))
         except Exception:
-            self.add("error", "unknown-type", f"map step: unknown node type {step.get('type')!r}", node_id)
+            self.add(
+                "error",
+                "unknown-type",
+                f"map step: unknown node type {step.get('type')!r}",
+                node_id,
+            )
             return
         if st.name in MAP_STEP_FORBIDDEN:
             self.add("error", "param", f"map step cannot be a {st.name!r} node", node_id)
@@ -150,13 +173,21 @@ class _Linter:
                 ntype = get_node_type(node.type)
             except Exception:
                 known = ", ".join(sorted(t.name for t in node_types()))
-                self.add("error", "unknown-type", f"unknown node type {node.type!r} (known: {known})", node.id)
+                self.add(
+                    "error",
+                    "unknown-type",
+                    f"unknown node type {node.type!r} (known: {known})",
+                    node.id,
+                )
                 continue
             self.types[node.id] = ntype
             self.check_params(node.id, ntype, node.params)
             ins, outs = ports_for(ntype, node.params)
             node_ports[node.id] = (ins, outs)
-            self.ports[node.id] = {"inputs": [p.to_dict() for p in ins], "outputs": [p.to_dict() for p in outs]}
+            self.ports[node.id] = {
+                "inputs": [p.to_dict() for p in ins],
+                "outputs": [p.to_dict() for p in outs],
+            }
             self.check_defaults(node, ins)
         for edge in self.p.edges:
             self.check_edge(edge, node_ports)
@@ -171,7 +202,9 @@ class _Linter:
         names = {p.name for p in ins}
         for key in node.defaults:
             if key not in names:
-                self.add("warning", "unused-default", f"default for unknown input {key!r}", node.id, key)
+                self.add(
+                    "warning", "unused-default", f"default for unknown input {key!r}", node.id, key
+                )
 
     def check_edge(self, edge: Edge, node_ports: dict[str, tuple[list[Any], list[Any]]]) -> None:
         if edge.src_node not in node_ports or edge.dst_node not in node_ports:
@@ -180,10 +213,22 @@ class _Linter:
         ins = {p.name: p for p in node_ports[edge.dst_node][0]}
         ok = True
         if edge.src_port not in outs:
-            self.add("error", "unknown-port", f"cable from unknown output {edge.source!r}", edge.src_node, edge.src_port)
+            self.add(
+                "error",
+                "unknown-port",
+                f"cable from unknown output {edge.source!r}",
+                edge.src_node,
+                edge.src_port,
+            )
             ok = False
         if edge.dst_port not in ins:
-            self.add("error", "unknown-port", f"cable into unknown input {edge.target!r}", edge.dst_node, edge.dst_port)
+            self.add(
+                "error",
+                "unknown-port",
+                f"cable into unknown input {edge.target!r}",
+                edge.dst_node,
+                edge.dst_port,
+            )
             ok = False
         if not ok:
             return
@@ -204,9 +249,21 @@ class _Linter:
         for port in ins:
             edges = [e for e in self.p.incoming(node.id) if e.dst_port == port.name]
             if len(edges) > 1 and not port.multi:
-                self.add("error", "multiple-edges", f"input {port.name!r} has {len(edges)} cables; only one is allowed", node.id, port.name)
+                self.add(
+                    "error",
+                    "multiple-edges",
+                    f"input {port.name!r} has {len(edges)} cables; only one is allowed",
+                    node.id,
+                    port.name,
+                )
             if not edges and port.name not in node.defaults and port.required:
-                self.add("error", "unbound", f"unknown variable: input {port.name!r} has no cable and no default", node.id, port.name)
+                self.add(
+                    "error",
+                    "unbound",
+                    f"unknown variable: input {port.name!r} has no cable and no default",
+                    node.id,
+                    port.name,
+                )
         # dotted paths ({{plan.items}}) need a structured source
         for src in ntype.input_vars:
             text: Any = node.params
@@ -221,9 +278,22 @@ class _Linter:
                 for e in self.p.incoming(node.id):
                     if e.dst_port != head or e.src_node not in self.ports:
                         continue
-                    src_t = next((o["type"] for o in self.ports[e.src_node]["outputs"] if o["name"] == e.src_port), "any")
+                    src_t = next(
+                        (
+                            o["type"]
+                            for o in self.ports[e.src_node]["outputs"]
+                            if o["name"] == e.src_port
+                        ),
+                        "any",
+                    )
                     if src_t in ("text", "number", "bool", "vectors"):
-                        self.add("warning", "path-type", f"{{{{{path}}}}}: {e.source} is {src_t}, not structured", node.id, head)
+                        self.add(
+                            "warning",
+                            "path-type",
+                            f"{{{{{path}}}}}: {e.source} is {src_t}, not structured",
+                            node.id,
+                            head,
+                        )
 
     def check_names(self) -> None:
         for kind in ("input", "output"):
@@ -233,7 +303,12 @@ class _Linter:
                     continue
                 name = str(n.params.get("name") or n.id)
                 if name in seen:
-                    self.add("error", "duplicate-name", f"{kind} name {name!r} is also used by {seen[name]!r}", n.id)
+                    self.add(
+                        "error",
+                        "duplicate-name",
+                        f"{kind} name {name!r} is also used by {seen[name]!r}",
+                        n.id,
+                    )
                 seen[name] = n.id
 
     def check_reachability(self) -> None:

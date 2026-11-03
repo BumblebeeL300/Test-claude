@@ -69,7 +69,7 @@ def type_of(value: Any) -> str:
     return "any"
 
 
-def coerce(value: Any, target: str) -> Any:  # noqa: C901
+def coerce(value: Any, target: str) -> Any:
     """Convert ``value`` to the port type ``target`` (raises :class:`InputError`)."""
     if target in ("any", "vectors") or value is None:
         return value

@@ -102,14 +102,25 @@ def test_param_checks() -> None:
     pipe = make(
         [
             inp(),
-            {"id": "p", "type": "prompt", "params": {"template": "{{q}}", "temperature": 9, "color": "red"}},
+            {
+                "id": "p",
+                "type": "prompt",
+                "params": {"template": "{{q}}", "temperature": 9, "color": "red"},
+            },
             {"id": "b", "type": "branch", "params": {"condition": "value.real"}},
             {"id": "t", "type": "template", "params": {"template": "{{q | shout}}"}},
             {"id": "f", "type": "python_fn", "params": {"fn": "no_such_function"}},
             {"id": "r", "type": "regex", "params": {}},
             out(),
         ],
-        [("q.value", "p.q"), ("p.text", "b.value"), ("q.value", "t.q"), ("t.text", "f.value"), ("f.result", "r.text"), ("b.then", "out.value")],
+        [
+            ("q.value", "p.q"),
+            ("p.text", "b.value"),
+            ("q.value", "t.q"),
+            ("t.text", "f.value"),
+            ("f.result", "r.text"),
+            ("b.then", "out.value"),
+        ],
     )
     report = lint(pipe)
     text = " | ".join(i.format() for i in report.issues)
@@ -124,7 +135,9 @@ def test_param_checks() -> None:
 def test_unknown_node_type_and_schema_errors() -> None:
     report = lint({"name": "x", "nodes": [{"id": "a", "type": "teleporter"}]})
     assert "unknown-type" in codes(report, "error")
-    broken = lint({"name": "x", "nodes": [{"id": "a", "type": "input"}, {"id": "a", "type": "input"}]})
+    broken = lint(
+        {"name": "x", "nodes": [{"id": "a", "type": "input"}, {"id": "a", "type": "input"}]}
+    )
     assert codes(broken) == ["schema"] and "duplicate node id" in broken.issues[0].message
 
 
@@ -138,7 +151,11 @@ def test_path_into_scalar_warns() -> None:
 
 def test_http_get_warns_until_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
     pipe = make(
-        [inp("u", "https://example.com"), {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}}, out()],
+        [
+            inp("u", "https://example.com"),
+            {"id": "g", "type": "http_get", "params": {"url": "{{u}}"}},
+            out(),
+        ],
         [("u.value", "g.u"), ("g.body", "out.value")],
     )
     assert codes(lint(pipe)) == ["http-disabled"]
@@ -148,7 +165,13 @@ def test_http_get_warns_until_allowed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_duplicate_io_names_and_unused_defaults() -> None:
     pipe = make(
-        [inp("a", "x"), inp("b", "y"), prompt("p", "{{a}}{{b}}"), out("o1", "same"), out("o2", "same")],
+        [
+            inp("a", "x"),
+            inp("b", "y"),
+            prompt("p", "{{a}}{{b}}"),
+            out("o1", "same"),
+            out("o2", "same"),
+        ],
         [("a.value", "p.a"), ("b.value", "p.b"), ("p.text", "o1.value"), ("p.text", "o2.value")],
     )
     pipe.node("p").defaults["zzz"] = 1
@@ -160,7 +183,11 @@ def test_map_step_is_checked() -> None:
     pipe = make(
         [
             {"id": "i", "type": "input", "params": {"type": "list", "default": ["a"]}},
-            {"id": "m", "type": "map", "params": {"step": {"type": "branch", "params": {"condition": "value"}}}},
+            {
+                "id": "m",
+                "type": "map",
+                "params": {"step": {"type": "branch", "params": {"condition": "value"}}},
+            },
             out(),
         ],
         [("i.value", "m.items"), ("m.results", "out.value")],

@@ -4,14 +4,16 @@ import json
 
 import pytest
 
-from nimlab.loom import CycleError, Pipeline, PipelineError, SCHEMA_VERSION
+from nimlab.loom import SCHEMA_VERSION, CycleError, Pipeline, PipelineError
 from nimlab.loom.schema import find_cycle, topo_levels
 
 from .conftest import inp, make, out, prompt
 
 
 def test_roundtrip_json(tmp_path) -> None:
-    pipe = make([inp(), prompt("a", "Say {{q}}"), out()], [("q.value", "a.q"), ("a.text", "out.value")])
+    pipe = make(
+        [inp(), prompt("a", "Say {{q}}"), out()], [("q.value", "a.q"), ("a.text", "out.value")]
+    )
     path = pipe.save(tmp_path / "p.json")
     again = Pipeline.load(path)
     assert again.to_data() == pipe.to_data()
@@ -33,10 +35,23 @@ def test_defaults_and_positions() -> None:
     "data, message",
     [
         ({"name": "x", "version": 99, "nodes": []}, "unsupported pipeline schema version"),
-        ({"name": "x", "nodes": [{"id": "a", "type": "input"}, {"id": "a", "type": "output"}]}, "duplicate node id"),
+        (
+            {"name": "x", "nodes": [{"id": "a", "type": "input"}, {"id": "a", "type": "output"}]},
+            "duplicate node id",
+        ),
         ({"name": "x", "nodes": [{"id": "1bad", "type": "input"}]}, "invalid node id"),
-        ({"name": "x", "nodes": [{"id": "a", "type": "output"}], "edges": [{"from": "a.x", "to": "ghost.value"}]}, "unknown node"),
-        ({"name": "x", "nodes": [], "edges": [{"from": "nope", "to": "a.b"}]}, "expected 'node.port'"),
+        (
+            {
+                "name": "x",
+                "nodes": [{"id": "a", "type": "output"}],
+                "edges": [{"from": "a.x", "to": "ghost.value"}],
+            },
+            "unknown node",
+        ),
+        (
+            {"name": "x", "nodes": [], "edges": [{"from": "nope", "to": "a.b"}]},
+            "expected 'node.port'",
+        ),
         ({"name": "x", "nodes": [{"id": "a", "type": "input", "bogus": 1}]}, "bogus"),
         ({"name": "x", "nodes": [{"id": "a", "type": "input", "retries": -1}]}, "retries"),
         ({"name": "", "nodes": []}, "name"),
@@ -77,7 +92,13 @@ def test_self_loop_is_a_cycle() -> None:
 def test_topological_levels_group_parallel_nodes() -> None:
     pipe = make(
         [inp(), prompt("a", "{{q}}"), prompt("b", "{{q}}"), prompt("c", "{{a}} {{b}}"), out()],
-        [("q.value", "a.q"), ("q.value", "b.q"), ("a.text", "c.a"), ("b.text", "c.b"), ("c.text", "out.value")],
+        [
+            ("q.value", "a.q"),
+            ("q.value", "b.q"),
+            ("a.text", "c.a"),
+            ("b.text", "c.b"),
+            ("c.text", "out.value"),
+        ],
     )
     levels = topo_levels(pipe)
     assert levels == [["q"], ["a", "b"], ["c"], ["out"]]

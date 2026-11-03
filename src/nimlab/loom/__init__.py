@@ -23,8 +23,8 @@ from .errors import (
     PipelineError,
     TemplateError,
 )
-from .expr import evaluate as evaluate_expression
 from .export import to_mermaid, to_python
+from .expr import evaluate as evaluate_expression
 from .functions import list_functions, register_function
 from .library import list_pipelines, load_pipeline, new_pipeline
 from .linter import Issue, LintReport, lint

@@ -229,7 +229,7 @@ export async function mount(el, params = {}) {
     }
     const led = h('span.lm-led', { title: 'No problems' });
     const lcdText = h('div.lm-lcd-t'), lcdMeta = h('div.lm-lcd-m');
-    const el = h('div.lm-node', { 'data-id': n.id, 'data-type': n.type, style: { '--cat': `var(--c-${CAT[t?.category] || 'core'})`, height: nodeH(rows) + 'px' }, tabindex: '-1' },
+    const el = h('div.lm-node', { 'data-id': n.id, 'data-type': n.type, style: { '--cat': `var(--c-${CAT[t?.category] || 'core'})`, height: nodeH(rows) + 'px' }, tabindex: '0', role: 'group', 'aria-label': `${t?.title || n.type} module ${n.label || n.id}` },
       h('div.lm-head', h('span.lm-glyph', glyphOf(n)), h('span.lm-ttl', n.label || n.id), h('span.lm-kind.mono', t?.title || n.type), led),
       h('div.lm-ports', rowsEl),
       h('div.lm-lcd', lcdText, lcdMeta),
@@ -419,7 +419,7 @@ export async function mount(el, params = {}) {
     ui.canvas.focus({ preventScroll: true });
     const start = { x: ev.clientX, y: ev.clientY };
     const items = [...sel].map((i) => { const n = nodeById(i); return n && { n, x: n.pos.x, y: n.pos.y }; }).filter(Boolean);
-    drag = { kind: 'move', start, items, moved: false, pid: ev.pointerId };
+    drag = { kind: 'move', start, items, moved: false, pid: ev.pointerId, id };
     nodeEl.setPointerCapture?.(ev.pointerId);
   }
   function startLink(ev, id, jack) {
@@ -511,7 +511,7 @@ export async function mount(el, params = {}) {
     drag = null;
     if (d.kind === 'move') {
       for (const it of d.items) NV.get(it.n.id)?.el.classList.remove('dragging');
-      if (d.moved) { flush(); commit('move'); } else if (!ev.shiftKey && !ev.metaKey && !ev.ctrlKey && sel.size > 1) select([d.items.find((i) => ev.target.closest('.lm-node')?.dataset.id === i.n.id)?.n.id || d.items[0].n.id]);
+      if (d.moved) { flush(); commit('move'); } else if (!ev.shiftKey && !ev.metaKey && !ev.ctrlKey && sel.size > 1) select([d.id]);
     } else if (d.kind === 'pan') {
       ui.canvas.classList.remove('panning');
       if (!d.moved && !ev.target.closest('.lm-node')) { selectNone(); renderInspector(); }
@@ -533,6 +533,7 @@ export async function mount(el, params = {}) {
   on(ui.canvas, 'wheel', onWheel, { passive: false });
   on(ui.canvas, 'dragover', (e) => { if (e.dataTransfer?.types.includes('text/x-loom-type')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } });
   on(ui.canvas, 'drop', (e) => { const t = e.dataTransfer?.getData('text/x-loom-type'); if (!t) return; e.preventDefault(); const p = toWorld(e.clientX, e.clientY); addNode(t, p.x - W / 2, p.y - 20); });
+  on(ui.nodes, 'keydown', (e) => { const nd = e.target.closest?.('.lm-node'); if (nd && e.target === nd && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); select([nd.dataset.id], e.shiftKey); } });
   on(ui.nodes, 'dblclick', (e) => { const nd = e.target.closest('.lm-node'); if (nd && !e.target.closest('.lm-jack')) { select([nd.dataset.id]); ui.insp.querySelector('input,textarea,select')?.focus(); } });
 
   // ---------------------------------------------------------------- keyboard
@@ -576,8 +577,8 @@ export async function mount(el, params = {}) {
   function fieldRow(label, control, hint, required) {
     return h('label.lm-f', h('span.lm-fl', label, required && h('i.req', ' *')), control, hint && h('small.lm-fh', hint));
   }
-  function schemaField(key, spec, value, set, ctxNode) {
-    const label = spec.title || key; const hint = spec.description; const req = false;
+  function schemaField(key, spec, value, set) {
+    const label = spec.title || key; const hint = spec.description;
     const setv = (v) => set(v);
     if (spec.format === 'step') return stepField(key, spec, value ?? spec.default, set);
     if (spec.type === 'boolean') {
@@ -642,7 +643,7 @@ export async function mount(el, params = {}) {
     n.params = n.params || {};
     if (value === undefined || value === '' || (Array.isArray(value) && !value.length && key === 'models')) delete n.params[key]; else n.params[key] = value;
     const t = tOf(n); const dynamic = (t.input_vars || []).some((s) => s.path.split('.')[0] === key) || n.type === 'input' || n.type === 'map';
-    if (dynamic) { const v = renderNode(n); rerouteNode(n.id); drawEdgesIfNeeded(); refreshInspectorDefaults(n); } else paintLcd(n.id);
+    if (dynamic) { renderNode(n); rerouteNode(n.id); refreshInspectorDefaults(n); } else paintLcd(n.id);
     paintLcd(n.id); commit(`edit ${n.id}.${key}`, `p:${n.id}.${key}`);
   }
   function refreshInspectorDefaults(n) { const box = ui.insp.querySelector('.lm-defaults'); if (box) box.replaceWith(defaultsBox(n)); }

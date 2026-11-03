@@ -133,3 +133,4 @@
 
 @media (max-width: 1180px) { .lm { grid-template-columns: 196px minmax(0, 1fr) 280px; } .lm-title { max-width: 180px; } .lm-btn span { display: none; } .lm-run span { display: inline; } }
 @media (max-width: 900px) { .lm { grid-template-columns: minmax(0, 1fr); grid-template-rows: 48px minmax(0, 1fr) 0 0; grid-template-areas: "bar" "canvas" "pal" "insp"; } .lm-palette, .lm-insp { display: none; } }
+.lm-node:focus-visible { outline: 2px solid var(--cat); outline-offset: 3px; border-radius: 12px; }

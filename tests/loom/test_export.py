@@ -28,7 +28,11 @@ def test_mermaid_structure() -> None:
 
 def test_mermaid_escapes_quotes_and_dashes() -> None:
     pipe = make(
-        [inp("in-1"), {"id": "x", "type": "template", "label": 'say "hi"', "params": {"template": "{{a}}"}}, out()],
+        [
+            inp("in-1"),
+            {"id": "x", "type": "template", "label": 'say "hi"', "params": {"template": "{{a}}"}},
+            out(),
+        ],
         [("in-1.value", "x.a"), ("x.text", "out.value")],
     )
     text = to_mermaid(pipe)
@@ -63,7 +67,12 @@ def test_exported_script_runs_in_mock_mode(name: str, tmp_path: Path) -> None:
 def test_exported_script_matches_the_engine(tmp_path: Path) -> None:
     """Same pipeline, same deterministic mock backend: identical outputs from engine and script."""
     pipe = make(
-        [inp("topic", "tea"), prompt("a", "About {{topic}}"), {"id": "t", "type": "template", "params": {"template": "<{{x}}>"}}, out()],
+        [
+            inp("topic", "tea"),
+            prompt("a", "About {{topic}}"),
+            {"id": "t", "type": "template", "params": {"template": "<{{x}}>"}},
+            out(),
+        ],
         [("topic.value", "a.topic"), ("a.text", "t.x"), ("t.text", "out.value")],
     )
     import asyncio
@@ -81,7 +90,10 @@ def test_exported_script_matches_the_engine(tmp_path: Path) -> None:
 
 
 def test_exported_script_reports_missing_inputs(tmp_path: Path) -> None:
-    pipe = make([{"id": "q", "type": "input", "params": {"type": "string"}}, out()], [("q.value", "out.value")])
+    pipe = make(
+        [{"id": "q", "type": "input", "params": {"type": "string"}}, out()],
+        [("q.value", "out.value")],
+    )
     script = tmp_path / "p.py"
     script.write_text(to_python(pipe), encoding="utf-8")
     proc = subprocess.run(

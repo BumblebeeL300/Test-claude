@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "name": "meeting-actions",
+  "title": "Meeting notes to action items",
+  "description": "Pull action items out of raw meeting notes with a JSON schema, then format them as a checklist.",
+  "nodes": [
+    {
+      "id": "notes",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "Ana will draft the launch email by Friday. Bo to book the venue. Everyone reviews the budget before Tuesday.",
+        "description": "Raw meeting notes"
+      },
+      "pos": {"x": 40, "y": 70}
+    },
+    {
+      "id": "extract",
+      "type": "json",
+      "label": "Extract actions",
+      "params": {
+        "template": "List every action item in these meeting notes.\n\nNotes:\n{{notes}}",
+        "role": "fast",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {"owner": {"type": "string"}, "task": {"type": "string"}},
+                "required": ["owner", "task"]
+              }
+            }
+          },
+          "required": ["actions"]
+        }
+      },
+      "pos": {"x": 340, "y": 40}
+    },
+    {"id": "list", "type": "python_fn", "label": "Actions", "params": {"fn": "get_field", "args": {"field": "actions"}}, "pos": {"x": 640, "y": 70}},
+    {
+      "id": "checklist",
+      "type": "map",
+      "label": "Format each",
+      "params": {
+        "step": {"type": "template", "params": {"template": "[ ] {{item.owner}}: {{item.task}}"}},
+        "concurrency": 8
+      },
+      "pos": {"x": 940, "y": 60}
+    },
+    {"id": "lines", "type": "python_fn", "label": "Join lines", "params": {"fn": "join_lines"}, "pos": {"x": 1240, "y": 80}},
+    {"id": "result", "type": "output", "params": {"name": "checklist"}, "pos": {"x": 1540, "y": 90}}
+  ],
+  "edges": [
+    {"from": "notes.value", "to": "extract.notes"},
+    {"from": "extract.data", "to": "list.value"},
+    {"from": "list.result", "to": "checklist.items"},
+    {"from": "checklist.results", "to": "lines.value"},
+    {"from": "lines.result", "to": "result.value"}
+  ]
+}

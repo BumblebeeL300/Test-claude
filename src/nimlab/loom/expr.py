@@ -72,9 +72,7 @@ def _parse(source: str) -> ast.expr:
         tree = ast.parse(source.strip(), mode="eval")
     except SyntaxError as exc:
         raise ExprError(f"syntax error: {exc.msg} (column {exc.offset or 0})") from exc
-    count = 0
-    for node in ast.walk(tree):
-        count += 1
+    for count, node in enumerate(ast.walk(tree), 1):
         if count > MAX_NODES:
             raise ExprError("expression is too complex")
         _validate(node)
@@ -129,7 +127,7 @@ class _Eval:
     def __init__(self, variables: Mapping[str, Any]) -> None:
         self.vars = variables
 
-    def visit(self, node: ast.expr) -> Any:  # noqa: C901 - a flat dispatch is clearest here
+    def visit(self, node: ast.expr) -> Any:
         if isinstance(node, ast.Constant):
             return node.value
         if isinstance(node, ast.Name):
@@ -158,7 +156,7 @@ class _Eval:
             return self._binop(node)
         if isinstance(node, ast.Compare):
             left = self.visit(node.left)
-            for op, comparator in zip(node.ops, node.comparators):
+            for op, comparator in zip(node.ops, node.comparators, strict=True):
                 right = self.visit(comparator)
                 try:
                     ok = _CMP[type(op)](left, right)
@@ -177,7 +175,7 @@ class _Eval:
                 raise ExprError("dict unpacking is not allowed")
             return {
                 self._hashable(self.visit(k)): self.visit(v)
-                for k, v in zip(node.keys, node.values)
+                for k, v in zip(node.keys, node.values, strict=True)
                 if k is not None
             }
         if isinstance(node, ast.Subscript):
@@ -195,11 +193,14 @@ class _Eval:
         op = type(node.op)
         if op not in _BIN:
             raise ExprError("unsupported operator")
-        if op is ast.Mult and isinstance(a, (str, list)) and isinstance(b, int):
-            if len(a) * max(b, 0) > MAX_SEQUENCE:
-                raise ExprError("result of '*' is too large")
-        elif op is ast.Mult and isinstance(b, (str, list)) and isinstance(a, int):
-            if len(b) * max(a, 0) > MAX_SEQUENCE:
+        if op is ast.Mult:
+            seq, times = (a, b) if isinstance(a, (str, list)) else (b, a)
+            too_big = (
+                isinstance(seq, (str, list))
+                and isinstance(times, int)
+                and len(seq) * max(times, 0) > MAX_SEQUENCE
+            )
+            if too_big:
                 raise ExprError("result of '*' is too large")
         try:
             return _BIN[op](a, b)
@@ -210,7 +211,9 @@ class _Eval:
         target = self.visit(node.value)
         sl = node.slice
         if isinstance(sl, ast.Slice):
-            parts = [self.visit(p) if p is not None else None for p in (sl.lower, sl.upper, sl.step)]
+            parts = [
+                self.visit(p) if p is not None else None for p in (sl.lower, sl.upper, sl.step)
+            ]
             key: Any = slice(*parts)
         else:
             key = self.visit(sl)

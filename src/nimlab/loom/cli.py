@@ -104,7 +104,9 @@ def run(
         elif kind == "node.skipped":
             err.print(f"[dim]skipped {node}: {escape(ev['reason'])}[/dim]")
         elif kind == "node.retry":
-            err.print(f"[yellow]retry[/yellow]   {node} (attempt {ev['attempt']}): {escape(ev['error'])}")
+            err.print(
+                f"[yellow]retry[/yellow]   {node} (attempt {ev['attempt']}): {escape(ev['error'])}"
+            )
         elif kind == "node.error":
             err.print(f"[red]failed[/red]  {node}: {escape(ev['error'])}")
 
@@ -210,7 +212,9 @@ def export(
 @app.command()
 def new(
     name: str = typer.Argument(..., help="Pipeline name."),
-    output: Path | None = typer.Option(None, "--output", "-o", help="File (default: ./<name>.json)."),
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="File (default: ./<name>.json)."
+    ),
     force: bool = typer.Option(False, "--force", help="Overwrite an existing file."),
 ) -> None:
     """Scaffold a starter pipeline (input -> prompt -> output)."""
@@ -230,3 +234,5 @@ def cache_clear() -> None:
     get_console().print(f"removed {n} cached result(s) from {default_cache_dir()}")
 
 
+if __name__ == "__main__":
+    app()

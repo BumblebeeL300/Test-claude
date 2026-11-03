@@ -35,11 +35,11 @@ from typing import Any
 from . import nodes as _nodes  # noqa: F401  (registers the built-in node types)
 from .cache import NodeCache, cache_key
 from .context import NodeContext, NodeResult, RunEnv
+from .datatypes import coerce, preview
 from .errors import InputError, NodeFailed, NodeTimeout, PipelineError
 from .nodes import http_allowlist
 from .registry import NodeType, apply_defaults, get_node_type, ports_for
 from .schema import Pipeline, topo_levels
-from .datatypes import coerce, preview
 
 __all__ = ["NodeReport", "RunResult", "run_pipeline"]
 
@@ -175,14 +175,18 @@ class _Engine:
         self.env = env
         self.cache = cache
         self.sem = asyncio.Semaphore(max(1, max_parallel))
-        self.reports: dict[str, NodeReport] = {n.id: NodeReport(n.id, n.type) for n in pipeline.nodes}
+        self.reports: dict[str, NodeReport] = {
+            n.id: NodeReport(n.id, n.type) for n in pipeline.nodes
+        }
         self.done: dict[str, asyncio.Event] = {n.id: asyncio.Event() for n in pipeline.nodes}
         self.failure: tuple[str, str] | None = None
         self.tasks: list[asyncio.Task[None]] = []
         self.backend = "mock" if getattr(env.client, "mock", False) else "live"
 
     # ------------------------------------------------------------------ inputs
-    def _collect(self, node_id: str, ntype: NodeType, params: dict[str, Any]) -> tuple[dict[str, Any], str | None]:
+    def _collect(
+        self, node_id: str, ntype: NodeType, params: dict[str, Any]
+    ) -> tuple[dict[str, Any], str | None]:
         """Resolve input jacks. Returns ``(inputs, skip_reason)``."""
         node = self.p.node(node_id)
         ins, _ = ports_for(ntype, params)
@@ -212,7 +216,9 @@ class _Engine:
                 any_live = True
             elif edges:
                 if port.required:
-                    dead_required = dead_required or f"input {port.name!r} was not produced upstream"
+                    dead_required = (
+                        dead_required or f"input {port.name!r} was not produced upstream"
+                    )
                 inputs[port.name] = None
             elif port.name in node.defaults:
                 inputs[port.name] = coerce(node.defaults[port.name], port.type)
@@ -277,9 +283,7 @@ class _Engine:
         )
         key = ""
         if use_cache and self.cache is not None:
-            key = cache_key(
-                node.type, params, {**node.defaults, **inputs}, self.backend
-            )
+            key = cache_key(node.type, params, {**node.defaults, **inputs}, self.backend)
             hit = self.cache.get(key)
             if hit is not None:
                 self._finish(report, hit.outputs, hit.tokens, hit.model, t0, cached=True)
@@ -468,4 +472,3 @@ def _safe(fn: Callable[[dict[str, Any]], None] | None) -> Callable[[dict[str, An
             _log.debug("event listener failed", exc_info=True)
 
     return emit
-

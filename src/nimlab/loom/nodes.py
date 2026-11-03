@@ -1,5 +1,6 @@
 """The built-in node types. Importing this module registers them."""
 
+# ruff: noqa: E501  (the registration table below is easiest to read one parameter per line)
 from __future__ import annotations
 
 import asyncio
@@ -14,6 +15,7 @@ from nimlab.core import chunk_text, cosine, default_registry
 from . import expr as _expr
 from . import template as _tpl
 from .context import NodeContext, NodeResult, estimate_tokens
+from .datatypes import coerce
 from .errors import LoomError
 from .functions import get_function, list_functions
 from .jsonschema_lite import schema_model
@@ -28,7 +30,6 @@ from .registry import (
 )
 from .schema import Node
 from .textops import check_http_url, dedupe_indices, http_allowlist, regex_apply
-from .datatypes import coerce
 
 __all__ = ["CATEGORIES", "MAP_STEP_FORBIDDEN", "http_allowlist"]
 
@@ -45,7 +46,13 @@ MAP_STEP_FORBIDDEN = frozenset({"map", "branch", "merge", "join", "input", "outp
 
 MAX_HTTP_BYTES = 1_000_000
 ROLES = ["chat", "reasoning", "coder", "vision", "fast"]
-INPUT_TYPES = {"string": "text", "number": "number", "boolean": "bool", "json": "json", "list": "list"}
+INPUT_TYPES = {
+    "string": "text",
+    "number": "number",
+    "boolean": "bool",
+    "json": "json",
+    "list": "list",
+}
 
 
 # --------------------------------------------------------------------------- helpers
@@ -146,9 +153,7 @@ async def _run_prompt(ctx: NodeContext) -> NodeResult:
         text = "".join(parts)
         tokens = prompt_tokens + estimate_tokens(text)
     else:
-        result = await client.chat(
-            model, messages, temperature=temperature, max_tokens=max_tokens
-        )
+        result = await client.chat(model, messages, temperature=temperature, max_tokens=max_tokens)
         text = result.content
         tokens = int(getattr(result.usage, "total_tokens", 0) or 0)
     return NodeResult({"text": text.strip()}, tokens, model)
@@ -182,9 +187,7 @@ async def _run_embed(ctx: NodeContext) -> NodeResult:
     if threshold > 0:
         unique = [texts[i] for i in dedupe_indices(vectors, threshold, cosine)]
     tokens = sum(estimate_tokens(t) for t in texts)
-    return NodeResult(
-        {"vectors": vectors, "unique": unique, "count": len(unique)}, tokens, model
-    )
+    return NodeResult({"vectors": vectors, "unique": unique, "count": len(unique)}, tokens, model)
 
 
 async def _run_rerank(ctx: NodeContext) -> NodeResult:
@@ -255,7 +258,9 @@ async def _run_python_fn(ctx: NodeContext) -> NodeResult:
     name = str(ctx.params.get("fn") or "")
     fn = get_function(name)
     if fn is None:
-        raise LoomError(f"function {name!r} is not registered (known: {', '.join(list_functions())})")
+        raise LoomError(
+            f"function {name!r} is not registered (known: {', '.join(list_functions())})"
+        )
     args = ctx.params.get("args") or {}
     result = fn(ctx.inputs.get("value"), **args)
     if inspect.isawaitable(result):
@@ -321,7 +326,9 @@ async def _run_map(ctx: NodeContext) -> NodeResult:
             inputs["item"] = item
             if item_port:
                 inputs[item_port] = item
-            sub_node = Node(id=ctx.node.id, type=st.name, params=step_params, defaults=ctx.node.defaults)
+            sub_node = Node(
+                id=ctx.node.id, type=st.name, params=step_params, defaults=ctx.node.defaults
+            )
             sub = NodeContext(sub_node, step_params, inputs, ctx.env, quiet=True)
             try:
                 res = await st.run(sub)
@@ -400,7 +407,7 @@ async def _run_atlas_ask(ctx: NodeContext) -> NodeResult:
 
     p = ctx.params
     db = p.get("db") or ctx.env.atlas_db or os.environ.get("NIMLAB_ATLAS_DB") or DEFAULT_DB_PATH
-    atlas = Atlas(ctx.client, db)
+    atlas = Atlas(ctx.client, os.fspath(db))
     try:
         answer = await atlas.ask(
             _tpl.stringify(ctx.inputs.get("question")).strip(),
@@ -412,7 +419,9 @@ async def _run_atlas_ask(ctx: NodeContext) -> NodeResult:
         with contextlib.suppress(Exception):
             atlas.close()
     cites = [c.model_dump(mode="json") for c in answer.citations]
-    tokens = int(sum(int(v.get("total_tokens", 0)) for v in answer.usage.values() if isinstance(v, dict)))
+    tokens = int(
+        sum(int(v.get("total_tokens", 0)) for v in answer.usage.values() if isinstance(v, dict))
+    )
     return NodeResult({"answer": answer.text, "citations": cites}, tokens, answer.model or None)
 
 

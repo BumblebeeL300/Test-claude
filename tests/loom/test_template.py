@@ -32,7 +32,11 @@ def test_non_variable_braces_are_left_alone() -> None:
 
 @pytest.mark.parametrize(
     "text, message",
-    [("{{missing}}", "unknown variable 'missing'"), ("{{a.b}}", "cannot read 'b'"), ("{{a | nope}}", "unknown filter")],
+    [
+        ("{{missing}}", "unknown variable 'missing'"),
+        ("{{a.b}}", "cannot read 'b'"),
+        ("{{a | nope}}", "unknown filter"),
+    ],
 )
 def test_errors(text, message) -> None:
     with pytest.raises(TemplateError, match=message):

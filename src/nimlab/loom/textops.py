@@ -14,6 +14,7 @@ from .errors import LoomError
 __all__ = ["check_http_url", "dedupe_indices", "http_allowlist", "regex_apply"]
 
 MAX_REGEX_TEXT = 1_000_000
+MAX_REGEX_PATTERN = 500
 _FLAGS = {"i": re.IGNORECASE, "m": re.MULTILINE, "s": re.DOTALL}
 
 
@@ -26,6 +27,8 @@ def regex_apply(
     replacement: str = "",
 ) -> dict[str, Any]:
     """Run a regex node: returns ``{"match", "matches", "found"}``."""
+    if len(pattern) > MAX_REGEX_PATTERN:
+        raise LoomError(f"regex pattern is too long ({len(pattern)} > {MAX_REGEX_PATTERN})")
     if len(text) > MAX_REGEX_TEXT:
         raise LoomError(f"text is too long for regex ({len(text)} > {MAX_REGEX_TEXT} characters)")
     bits = 0
@@ -63,7 +66,7 @@ def dedupe_indices(
 
 
 def http_allowlist(extra: Any = None) -> list[str]:
-    """Allowed hosts: ``NIMLAB_LOOM_HTTP_ALLOW`` (comma separated, ``*.example.com`` ok) + extras."""
+    """Allowed hosts: ``NIMLAB_LOOM_HTTP_ALLOW`` (comma separated, ``*.example.com``) + extras."""
     hosts = [h.strip().lower() for h in os.environ.get("NIMLAB_LOOM_HTTP_ALLOW", "").split(",")]
     hosts += [str(h).strip().lower() for h in (extra or [])]
     return [h for h in hosts if h]

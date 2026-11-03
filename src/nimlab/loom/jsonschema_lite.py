@@ -118,11 +118,11 @@ class JsonSchemaModel(BaseModel):
     loom_schema: ClassVar[dict[str, Any]] = {}
 
     @classmethod
-    def model_json_schema(cls, *args: Any, **kwargs: Any) -> dict[str, Any]:  # type: ignore[override]
+    def model_json_schema(cls, *args: Any, **kwargs: Any) -> dict[str, Any]:
         return cls.loom_schema
 
     @classmethod
-    def model_validate(cls, obj: Any, *args: Any, **kwargs: Any) -> Any:  # type: ignore[override]
+    def model_validate(cls, obj: Any, *args: Any, **kwargs: Any) -> Any:
         problems = validate(obj, cls.loom_schema)
         if problems:
             raise ValueError("; ".join(problems[:6]))

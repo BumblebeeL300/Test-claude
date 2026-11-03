@@ -6,6 +6,7 @@ policy) are copied into it verbatim, so it behaves like ``loom run``. Each depen
 concurrently; branches skip the untaken side exactly as the engine does.
 """
 
+# ruff: noqa: E501  (code generator: long f-string templates are clearer unsplit)
 from __future__ import annotations
 
 import inspect
@@ -97,7 +98,7 @@ def _indent(lines: list[str], n: int = 4) -> str:
     return "\n".join(pad + ln if ln else ln for ln in lines)
 
 
-def _body(type_name: str, node_id: str, p: dict[str, Any], defaults: dict[str, Any]) -> list[str]:  # noqa: C901
+def _body(type_name: str, node_id: str, p: dict[str, Any], defaults: dict[str, Any]) -> list[str]:
     """Python statements implementing one node (variables: ``client``, ``i``)."""
     if type_name == "input":
         return [f"return {{'value': INPUTS[{(p.get('name') or node_id)!r}]}}"]
@@ -214,7 +215,7 @@ def _node_function(n: Any) -> str:
         step = n.params.get("step") or {}
         st = get_node_type(str(step.get("type") or "prompt"))
         sp = dict(step.get("params") or {})
-        sins, souts = ports_for(st, sp)
+        _, souts = ports_for(st, sp)
         item_port = next((q.name for q in st.inputs if q.required), None)
         primary = souts[0].name if souts else "text"
         step_fn = (
@@ -249,7 +250,7 @@ def _node_function(n: Any) -> str:
     return f"async def n_{fid}(client, i):{doc}\n" + _indent(body) + "\n"
 
 
-_PRELUDE = '''
+_PRELUDE = """
 import argparse
 import asyncio
 import inspect
@@ -280,7 +281,7 @@ class ExprError(LoomError):
 
 class InputError(LoomError):
     pass
-'''
+"""
 
 _HELPERS = '''
 def pick_model(model, role):
@@ -344,7 +345,7 @@ async def http_fetch(url, timeout, max_bytes):
             return bytes(body[:max_bytes]).decode("utf-8", errors="replace"), resp.status_code
 '''
 
-_RUNNER = '''
+_RUNNER = """
 def collect(nid, state, skipped):
     spec = SPEC[nid]
     inputs, dead_required, live, wired = {}, None, False, False
@@ -429,7 +430,7 @@ INPUTS: dict[str, Any] = {}
 
 if __name__ == "__main__":
     asyncio.run(main())
-'''
+"""
 
 
 def to_python(pipeline: Pipeline) -> str:
@@ -469,7 +470,10 @@ def to_python(pipeline: Pipeline) -> str:
         'Edit the node functions freely; the helpers below the line are copied from nimlab.loom."""',
         "from __future__ import annotations\n",
         _PRELUDE.strip("\n"),
-        "\n# " + "-" * 70 + "\n# helpers copied from nimlab.loom (templates, safe expressions, types)\n# " + "-" * 70,
+        "\n# "
+        + "-" * 70
+        + "\n# helpers copied from nimlab.loom (templates, safe expressions, types)\n# "
+        + "-" * 70,
         _module_source(_template),
         _module_source(_expr),
         _module_source(_datatypes),

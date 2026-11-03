@@ -110,7 +110,8 @@ class Pipeline(BaseModel):
     def _check_version(cls, v: int) -> int:
         if v < 1 or v > SCHEMA_VERSION:
             raise ValueError(
-                f"unsupported pipeline schema version {v} (this Loom reads versions 1..{SCHEMA_VERSION})"
+                f"unsupported pipeline schema version {v} "
+                f"(this Loom reads versions 1..{SCHEMA_VERSION})"
             )
         return v
 
@@ -131,7 +132,9 @@ class Pipeline(BaseModel):
         for edge in self.edges:
             for end in (edge.src_node, edge.dst_node):
                 if end not in seen:
-                    raise ValueError(f"edge {edge.source} -> {edge.target} refers to unknown node {end!r}")
+                    raise ValueError(
+                        f"edge {edge.source} -> {edge.target} refers to unknown node {end!r}"
+                    )
         return self
 
     # ------------------------------------------------------------------ helpers

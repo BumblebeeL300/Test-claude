@@ -28,7 +28,12 @@ def test_list_shows_bundled() -> None:
     result = invoke("list", "--json")
     assert result.exit_code == 0
     items = json.loads(result.stdout)
-    assert {i["id"] for i in items} >= {"research-brief", "support-triage", "doc-to-quiz", "translate-backcheck"}
+    assert {i["id"] for i in items} >= {
+        "research-brief",
+        "support-triage",
+        "doc-to-quiz",
+        "translate-backcheck",
+    }
     assert all(i["readonly"] for i in items if i["source"] == "bundled")
     assert "research-brief" in invoke("list").output
 
@@ -49,7 +54,9 @@ def test_run_with_inputs_and_pretty_output() -> None:
 
 def test_run_reads_input_from_file(tmp_path: Path) -> None:
     (tmp_path / "doc.txt").write_text("Alpha beta gamma. " * 80)
-    result = invoke("run", "doc-to-quiz", "--mock", "--json", "--set", f"document=@{tmp_path / 'doc.txt'}")
+    result = invoke(
+        "run", "doc-to-quiz", "--mock", "--json", "--set", f"document=@{tmp_path / 'doc.txt'}"
+    )
     assert result.exit_code == 0, result.output
     assert json.loads(result.stdout)["outputs"]["question_count"] >= 1
 
@@ -86,7 +93,11 @@ def test_lint_clean_and_failing(tmp_path: Path) -> None:
         "nodes": [{"id": "a", "type": "prompt", "params": {"template": "{{who}}"}}],
     }))  # fmt: skip
     result = invoke("lint", str(bad))
-    assert result.exit_code == 1 and "unknown variable" in result.output and "no output" in result.output
+    assert (
+        result.exit_code == 1
+        and "unknown variable" in result.output
+        and "no output" in result.output
+    )
     data = json.loads(invoke("lint", str(bad), "--json").stdout)
     assert data["ok"] is False and data["errors"] >= 2
 
@@ -108,7 +119,9 @@ def test_lint_strict_fails_on_warnings(tmp_path: Path) -> None:
 
 def test_graph_prints_and_writes_mermaid(tmp_path: Path) -> None:
     result = invoke("graph", "translate-backcheck")
-    assert result.exit_code == 0 and result.stdout.startswith("%% Translate and back-check\nflowchart LR")
+    assert result.exit_code == 0 and result.stdout.startswith(
+        "%% Translate and back-check\nflowchart LR"
+    )
     target = tmp_path / "g.mmd"
     assert invoke("graph", "translate-backcheck", "-o", str(target)).exit_code == 0
     assert "flowchart LR" in target.read_text()
@@ -127,7 +140,11 @@ def test_new_scaffolds_a_runnable_pipeline(tmp_path: Path) -> None:
     result = invoke("new", "My Flow", "-o", str(target))
     assert result.exit_code == 0 and target.exists()
     data = json.loads(target.read_text())
-    assert data["name"] == "my-flow" and data["title"] == "My Flow" and all("pos" in n for n in data["nodes"])
+    assert (
+        data["name"] == "my-flow"
+        and data["title"] == "My Flow"
+        and all("pos" in n for n in data["nodes"])
+    )
     assert invoke("lint", str(target)).exit_code == 0
     run = invoke("run", str(target), "--mock", "--json")
     assert run.exit_code == 0 and json.loads(run.stdout)["outputs"]["answer"]
@@ -141,9 +158,9 @@ def test_new_defaults_to_the_working_directory() -> None:
 
 
 def test_cli_is_discoverable_as_a_nimlab_plugin() -> None:
-    from nimlab.cli import register_plugins
-
     import typer
+
+    from nimlab.cli import register_plugins
 
     target = typer.Typer()
     assert register_plugins(target, names=("loom",)) == ["loom"]

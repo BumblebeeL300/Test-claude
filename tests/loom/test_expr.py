@@ -8,7 +8,11 @@ from nimlab.loom import ExprError, evaluate_expression
 from nimlab.loom import expr as expr_module
 from nimlab.loom.expr import check, names
 
-V = {"value": {"category": "billing", "score": 7, "tags": ["a", "b"]}, "n": 5, "text": "Refund please"}
+V = {
+    "value": {"category": "billing", "score": 7, "tags": ["a", "b"]},
+    "n": 5,
+    "text": "Refund please",
+}
 
 
 @pytest.mark.parametrize(

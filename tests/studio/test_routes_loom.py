@@ -78,7 +78,10 @@ def test_node_types_have_param_schemas(c: TestClient) -> None:
     assert prompt["params"]["properties"]["template"]["format"] == "textarea"
     assert prompt["params"]["properties"]["role"]["enum"][0] == "chat"
     assert prompt["input_vars"][0] == {"path": "template", "kind": "template"}
-    assert by["branch"]["outputs"] == [{"name": "then", "type": "any"}, {"name": "else", "type": "any"}]
+    assert by["branch"]["outputs"] == [
+        {"name": "then", "type": "any"},
+        {"name": "else", "type": "any"},
+    ]
     assert by["branch"]["input_vars"] == [{"path": "condition", "kind": "expr"}]
     assert "flatten" in by["python_fn"]["params"]["properties"]["fn"]["enum"]
     assert by["http_get"]["enabled"] is False
@@ -105,16 +108,23 @@ def test_save_get_list_delete_roundtrip(c: TestClient, tmp_path: Path) -> None:
     assert mine["source"] == "user" and mine["readonly"] is False and mine["nodes"] == 3
     got = c.get("/api/loom/pipelines/my-flow").json()
     assert got["pipeline"]["nodes"][1]["params"]["template"] == "Say {{word}}"
-    again = c.put("/api/loom/pipelines/my-flow", json=simple("Shout {{word}}"))  # bare document works too
+    again = c.put(
+        "/api/loom/pipelines/my-flow", json=simple("Shout {{word}}")
+    )  # bare document works too
     assert again.status_code == 200 and again.json()["created"] is False
-    assert c.get("/api/loom/pipelines/my-flow").json()["pipeline"]["nodes"][1]["params"]["template"] == "Shout {{word}}"
+    assert (
+        c.get("/api/loom/pipelines/my-flow").json()["pipeline"]["nodes"][1]["params"]["template"]
+        == "Shout {{word}}"
+    )
     assert c.delete("/api/loom/pipelines/my-flow").json() == {"ok": True, "id": "my-flow"}
     assert c.get("/api/loom/pipelines/my-flow").status_code == 404
     assert c.delete("/api/loom/pipelines/my-flow").status_code == 404
 
 
 def test_save_rejects_bad_requests(c: TestClient) -> None:
-    assert c.put("/api/loom/pipelines/research-brief", json=simple()).status_code == 409  # bundled id
+    assert (
+        c.put("/api/loom/pipelines/research-brief", json=simple()).status_code == 409
+    )  # bundled id
     assert c.put("/api/loom/pipelines/Bad Id", json=simple()).status_code == 422
     assert c.put("/api/loom/pipelines/../x", json=simple()).status_code in (404, 405, 422)
     broken = c.put("/api/loom/pipelines/ok-id", json={"name": "x", "nodes": [{"id": "a"}]})
@@ -126,7 +136,9 @@ def test_save_rejects_bad_requests(c: TestClient) -> None:
     assert result["saved"] is True and result["errors"] >= 1
 
 
-def test_saved_pipelines_default_to_the_studio_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_saved_pipelines_default_to_the_studio_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("NIMLAB_LOOM_DIR", raising=False)
     studio = create_app(make_settings(tmp_path))
     studio.router.routes[0:0] = _routes_of(router)
@@ -140,9 +152,17 @@ def test_lint_endpoint(c: TestClient) -> None:
     clean = c.post("/api/loom/lint", json={"pipeline": simple()}).json()
     assert clean["ok"] is True and clean["issues"] == []
     assert clean["ports"]["a"]["inputs"] == [{"name": "word", "type": "any"}]
-    bad = c.post("/api/loom/lint", json=simple("Say {{word}} {{missing}}")).json()  # bare document also accepted
-    assert bad["ok"] is False and bad["issues"][0]["code"] == "unbound" and bad["issues"][0]["node"] == "a"
-    schema = c.post("/api/loom/lint", json={"pipeline": {"name": "x", "nodes": [{"id": "9", "type": "input"}]}}).json()
+    bad = c.post(
+        "/api/loom/lint", json=simple("Say {{word}} {{missing}}")
+    ).json()  # bare document also accepted
+    assert (
+        bad["ok"] is False
+        and bad["issues"][0]["code"] == "unbound"
+        and bad["issues"][0]["node"] == "a"
+    )
+    schema = c.post(
+        "/api/loom/lint", json={"pipeline": {"name": "x", "nodes": [{"id": "9", "type": "input"}]}}
+    ).json()
     assert schema["ok"] is False and schema["issues"][0]["code"] == "schema"
 
 
@@ -151,7 +171,9 @@ def test_export_endpoint(c: TestClient) -> None:
     assert mer["text"].startswith("%% ") and "flowchart LR" in mer["text"]
     py = c.post("/api/loom/export", json={"pipeline": simple(), "format": "python"}).json()
     compile(py["text"], "x.py", "exec")
-    assert c.post("/api/loom/export", json={"pipeline": simple(), "format": "pdf"}).status_code == 422
+    assert (
+        c.post("/api/loom/export", json={"pipeline": simple(), "format": "pdf"}).status_code == 422
+    )
 
 
 # ------------------------------------------------------------------ runs
@@ -167,14 +189,23 @@ def test_run_by_id_streams_engine_events(c: TestClient, app: FastAPI) -> None:
     end = next(e for e in run.events if e["type"] == "node.end" and e["data"]["node"] == "classify")
     assert end["data"]["preview"] and end["data"]["latency_ms"] >= 0 and "tokens" in end["data"]
     result = run.result
-    assert result["ok"] is True and result["outputs"]["reply"] and result["nodes"]["classify"]["status"] == "done"
+    assert (
+        result["ok"] is True
+        and result["outputs"]["reply"]
+        and result["nodes"]["classify"]["status"] == "done"
+    )
 
 
 def test_run_inline_pipeline_with_inputs(c: TestClient, app: FastAPI) -> None:
     res = c.post("/api/loom/run", json={"pipeline": simple(), "inputs": {"word": "zebra"}})
     run = wait(app, res.json()["run_id"])
     assert run.status == "done" and run.result["outputs"]["answer"].strip()
-    second = wait(app, c.post("/api/loom/run", json={"pipeline": simple(), "inputs": {"word": "zebra"}}).json()["run_id"])
+    second = wait(
+        app,
+        c.post("/api/loom/run", json={"pipeline": simple(), "inputs": {"word": "zebra"}}).json()[
+            "run_id"
+        ],
+    )
     assert second.result["cache_hits"] >= 1  # the on-disk cache is on for Studio runs
 
 
@@ -217,7 +248,9 @@ def _routes_of(r: Any) -> list[Any]:
     return list(scratch.router.routes[before:])
 
 
-def test_mounted_on_studio_uses_its_run_manager_and_sse(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_mounted_on_studio_uses_its_run_manager_and_sse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("NIMLAB_LOOM_CACHE", raising=False)
     studio = create_app(make_settings(tmp_path))
     studio.router.routes[0:0] = _routes_of(router)  # before the /api catch-all
