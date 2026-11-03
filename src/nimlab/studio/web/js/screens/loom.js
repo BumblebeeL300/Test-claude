@@ -340,8 +340,9 @@ export async function mount(el, params = {}) {
     const b = boundsOf(); const r = ui.canvas.getBoundingClientRect();
     if (!b || r.width < 50) { view = { x: 40, y: 30, z: 1 }; return applyView(); }
     const pad = 56, bw = b.x1 - b.x0, bh = b.y1 - b.y0;
-    const z = clamp(Math.min((r.width - pad * 2) / bw, (r.height - pad * 2) / bh), ZMIN, 1.15);
-    const next = { z, x: (r.width - bw * z) / 2 - b.x0 * z, y: (r.height - bh * z) / 2 - b.y0 * z };
+    // On a narrow canvas a whole-graph fit would be unreadably small: keep a legible floor and anchor to the left (pan for the rest).
+    const z = clamp(Math.max(Math.min((r.width - pad * 2) / bw, (r.height - pad * 2) / bh), 0.4), ZMIN, 1.15);
+    const next = { z, x: bw * z + pad * 2 > r.width ? pad / 2 - b.x0 * z : (r.width - bw * z) / 2 - b.x0 * z, y: (r.height - bh * z) / 2 - b.y0 * z };
     if (animate && !reduced()) { ui.world.classList.add('glide'); setTimeout(() => ui.world.classList.remove('glide'), 380); }
     view.x = next.x; view.y = next.y; view.z = next.z; applyView();
   }

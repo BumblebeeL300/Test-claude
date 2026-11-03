@@ -1,9 +1,10 @@
 # NIM Lab
 
-**Four applications built on NVIDIA NIM, sharing one async core.** NIM Lab is a Python monorepo that
+**Eight applications built on NVIDIA NIM, sharing one async core.** NIM Lab is a Python monorepo that
 shows what you can build when many open models are one API call away: a multi-model *council* that
-deliberates, a citation-verified *RAG* engine, an autonomous test-driven *coding agent*, and an *arena*
-that benchmarks models, ranks them with Elo and routes prompts to the best one. Everything runs
+deliberates, a citation-verified *RAG* engine, an autonomous test-driven *coding agent*, an *arena*
+that benchmarks models and routes prompts to the best one, a *vision* workbench (Prism), a *safety lab*
+(Sentinel), a *pipeline node editor* (Loom) and a *synthetic-dataset* refinery (Distill). Everything runs
 offline in a deterministic mock mode, so you can try it with no API key.
 
 [![CI](https://github.com/BumblebeeL300/Test-claude/actions/workflows/ci.yml/badge.svg)](https://github.com/BumblebeeL300/Test-claude/actions/workflows/ci.yml)
@@ -16,16 +17,21 @@ offline in a deterministic mock mode, so you can try it with no API key.
 
 ```mermaid
 flowchart TD
-    CLI["nimlab CLI<br/>doctor, models + app sub-commands"] --> Council & Atlas & Forge & Arena
+    CLI["nimlab CLI<br/>doctor, models + app sub-commands"] --> Council & Atlas & Forge & Arena & Prism & Sentinel & Loom & Distill
+    Studio["NIM Lab Studio<br/>macOS desktop app"] -.-> Council & Atlas & Forge & Arena & Prism & Sentinel & Loom & Distill
 
     subgraph Apps
         Council["Council<br/>MoA, debate, best-of-N, critic"]
         Atlas["Atlas<br/>agentic, verified RAG"]
         Forge["Forge<br/>TDD coding agent"]
         Arena["Arena<br/>evals, Elo, router, proxy"]
+        Prism["Prism<br/>vision: OCR, extract, UI to code"]
+        Sentinel["Sentinel<br/>safety probes, Shield, redaction"]
+        Loom["Loom<br/>pipeline node editor"]
+        Distill["Distill<br/>synthetic datasets"]
     end
 
-    Council & Atlas & Forge & Arena --> Core
+    Council & Atlas & Forge & Arena & Prism & Sentinel & Loom & Distill --> Core
 
     subgraph Core["nimlab.core"]
         Client["Async NIM client<br/>chat, stream, JSON, embed, rerank<br/>retries, usage tracking"]
@@ -54,7 +60,11 @@ flowchart TD
 | **Atlas** | Agentic RAG with citation checks: hybrid BM25 + dense retrieval (RRF), reranking, MMR, HyDE, multi-hop, claim verification, NemoGuard. FastAPI server and web UI | `nimlab atlas` | [docs/atlas.md](docs/atlas.md) |
 | **Forge** | Autonomous TDD coding agent: plan, implement, test and debug, review, in a sandboxed workspace | `nimlab forge` | [docs/forge.md](docs/forge.md) |
 | **Arena** | Eval suites and graders, time-to-first-token, Bradley-Terry Elo, HTML leaderboard, a smart router and an OpenAI-compatible routing proxy | `nimlab arena` | [docs/arena.md](docs/arena.md) |
-| **Studio** | Desktop app for all four apps: native window, run streaming, project browser, Keychain key storage, macOS packaging | `nimlab studio` | [docs/studio.md](docs/studio.md) |
+| **Prism** | Vision workbench: describe, OCR, structured extraction (built-in or custom JSON Schema), screenshot to HTML/CSS with critique-and-refine, image diff, chart to data, batch runs | `nimlab prism` | [docs/prism.md](docs/prism.md) |
+| **Sentinel** | Safety lab: 64 probes across injection, jailbreak, extraction, PII, harmful, citation and over-refusal suites, scorecards and HTML reports, a Shield wrapper (NemoGuard plus heuristics) and reversible PII redaction | `nimlab sentinel` | [docs/sentinel.md](docs/sentinel.md) |
+| **Loom** | Pipeline node editor: typed JSON pipelines (prompt, JSON, embed, rerank, branch, map, merge, regex, chunk, ...), parallel scheduling, caching, linting, mermaid and standalone-Python export, four bundled pipelines | `nimlab loom` | [docs/loom.md](docs/loom.md) |
+| **Distill** | Synthetic datasets: multi-model generation, reward scoring, filtering, near-duplicate removal, eval-set decontamination, resumable runs, JSONL export (openai-chat, alpaca, sharegpt, dpo), HTML report and dataset card | `nimlab distill` | [docs/distill.md](docs/distill.md) |
+| **Studio** | Desktop app for all eight apps: native window, run streaming, project browser, Keychain key storage, macOS packaging | `nimlab studio` | [docs/studio.md](docs/studio.md) |
 
 ## Quickstart
 
@@ -107,16 +117,39 @@ nimlab arena route "write a python function"
 nimlab arena serve                          # OpenAI-compatible proxy on http://127.0.0.1:8000, model "nimlab/auto"
 ```
 
+```bash
+# Prism: turn a screenshot into HTML, read a chart, extract fields
+nimlab prism modes
+nimlab prism ui2code examples/prism/sample_ui.png -o ui.html --refine 1
+nimlab prism describe examples/prism/sample_chart.png
+
+# Sentinel: blast-test models, then screen a prompt and redact PII
+nimlab sentinel suites
+nimlab sentinel scan --models meta/llama-3.3-70b-instruct --suite injection,pii_leakage --html-out scorecard.html
+nimlab sentinel redact examples/sentinel/pii_sample.txt
+
+# Loom: list, lint and run a bundled pipeline, or export it as a script
+nimlab loom list
+nimlab loom run research-brief --set topic="solid-state batteries"
+nimlab loom graph support-triage            # mermaid flowchart
+
+# Distill: generate a small synthetic dataset and look at its quality report
+nimlab distill recipes
+nimlab distill run instruction_diversity --n 40 --out /tmp/distill-demo
+```
+
 Runtime data (`.nimlab/`, `.forge/`, `*.db`) is git-ignored. Python examples live in
 [`examples/`](examples/).
 
 ## NIM Lab Studio (macOS app)
 
-A synth-rack desktop UI for all four apps in one window: **Foundry** (type a prompt, watch Forge plan,
+A synth-rack desktop UI for all eight apps in one window: **Foundry** (type a prompt, watch Forge plan,
 build, test and ship a project), **Council** (a round table of models reaching a verdict), **Atlas**
-(ask your documents, with citations) and **Arena** (scoreboard and smart router), wired together by a
-**Switchboard**. It is a small FastAPI server on `127.0.0.1` (token-protected) plus a static web UI shown
-in a native window.
+(ask your documents, with citations), **Arena** (scoreboard and smart router), **Prism** (a light table
+for images), **Sentinel** (a containment lab that lights up as attacks land), **Loom** (a node editor with
+live patch cables) and **Distill** (a glass distillation column), wired together by a two-tier
+**Switchboard** around the NIM Core. Jump anywhere with the command palette (`⌘K`) or `⌘1` to `⌘9`. It is
+a small FastAPI server on `127.0.0.1` (token-protected) plus a static web UI shown in a native window.
 
 ```bash
 pip install -e '.[desktop]'     # optional: native window (pywebview) and Keychain (keyring)
@@ -124,11 +157,11 @@ nimlab studio                   # native window; falls back to your browser
 nimlab studio --browser         # always the browser
 ```
 
-![Foundry: a simulated build that shipped](docs/images/studio-foundry.png)
+![Switchboard: eight modules in two tiers around the NIM Core](docs/images/studio-switchboard.png)
 
 | | |
 | --- | --- |
-| ![Council](docs/images/studio-council.png) | ![Switchboard](docs/images/studio-switchboard.png) |
+| ![Foundry: a simulated build that shipped](docs/images/studio-foundry.png) | ![Council](docs/images/studio-council.png) |
 
 * **No key needed to try it.** Without a key Studio shows a **SIMULATION** badge and plays scripted
   sessions: Foundry derives a small project from your prompt (real files, real `pytest`, one failing test,
@@ -186,6 +219,11 @@ src/nimlab/
   atlas/          ingest, hybrid retrieval, agent, verification, guard, FastAPI server + UI
   forge/          planner/coder/reviewer pipeline, sandbox, patching, pytest parsing
   arena/          suites, graders, runner, Elo, leaderboard, router, proxy
+  prism/          vision modes, image loading, schemas, UI-to-code
+  sentinel/       probe suites, judges, Shield, redaction, scorecards
+  loom/           pipeline schema, engine, nodes, expression evaluator, export
+  distill/        recipes, generation stages, filters, dedup, export
+  studio/         FastAPI server, run manager, simulation, web UI (studio/web)
 tests/            offline test suite (conftest.py isolates env and global state per test)
   live/           opt-in smoke tests against the real NIM API
 docs/             one guide per app plus the core
@@ -218,10 +256,16 @@ CI runs ruff, mypy and the test suite on Python 3.10 to 3.13 with `NIMLAB_MOCK=1
 - [Atlas](docs/atlas.md): ingestion, retrieval pipeline, verification, server
 - [Forge](docs/forge.md): pipeline, sandbox, reports
 - [Arena](docs/arena.md): suites, graders, Elo, router, proxy
+- [Prism](docs/prism.md): vision modes, schemas, UI-to-code, API
+- [Sentinel](docs/sentinel.md): suites, judges, Shield, redaction, scorecards
+- [Loom](docs/loom.md): pipelines, nodes, expressions, export
+- [Distill](docs/distill.md): recipes, stages, export formats
+- [Studio](docs/studio.md): architecture and API
+- [CHANGELOG](CHANGELOG.md)
 
 ## Status
 
-Early (0.1.0). Be aware of what has and has not been verified:
+Early (0.2.0). Be aware of what has and has not been verified:
 
 - **Verified offline only.** The code has been exercised in mock mode and against HTTP-mocked tests. Live
   NIM calls have **not** been exercised yet; this was built in an environment without an API key or access
@@ -231,5 +275,7 @@ Early (0.1.0). Be aware of what has and has not been verified:
 - **The Forge sandbox is a guard rail, not an isolation boundary.** It confines paths, scrubs the
   environment and allowlists commands, but code the agent writes still runs on your machine. Use a
   container or VM for untrusted tasks or models.
+- **Sentinel judges are heuristic.** Refusal, citation and injection verdicts are rules (optionally an LLM
+  judge), so expect some misjudged replies; the probes are a regression battery, not a full red team.
 - **Mock output is synthetic.** Leaderboards and routing produced in mock mode are simulations.
 - **License:** no license has been chosen yet, so no rights are granted until the owner adds one.

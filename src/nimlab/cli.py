@@ -1,7 +1,8 @@
 """Root ``nimlab`` command line: built-ins (doctor, models) plus auto-discovered app plugins.
 
 Plugin contract: ``nimlab.<name>.cli`` exposes ``app`` (a ``typer.Typer``) for each of
-``council``, ``atlas``, ``forge``, ``arena`` and ``studio``. Plugin CLI modules must NOT import
+``council``, ``atlas``, ``forge``, ``arena``, ``prism``, ``sentinel``, ``loom``,
+``distill`` and ``studio``. Plugin CLI modules must NOT import
 ``nimlab.cli``
 (it imports them while it is being initialised).
 """
@@ -28,11 +29,24 @@ from .core.errors import NIMError
 from .core.logging import configure_logging, get_console
 from .core.registry import Role, default_registry
 
-PLUGIN_NAMES: tuple[str, ...] = ("council", "atlas", "forge", "arena", "studio")
+PLUGIN_NAMES: tuple[str, ...] = (
+    "council",
+    "atlas",
+    "forge",
+    "arena",
+    "prism",
+    "sentinel",
+    "loom",
+    "distill",
+    "studio",
+)
 
 app = typer.Typer(
     name="nimlab",
-    help="NIM Lab: council, atlas, forge and arena on NVIDIA NIM. Use --mock to run offline.",
+    help=(
+        "NIM Lab: council, atlas, forge, arena, prism, sentinel, loom and distill on NVIDIA NIM. "
+        "Use --mock to run offline."
+    ),
     no_args_is_help=True,
     add_completion=False,
 )

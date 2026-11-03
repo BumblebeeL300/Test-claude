@@ -21,7 +21,7 @@ __all__ = ["APPS", "StudioState"]
 
 _log = logging.getLogger("nimlab.studio")
 
-#: Static presentation metadata for the four apps.
+#: Static presentation metadata for the eight apps.
 APPS: dict[str, dict[str, str]] = {
     "council": {
         "name": "Council",
@@ -46,6 +46,30 @@ APPS: dict[str, dict[str, str]] = {
         "tagline": "Benchmark, rank and route across models",
         "color": "#FFA62B",
         "glyph": "◆",
+    },
+    "prism": {
+        "name": "Prism",
+        "tagline": "Put an image on the light table: describe, read, extract, rebuild",
+        "color": "#B07CFF",
+        "glyph": "△",
+    },
+    "sentinel": {
+        "name": "Sentinel",
+        "tagline": "Blast-test your models for leaks, injections and jailbreaks",
+        "color": "#FF4D4D",
+        "glyph": "⬢",
+    },
+    "loom": {
+        "name": "Loom",
+        "tagline": "Patch models into pipelines",
+        "color": "#3DFFB4",
+        "glyph": "≋",
+    },
+    "distill": {
+        "name": "Distill",
+        "tagline": "Refine model output into clean, deduplicated datasets",
+        "color": "#FFC83D",
+        "glyph": "⬡",
     },
 }
 

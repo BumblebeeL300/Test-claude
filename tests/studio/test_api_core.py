@@ -27,7 +27,16 @@ class TestStatus:
         assert data["key"] == {"set": False, "source": None, "masked": None}
         assert data["network"] == "unknown"
         assert data["base_url"] == "https://integrate.api.nvidia.com/v1"
-        assert [a["id"] for a in data["apps"]] == ["council", "atlas", "forge", "arena"]
+        assert [a["id"] for a in data["apps"]] == [
+            "council",
+            "atlas",
+            "forge",
+            "arena",
+            "prism",
+            "sentinel",
+            "loom",
+            "distill",
+        ]
         for app in data["apps"]:
             assert set(app) == {
                 "id",

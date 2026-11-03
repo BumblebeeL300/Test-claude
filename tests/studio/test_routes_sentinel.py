@@ -48,7 +48,7 @@ async def finished(state: StudioState, run_id: str) -> Any:
 def test_app_info_has_a_distinct_colour() -> None:
     assert APP_INFO["id"] == "sentinel" and APP_INFO["name"] == "Sentinel"
     assert APP_INFO["tagline"] and APP_INFO["glyph"]
-    taken = {meta["color"].lower() for meta in APPS.values()} | {
+    taken = {meta["color"].lower() for key, meta in APPS.items() if key != "sentinel"} | {
         "#ff3d9a",
         "#22e1ff",
         "#c6ff3d",
@@ -57,7 +57,9 @@ def test_app_info_has_a_distinct_colour() -> None:
     }
     assert APP_INFO["color"].startswith("#") and len(APP_INFO["color"]) == 7
     assert APP_INFO["color"].lower() not in taken
-    assert {meta["glyph"] for meta in APPS.values()}.isdisjoint({APP_INFO["glyph"]})
+    assert {meta["glyph"] for key, meta in APPS.items() if key != "sentinel"}.isdisjoint(
+        {APP_INFO["glyph"]}
+    )
     assert router.prefix == "/api/sentinel"
 
 

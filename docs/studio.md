@@ -1,6 +1,6 @@
 # NIM Lab Studio: the desktop app
 
-Studio is one window for the four apps (Council, Atlas, Forge, Arena). It is a small FastAPI server
+Studio is one window for the eight apps (Council, Atlas, Forge, Arena, Prism, Sentinel, Loom, Distill). It is a small FastAPI server
 that runs on `127.0.0.1`, a static web UI served from the same process, and a thin native shell
 (pywebview) that shows it. Everything works without an NVIDIA key: with no key Studio runs in
 **simulation mode** (see below); paste a key in the UI and the same screens use real NIM models.

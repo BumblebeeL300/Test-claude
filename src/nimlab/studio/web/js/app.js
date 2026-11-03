@@ -16,6 +16,10 @@ export const APPS = [
   { id: 'council', name: 'Council', key: '3', cls: 'app-council', icon: 'council', app: 'council', hint: 'Many models, one verdict' },
   { id: 'atlas', name: 'Atlas', key: '4', cls: 'app-atlas', icon: 'atlas', app: 'atlas', hint: 'Ask your documents' },
   { id: 'arena', name: 'Arena', key: '5', cls: 'app-arena', icon: 'arena', app: 'arena', hint: 'Rank and route models' },
+  { id: 'prism', name: 'Prism', key: '6', cls: 'app-prism', icon: 'prism', app: 'prism', hint: 'Put an image on the light table' },
+  { id: 'sentinel', name: 'Sentinel', key: '7', cls: 'app-sentinel', icon: 'sentinel', app: 'sentinel', hint: 'Blast-test model safety' },
+  { id: 'loom', name: 'Loom', key: '8', cls: 'app-loom', icon: 'loom', app: 'loom', hint: 'Patch models into pipelines' },
+  { id: 'distill', name: 'Distill', key: '9', cls: 'app-distill', icon: 'distill', app: 'distill', hint: 'Synthetic datasets, refined' },
 ];
 export const appMeta = (id) => APPS.find((a) => a.id === id || a.app === id);
 
@@ -130,7 +134,7 @@ function keys() {
     const mod = e.metaKey || e.ctrlKey; if (!mod || e.altKey) return;
     if (e.key === 'k') { e.preventDefault(); import('./components/palette.js').then((m) => m.openPalette()); }
     else if (e.key === ',') { e.preventDefault(); import('./screens/settings.js').then((m) => m.openSettings()); }
-    else if (/^[1-5]$/.test(e.key)) { e.preventDefault(); go(APPS[+e.key - 1].id); }
+    else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); go(APPS[+e.key - 1].id); }
   });
   addEventListener('hashchange', render);
 }

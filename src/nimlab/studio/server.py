@@ -19,6 +19,10 @@ from nimlab.core import NIMError, default_registry
 
 from . import arena_app, atlas_app, council_app, credentials, forge_app
 from .projects import ProjectError
+from .routes_distill import router as distill_router
+from .routes_loom import router as loom_router
+from .routes_prism import router as prism_router
+from .routes_sentinel import router as sentinel_router
 from .security import SecurityMiddleware
 from .settings import StudioSettings
 from .state import StudioState
@@ -366,6 +370,9 @@ def create_app(
     async def api_not_found(rest: str) -> JSONResponse:
         return JSONResponse({"detail": f"no such API route: /api/{rest}"}, status_code=404)
 
+    # Tool routers must come before `api`: its /api/{rest:path} catch-all would 404 them.
+    for tool_router in (prism_router, sentinel_router, loom_router, distill_router):
+        app.include_router(tool_router)
     app.include_router(api)
 
     # ------------------------------------------------------------------ static web UI

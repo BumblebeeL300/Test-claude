@@ -6,6 +6,10 @@ const P = {
   council: '<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="3.8" r="1.6"/><circle cx="19.8" cy="9.6" r="1.6"/><circle cx="16.8" cy="19" r="1.6"/><circle cx="7.2" cy="19" r="1.6"/><circle cx="4.2" cy="9.6" r="1.6"/>',
   atlas: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/>',
   arena: '<path d="M5 20V11M10 20V5M15 20v-7M20 20V8"/><path d="M3 20.5h19"/>',
+  prism: '<path d="M12 3.5 21 19.5H3Z"/><path d="M2.5 13.5 10 11.8"/><path d="m12.6 10.6 8.9-2.6M13.2 13l8.3-.6M13.6 15.4l7.4 2.4" opacity=".75"/>',
+  sentinel: '<path d="M12 3 4.5 6v5.5c0 4.6 3.1 8 7.5 9.5 4.4-1.5 7.5-4.9 7.5-9.5V6Z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  loom: '<circle cx="4.5" cy="8" r="1.8"/><circle cx="19.5" cy="16" r="1.8"/><path d="M6.3 8C12 8 12 16 17.7 16"/><circle cx="4.5" cy="16" r="1.8"/><circle cx="19.5" cy="8" r="1.8"/><path d="M6.3 16C12 16 12 8 17.7 8"/>',
+  distill: '<path d="M4.5 4.5h15L13.5 12v6.5l-3 2V12Z"/><path d="M7.5 8h9" opacity=".7"/>',
   settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   paste: '<rect x="6" y="5" width="12" height="16" rx="2"/><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9.5 12h5M9.5 15.5h3"/>',
@@ -37,4 +41,4 @@ export function icon(name, cls = '') {
   return s;
 }
 export const iconHTML = (name) => icon(name).outerHTML;
-export const APP_ICON = { forge: 'forge', council: 'council', atlas: 'atlas', arena: 'arena', switchboard: 'switchboard' };
+export const APP_ICON = { forge: 'forge', council: 'council', atlas: 'atlas', arena: 'arena', prism: 'prism', sentinel: 'sentinel', loom: 'loom', distill: 'distill', switchboard: 'switchboard' };

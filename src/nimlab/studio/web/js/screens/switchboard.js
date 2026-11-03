@@ -1,4 +1,4 @@
-// Switchboard: four modules + the NIM Core, patched together with live cables.
+// Switchboard: eight modules in two tiers around the NIM Core, patched together with live cables.
 import { h, clear, ago, fmtNum, shortModel, pop, reduced, clamp } from '../util.js';
 import { icon } from '../icons.js';
 import { store, on, go, api, appStatus, isSim, refresh } from '../app.js';
@@ -8,6 +8,10 @@ const MODS = [
   { id: 'council', name: 'Council', route: 'council', n: '02', key: '3', tag: 'Many models, one verdict', verb: 'Convene', area: 'b' },
   { id: 'atlas', name: 'Atlas', route: 'atlas', n: '03', key: '4', tag: 'Answers grounded in your documents', verb: 'Ask your docs', area: 'c' },
   { id: 'arena', name: 'Arena', route: 'arena', n: '04', key: '5', tag: 'Benchmark, rank and route', verb: 'Enter the arena', area: 'd' },
+  { id: 'prism', name: 'Prism', route: 'prism', n: '05', key: '6', tag: 'Describe, read and rebuild images', verb: 'Open Prism', area: 'e' },
+  { id: 'sentinel', name: 'Sentinel', route: 'sentinel', n: '06', key: '7', tag: 'Blast-test model safety', verb: 'Scan models', area: 'f' },
+  { id: 'loom', name: 'Loom', route: 'loom', n: '07', key: '8', tag: 'Patch models into pipelines', verb: 'Open Loom', area: 'g' },
+  { id: 'distill', name: 'Distill', route: 'distill', n: '08', key: '9', tag: 'Synthetic datasets, refined', verb: 'Generate data', area: 'h' },
 ];
 
 function normUsage(u) {
@@ -107,19 +111,16 @@ export function mount(el) {
   // ---- cables ----
   function cables() {
     const rr = rack.getBoundingClientRect(); if (!rr.width) return;
-    const cr = core.getBoundingClientRect(); const P = (r) => r;
+    const cr = core.getBoundingClientRect();
     svg.setAttribute('viewBox', `0 0 ${rr.width} ${rr.height}`); clear(svg);
     const defs = h('defs'); svg.append(defs);
     for (const { m, card } of Object.values(mods)) {
       const mr = card.getBoundingClientRect(), mx = mr.left - rr.left + mr.width / 2, my = mr.top - rr.top + mr.height / 2;
       const cl = cr.left - rr.left, cr_ = cl + cr.width, ct = cr.top - rr.top, cb = ct + cr.height;
-      let a, b, d;
-      if (mx < cl - 8 || mx > cr_ + 8) { // beside core
-        const left = mx < cl; a = [left ? mr.right - rr.left : mr.left - rr.left, my]; b = [left ? cl : cr_, clamp(my, ct + 40, cb - 40)];
-        const k = Math.abs(b[0] - a[0]) * .5; d = `M${a[0]} ${a[1]} C${a[0] + (left ? k : -k)} ${a[1]} ${b[0] + (left ? -k : k)} ${b[1]} ${b[0]} ${b[1]}`;
-      } else { // stacked under core
-        a = [mx, mr.top - rr.top]; b = [clamp(mx, cl + 30, cr_ - 30), cb]; const k = Math.abs(a[1] - b[1]) * .5; d = `M${a[0]} ${a[1]} C${a[0]} ${a[1] - k} ${b[0]} ${b[1] + k} ${b[0]} ${b[1]}`;
-      }
+      const above = my < (ct + cb) / 2; // top-tier modules plug into the core's top edge, bottom tier into its bottom edge
+      const a = [mx, above ? mr.bottom - rr.top : mr.top - rr.top], b = [clamp(mx, cl + 36, cr_ - 36), above ? ct : cb];
+      const k = Math.abs(b[1] - a[1]) * .55;
+      const d = `M${a[0]} ${a[1]} C${a[0]} ${a[1] + (above ? k : -k)} ${b[0]} ${b[1] + (above ? -k : k)} ${b[0]} ${b[1]}`;
       const busy = card.classList.contains('busy'), col = `var(--c-${m.id})`;
       svg.append(h('path.cab-base', { d }), h('path.cab-core', { d, stroke: col }), h('path.cab-flow', { d, stroke: col, class: busy ? 'on' : '' }));
       for (const [x, y] of [a, b]) svg.append(h('circle.plug', { cx: x, cy: y, r: 5, stroke: col }));
