@@ -24,7 +24,7 @@ CHAT = "nvidia/nemotron-3-super-120b-a12b"
 FAST = "nvidia/nemotron-3.5-lightning-30b-a3b"
 EMBED = "nvidia/nemotron-3.5-embed-1b"
 RERANK_MODEL = "nvidia/nemotron-3.5-rerank-8b"
-SAFETY = "nvidia/nemotron-3.5-content-safety"
+SAFETY = "nvidia/llama-3.1-nemoguard-8b-content-safety"
 QUESTION = (
     "How often do robots send heartbeats, and how many missed heartbeats mark a robot as lost?"
 )

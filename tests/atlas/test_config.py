@@ -46,6 +46,7 @@ def test_chunk_signature_changes_with_anything_that_alters_chunks_or_vectors():
 
 
 def test_model_set_uses_registry_defaults_and_overrides(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("NIMLAB_MODEL_SAFETY")  # pinned by this suite's conftest
     models = ModelSet.resolve(AtlasConfig())
     assert models.embed == "nvidia/nemotron-3.5-embed-1b"
     assert models.rerank == "nvidia/nemotron-3.5-rerank-8b"

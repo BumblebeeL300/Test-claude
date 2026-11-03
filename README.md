@@ -1,4 +1,4 @@
-# NIM Lab
+# <img src="docs/images/icon.png" alt="" width="96" align="center"> NIM Lab
 
 **Eight applications built on NVIDIA NIM, sharing one async core.** NIM Lab is a Python monorepo that
 shows what you can build when many open models are one API call away: a multi-model *council* that

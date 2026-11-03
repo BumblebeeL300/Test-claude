@@ -14,7 +14,7 @@ from nimlab.arena.suites import load_suites
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "arena" / "custom_suite.json"
 MODELS = [
-    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3-super-120b-a12b",
     "nvidia/nemotron-3-ultra-550b-a55b",
     "poolside/laguna-xs-2.1",
     "nvidia/nemotron-3.5-lightning-30b-a3b",

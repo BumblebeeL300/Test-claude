@@ -122,7 +122,7 @@ class TestModes:
         by = {m["name"]: m for m in data["modes"]}
         assert by["compare"]["min_images"] == 2 and by["ui2code"]["options"][0]["name"] == "refine"
         assert {s["name"] for s in data["schemas"]} >= {"receipt", "invoice", "business_card"}
-        assert data["simulated"] is True and data["model"].endswith("vision-instruct")
+        assert data["simulated"] is True and data["model"] == "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
         assert isinstance(data["pillow"], bool) and data["vision_models"]
 
 

@@ -21,6 +21,7 @@ MAKE_DMG=0
 SIGN=1
 CLEAN=0
 USE_VENV=1
+REGEN_ICON=0
 PYTHON_BIN="${PYTHON:-python3}"
 
 die() { echo "error: $*" >&2; exit 1; }

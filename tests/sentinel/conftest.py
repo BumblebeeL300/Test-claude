@@ -29,3 +29,9 @@ def scripted() -> type[ScriptedClient]:
 async def sim():
     async with SimulatedClient() as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+def _nemoguard_template_format(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fakes here script the NemoGuard instruction-template exchange; pin that model."""
+    monkeypatch.setenv("NIMLAB_MODEL_SAFETY", "nvidia/llama-3.1-nemoguard-8b-content-safety")

@@ -280,9 +280,12 @@ async def test_guard_is_skipped_after_an_earlier_block() -> None:
     assert res.blocked and client.guard_calls == 0
 
 
-async def test_guard_model_defaults_to_the_registry_safety_model() -> None:
+async def test_guard_model_defaults_to_the_registry_safety_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("NIMLAB_MODEL_SAFETY")
     shield = Shield(ScriptedClient("x"))
-    assert "nemoguard" in shield.guard_model
+    assert shield.guard_model == "nvidia/nemotron-3.5-content-safety"
     assert Shield(ScriptedClient("x"), guard_model="custom/guard").guard_model == "custom/guard"
 
 
