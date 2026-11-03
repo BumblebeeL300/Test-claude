@@ -71,7 +71,9 @@ def test_recipes_endpoint(client: TestClient) -> None:
 
 def test_run_lifecycle_and_events(app: FastAPI, client: TestClient) -> None:
     run_id = start(
-        client, n=40, models=["meta/llama-3.3-70b-instruct", "meta/llama-3.1-8b-instruct"]
+        client,
+        n=40,
+        models=["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3.5-lightning-30b-a3b"],
     )
     detail = wait_done(client, run_id)
     assert detail["status"] == "done" and detail["simulated"] is True

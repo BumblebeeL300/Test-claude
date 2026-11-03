@@ -25,7 +25,7 @@ class Sentinel:
     Example::
 
         async with Sentinel() as lab:                     # simulated offline without a key
-            run = await lab.scan(["meta/llama-3.3-70b-instruct"], suites="all")
+            run = await lab.scan(["nvidia/nemotron-3-super-120b-a12b"], suites="all")
             print(run.scorecards[0].grade)
             lab.write_html(run, "scorecard.html")
 

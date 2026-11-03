@@ -185,3 +185,13 @@ def make_pdf() -> Callable[[list[list[str]]], bytes]:
         return bytes(out)
 
     return build
+
+
+@pytest.fixture(autouse=True)
+def _nemoguard_template_format(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These suites script the NemoGuard instruction-template exchange; pin that safety model.
+
+    (The default ``nemotron-3.5-content-safety`` takes plain conversation turns and is covered in
+    ``test_guard.py`` / ``test_conversation_guard_format``.)
+    """
+    monkeypatch.setenv("NIMLAB_MODEL_SAFETY", "nvidia/llama-3.1-nemoguard-8b-content-safety")

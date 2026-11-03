@@ -49,7 +49,7 @@ async def check_safety(
     try:
         result = await client.chat(
             model,
-            build_guard_messages(user_text, response_text),
+            build_guard_messages(user_text, response_text, None if is_mock(client) else model),
             temperature=0.0,
             max_tokens=96,
         )

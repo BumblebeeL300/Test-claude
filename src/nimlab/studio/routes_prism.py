@@ -10,6 +10,7 @@ one ``result`` per image and finally ``run.done`` whose ``result`` is::
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -30,6 +31,7 @@ from nimlab.prism import (
 from nimlab.prism.schemas import BUILTIN_SCHEMAS
 
 from .runs import Run
+from .scope import clean_overrides, scoped_work
 from .state import StudioState
 
 __all__ = ["APP_INFO", "MAX_IMAGES", "MAX_UPLOAD_BYTES", "router"]
@@ -45,7 +47,7 @@ APP_INFO: dict[str, str] = {
 MAX_UPLOAD_BYTES = 40 * 1024 * 1024
 MAX_IMAGES = 12
 #: Form fields that are not mode options.
-RESERVED = frozenset({"mode", "model", "files"})
+RESERVED = frozenset({"mode", "model", "files", "model_overrides"})
 SIM_DELAY_SCALE = 1.0
 
 router = APIRouter(prefix="/api/prism")
@@ -107,6 +109,13 @@ async def run_prism(request: Request) -> dict[str, Any]:
         raise _bad(422, str(exc)) from exc
     options: dict[str, Any] = {k: v for k, v in fields.items() if k not in RESERVED}
     model = (fields.get("model") or "").strip() or None
+    try:
+        raw_overrides = json.loads(fields.get("model_overrides") or "{}")
+        if not isinstance(raw_overrides, dict):
+            raise ValueError("model_overrides must be a JSON object")
+        overrides = clean_overrides(raw_overrides)
+    except ValueError as exc:
+        raise _bad(422, f"model_overrides: {exc}") from exc
 
     schema = str(options.get("schema") or "").strip()
     if schema and schema.lower().replace("-", "_") not in BUILTIN_SCHEMAS:
@@ -157,5 +166,7 @@ async def run_prism(request: Request) -> dict[str, Any]:
         return {"mode": mode.name, "batch": not single, "simulated": sim, "items": items}
 
     title = f"{mode.name}: {images[0].name}" + (f" +{len(images) - 1}" if len(images) > 1 else "")
-    run = state.runs.start("prism", title[:80], work, simulated=simulated)
+    run = state.runs.start(
+        "prism", title[:80], scoped_work("prism", overrides, work), simulated=simulated
+    )
     return {"run_id": run.id}

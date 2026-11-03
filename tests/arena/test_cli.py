@@ -12,7 +12,9 @@ from nimlab.arena.cli import app
 from nimlab.arena.results import RunStore
 
 runner = CliRunner()
-MODELS = "meta/llama-3.3-70b-instruct,meta/llama-3.1-8b-instruct,qwen/qwen2.5-coder-32b-instruct"
+MODELS = (
+    "nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3.5-lightning-30b-a3b,poolside/laguna-xs-2.1"
+)
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "arena" / "custom_suite.json"
 
 
@@ -156,7 +158,10 @@ def test_run_errors_are_friendly(runs: str) -> None:
 
 
 def test_battle_prints_elo_with_confidence_intervals(runs: str) -> None:
-    models = "meta/llama-3.1-405b-instruct,meta/llama-3.1-8b-instruct,meta/llama-3.2-1b-instruct"
+    models = (
+        "nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3.5-lightning-30b-a3b,"
+        "nvidia/nemotron-3.5-bolt-e4b"
+    )
     out = invoke(
         "--mock",
         "battle",
@@ -169,7 +174,7 @@ def test_battle_prints_elo_with_confidence_intervals(runs: str) -> None:
         "--runs-dir",
         runs,
         "--judge-model",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
     ).output
     assert "Elo" in out and "95% CI" in out and "W-T-L" in out and "judge battles" in out
     assert "position bias" in out
@@ -177,7 +182,7 @@ def test_battle_prints_elo_with_confidence_intervals(runs: str) -> None:
     assert (
         run is not None
         and len(run.battles) == 3 * 5
-        and run.judge_model == "meta/llama-3.3-70b-instruct"
+        and run.judge_model == "nvidia/nemotron-3-super-120b-a12b"
     )
     assert "also a contestant" not in out
 
@@ -217,7 +222,7 @@ def test_route_explains_a_decision_without_any_runs(runs: str) -> None:
         "--mock", "route", "Write a Python function that parses a CSV", "--runs-dir", runs
     ).output
     assert "Routing decision" in out and "coding" in out and "registry" in out
-    assert "qwen/qwen2.5-coder-32b-instruct" in out
+    assert "poolside/laguna-xs-2.1" in out
 
 
 def test_route_uses_leaderboard_data_and_prints_candidates(runs: str) -> None:

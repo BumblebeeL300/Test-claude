@@ -21,9 +21,9 @@ from nimlab.arena.report import (
 )
 from nimlab.arena.results import BattleRecord, ItemResult, RunResult, SuiteInfo
 
-BIG = "meta/llama-3.1-405b-instruct"  # cost tier 5
-MID = "meta/llama-3.3-70b-instruct"  # cost tier 2
-SMALL = "meta/llama-3.1-8b-instruct"  # cost tier 1
+BIG = "nvidia/nemotron-3-ultra-550b-a55b"  # cost tier 5
+MID = "nvidia/nemotron-3-super-120b-a12b"  # cost tier 2
+SMALL = "nvidia/nemotron-3.5-lightning-30b-a3b"  # cost tier 1
 
 # model -> {suite: (score, latency)}
 DATA = {
@@ -209,7 +209,11 @@ def test_html_report_has_all_sections() -> None:
     assert parsed.tags.count("svg") >= 4  # elo chart + scatter + two legend swatches
     assert "Overall ranking" in page and "Scores by suite" in page
     assert "Elo ratings with confidence intervals" in page and "Quality vs latency" in page
-    for model in ("llama-3.1-405b-instruct", "llama-3.3-70b-instruct", "llama-3.1-8b-instruct"):
+    for model in (
+        "nemotron-3-ultra-550b-a55b",
+        "nemotron-3-super-120b-a12b",
+        "nemotron-3.5-lightning-30b-a3b",
+    ):
         assert model in page
     # per-suite heatmap: one cell per model x suite with a bucket class
     assert len(re.findall(r'<td class="c h\d', page)) == 6

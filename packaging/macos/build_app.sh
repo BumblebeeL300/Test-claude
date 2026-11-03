@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build "NIM Lab Studio.app" (and optionally a .dmg) on macOS.
 #
-#   packaging/macos/build_app.sh [--dmg] [--no-sign] [--clean] [--python PYTHON] [--no-venv]
+#   packaging/macos/build_app.sh [--dmg] [--no-sign] [--clean] [--python PYTHON] [--no-venv] [--regen-icon]
 #
 # Steps: create/refresh a build virtualenv -> install nimlab[desktop] + PyInstaller + Pillow ->
 # draw the icon -> PyInstaller (nimlab_studio.spec) -> ad-hoc codesign -> optional DMG.
@@ -21,6 +21,7 @@ MAKE_DMG=0
 SIGN=1
 CLEAN=0
 USE_VENV=1
+REGEN_ICON=0
 PYTHON_BIN="${PYTHON:-python3}"
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -32,6 +33,7 @@ while [[ $# -gt 0 ]]; do
     --no-sign) SIGN=0 ;;
     --clean) CLEAN=1 ;;
     --no-venv) USE_VENV=0 ;;
+    --regen-icon) REGEN_ICON=1 ;;
     --python) shift; PYTHON_BIN="${1:?--python needs a path}" ;;
     -h|--help) sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) die "unknown option: $1 (try --help)" ;;
@@ -67,8 +69,12 @@ say "Installing nimlab[desktop], PyInstaller and Pillow"
 "$PY" -m pip install --quiet "$ROOT[desktop]" "pyinstaller>=6" pillow pytest
 
 # --- icon --------------------------------------------------------------------------------------
-say "Drawing the app icon"
-"$PY" "$HERE/make_icon.py"
+if [[ "$REGEN_ICON" == 1 || ! -f "$HERE/AppIcon.icns" ]]; then
+  say "Drawing the app icon"
+  "$PY" "$HERE/make_icon.py"
+else
+  say "Using the committed AppIcon.icns (pass --regen-icon to redraw it)"
+fi
 
 # --- build -------------------------------------------------------------------------------------
 say "Running PyInstaller"

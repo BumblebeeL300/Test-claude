@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -94,6 +96,8 @@ class StudioState:
         self._retired: list[Any] = []
         self._atlas: Any | None = None
         self._atlas_for: Any | None = None
+        #: Called (once) to quit the app after an uninstall; set by the launcher.
+        self.exit_hook: Callable[[], None] | None = None
 
     # ------------------------------------------------------------------ client
     def base_config(self) -> NIMConfig:
@@ -247,9 +251,40 @@ class StudioState:
             )
         return out
 
+    def schedule_app_removal(self, info: Any) -> bool:
+        from .uninstall import schedule_app_removal
+
+        try:
+            return schedule_app_removal(info) is not None
+        except OSError:  # pragma: no cover - the helper could not be started
+            _log.warning("could not start the app-removal helper", exc_info=True)
+            return False
+
+    def schedule_exit(self, delay: float = 1.5) -> None:
+        """Quit shortly after the response is sent (window close + server stop)."""
+        hook = self.exit_hook
+        if not self.settings.allow_exit or hook is None:
+            return
+        timer = threading.Timer(delay, hook)
+        timer.daemon = True
+        timer.start()
+
+    def models_info(self) -> dict[str, Any]:
+        """Stale-default summary for the amber notice (never fetches)."""
+        from nimlab.core import default_registry
+
+        reg = default_registry()
+        stale = reg.stale_defaults(fetch=False)
+        return {
+            "live": reg.snapshot(fetch=False) is not None,
+            "stale": stale,
+            "stale_count": len(stale),
+        }
+
     def status(self) -> dict[str, Any]:
         cfg = self.base_config()
         return {
+            "models": self.models_info(),
             "version": __version__,
             "mode": "mock" if self.mock else "live",
             "key": self.key_info(),

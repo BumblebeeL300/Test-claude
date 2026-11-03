@@ -2,13 +2,13 @@
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const now = () => Date.now() / 1000;
 const MODELS = [
-  ['meta/llama-3.3-70b-instruct', ['chat', 'fast'], 3, 128000], ['meta/llama-3.1-405b-instruct', ['chat', 'reasoning'], 5, 128000],
-  ['nvidia/llama-3.1-nemotron-ultra-253b-v1', ['reasoning', 'chat'], 5, 128000], ['deepseek-ai/deepseek-r1', ['reasoning'], 4, 64000],
-  ['qwen/qwen2.5-coder-32b-instruct', ['coder'], 3, 32000], ['mistralai/codestral-22b-instruct-v0.1', ['coder'], 2, 32000],
-  ['meta/llama-3.1-8b-instruct', ['fast', 'chat'], 1, 128000], ['mistralai/mistral-large-2-instruct', ['chat'], 4, 128000],
-  ['nvidia/nv-embedqa-e5-v5', ['embed'], 1, 512], ['nvidia/llama-3.2-nv-rerankqa-1b-v2', ['rerank'], 1, 8192],
-  ['nvidia/llama-3.1-nemotron-70b-reward', ['reward'], 3, 4096], ['nvidia/llama-3.1-nemoguard-8b-content-safety', ['safety'], 1, 8192],
-  ['meta/llama-3.2-90b-vision-instruct', ['vision', 'chat'], 4, 128000], ['microsoft/phi-4-mini-instruct', ['fast'], 1, 16000],
+  ['nvidia/nemotron-3-super-120b-a12b', ['chat', 'reasoning'], 3, 1048576], ['nvidia/nemotron-3-ultra-550b-a55b', ['reasoning', 'chat'], 5, 1048576],
+  ['deepseek-ai/deepseek-v4.1-flash', ['reasoning', 'chat'], 2, 1048576], ['google/gemma-4-31b-it', ['chat', 'vision', 'fast'], 2, 131072],
+  ['poolside/laguna-xs-2.1', ['coder'], 2, 262144], ['mistralai/codestral-22b-instruct-v0.1', ['coder'], 2, 32768],
+  ['nvidia/nemotron-3.5-lightning-30b-a3b', ['fast', 'chat'], 1, 1048576], ['mistralai/mistral-large-4-1t-a52b', ['chat'], 5, 262144],
+  ['nvidia/nemotron-3.5-embed-1b', ['embed'], 1, 8192], ['nvidia/nemotron-3.5-rerank-8b', ['rerank'], 2, 8192],
+  ['nvidia/nemotron-4-340b-reward', ['reward'], 4, 4096], ['nvidia/nemotron-3.5-content-safety', ['safety'], 1, 131072],
+  ['nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', ['vision', 'reasoning'], 2, 262144], ['nvidia/nemotron-3.5-bolt-e4b', ['fast', 'vision'], 1, 131072],
 ].map(([id, roles, cost_tier, context_window]) => ({ id, roles, cost_tier, context_window, notes: '' }));
 
 const S = {
@@ -158,14 +158,14 @@ async function forgeScript(r, prompt, project) {
       { id: 2, description: 'argparse CLI: add, done, list', files: ['tasker/cli.py'] },
       { id: 3, description: 'Unit tests covering store behaviour', files: ['tests/test_store.py'] },
       { id: 4, description: 'README with usage examples', files: ['README.md'] }] }, 'plan');
-    emit(r, 'usage', { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', prompt_tokens: 1840, completion_tokens: 612, calls: 1 });
+    emit(r, 'usage', { model: 'nvidia/nemotron-3-ultra-550b-a55b', prompt_tokens: 1840, completion_tokens: 612, calls: 1 });
     await sleep(600);
   });
   await ph('implement', async () => {
     for (const n of names) {
       await sleep(650); emit(r, 'tool.call', { name: 'write_file', args: { path: n } }, 'implement');
       await sleep(300); emit(r, 'file.write', { path: n, lines: lines(FILES[n][1]), language: FILES[n][0], bytes: FILES[n][1].length }, 'implement');
-      emit(r, 'usage', { model: 'qwen/qwen2.5-coder-32b-instruct', prompt_tokens: 900 + Math.round(Math.random() * 600), completion_tokens: 300 + Math.round(Math.random() * 400), calls: 1 });
+      emit(r, 'usage', { model: 'poolside/laguna-xs-2.1', prompt_tokens: 900 + Math.round(Math.random() * 600), completion_tokens: 300 + Math.round(Math.random() * 400), calls: 1 });
     }
   });
   const names1 = ['test_add_assigns_ids', 'test_complete_marks_done', 'test_pending_hides_done', 'test_persists_between_instances', 'test_ids_survive_deletion'];
@@ -179,7 +179,7 @@ async function forgeScript(r, prompt, project) {
     await sleep(700); emit(r, 'tool.call', { name: 'write_file', args: { path: 'tasker/store.py' } }, 'debug');
     FILES['tasker/store.py'][1] = FIXED_STORE;
     emit(r, 'file.write', { path: 'tasker/store.py', lines: lines(FIXED_STORE), language: 'py' }, 'debug');
-    emit(r, 'usage', { model: 'deepseek-ai/deepseek-r1', prompt_tokens: 2400, completion_tokens: 1100, calls: 1 });
+    emit(r, 'usage', { model: 'deepseek-ai/deepseek-v4.1-flash', prompt_tokens: 2400, completion_tokens: 1100, calls: 1 });
   });
   await ph('verify', async () => {
     emit(r, 'test.run', { command: 'pytest -q' }, 'verify'); await sleep(1000);
@@ -188,7 +188,7 @@ async function forgeScript(r, prompt, project) {
   await ph('review', async () => {
     await sleep(900);
     emit(r, 'review', { verdict: 'approve', issues: [{ severity: 'low', message: 'Consider file locking for concurrent writers.' }, { severity: 'info', message: 'README could document the tasks.json location.' }] }, 'review');
-    emit(r, 'usage', { model: 'meta/llama-3.1-405b-instruct', prompt_tokens: 3100, completion_tokens: 420, calls: 1 });
+    emit(r, 'usage', { model: 'nvidia/nemotron-3-super-120b-a12b', prompt_tokens: 3100, completion_tokens: 420, calls: 1 });
   });
   await ph('report', async () => { await sleep(500); emit(r, 'log', { level: 'info', message: 'wrote REPORT.md' }, 'report'); });
   const pid = project || 'tasker';
@@ -198,7 +198,7 @@ async function forgeScript(r, prompt, project) {
 }
 
 async function councilScript(r, q, strategy) {
-  const panel = ['meta/llama-3.1-405b-instruct', 'nvidia/llama-3.1-nemotron-ultra-253b-v1', 'deepseek-ai/deepseek-r1', 'mistralai/mistral-large-2-instruct', 'meta/llama-3.3-70b-instruct'];
+  const panel = ['nvidia/nemotron-3-super-120b-a12b', 'nvidia/nemotron-3-ultra-550b-a55b', 'deepseek-ai/deepseek-v4.1-flash', 'mistralai/mistral-large-4-1t-a52b', 'google/gemma-4-31b-it'];
   const takes = ['Botanically yes: it develops from the ovary of a flower and carries seeds.', 'By botanical definition a fruit; culinary convention files it with vegetables.', 'Fruit. The savoury use is a kitchen habit, not taxonomy.', 'It is a fruit, though the US Supreme Court once ruled otherwise for tariffs.', 'Fruit in botany, vegetable in the kitchen; both statements are true.'];
   const stage = async (name, who, round) => {
     emit(r, 'stage.start', { name, round }); await Promise.all(who.map(async (m, i) => { await sleep(i * 380); emit(r, 'model.start', { model: panel[m], stage: name }); await sleep(900 + Math.random() * 900); emit(r, 'model.end', { model: panel[m], stage: name, preview: takes[m], tokens: 120 + m * 20 }); }));
@@ -224,8 +224,20 @@ async function atlasScript(r, q) {
   emit(r, 'run.done', { result: { answer: text, citations: cites, groundedness: 0.94 } });
 }
 
-const ARENA = [['nvidia/llama-3.1-nemotron-ultra-253b-v1', 1184, .91, 2100], ['meta/llama-3.1-405b-instruct', 1131, .88, 1750], ['deepseek-ai/deepseek-r1', 1112, .9, 3900], ['mistralai/mistral-large-2-instruct', 1046, .8, 1200], ['meta/llama-3.3-70b-instruct', 1018, .76, 640], ['qwen/qwen2.5-coder-32b-instruct', 982, .71, 520], ['meta/llama-3.1-8b-instruct', 861, .52, 210], ['microsoft/phi-4-mini-instruct', 826, .47, 180]];
+const ARENA = [['nvidia/nemotron-3-ultra-550b-a55b', 1184, .91, 2100], ['nvidia/nemotron-3-super-120b-a12b', 1131, .88, 1750], ['deepseek-ai/deepseek-v4.1-flash', 1112, .9, 3900], ['mistralai/mistral-large-4-1t-a52b', 1046, .8, 1200], ['google/gemma-4-31b-it', 1018, .76, 640], ['poolside/laguna-xs-2.1', 982, .71, 520], ['nvidia/nemotron-3.5-lightning-30b-a3b', 861, .52, 210], ['nvidia/nemotron-3.5-bolt-e4b', 826, .47, 180]];
 
+
+// ---- model switching (demo): same shapes as /api/models/* ----
+const APP_ROLES = { forge: [['reasoning', 'PLANNER'], ['coder', 'CODER'], ['chat', 'REVIEWER']], council: [['chat', 'PANEL'], ['reasoning', 'JUDGE']], atlas: [['embed', 'EMBED'], ['rerank', 'RERANK'], ['chat', 'ANSWER']], arena: [['chat', 'CHAT'], ['reasoning', 'REASONING'], ['coder', 'CODER'], ['fast', 'FAST']], prism: [['vision', 'VISION']], sentinel: [['chat', 'TARGET'], ['safety', 'GUARD']], loom: [['chat', 'CHAT'], ['fast', 'FAST'], ['reasoning', 'REASON'], ['embed', 'EMBED']], distill: [['chat', 'GENERATE'], ['fast', 'WEAK'], ['reward', 'REWARD'], ['embed', 'EMBED']] };
+const DEF = { chat: 'nvidia/nemotron-3-super-120b-a12b', reasoning: 'nvidia/nemotron-3-ultra-550b-a55b', coder: 'poolside/laguna-xs-2.1', vision: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning', fast: 'nvidia/nemotron-3.5-lightning-30b-a3b', embed: 'nvidia/nemotron-3.5-embed-1b', rerank: 'nvidia/nemotron-3.5-rerank-8b', reward: 'nvidia/nemotron-4-340b-reward', safety: 'nvidia/nemotron-3.5-content-safety' };
+S.override = {}; S.appOverride = {};
+function modelsPayload() {
+  const eff = (role, app) => (app && S.appOverride[app]?.[role] ? [S.appOverride[app][role], 'app'] : S.override[role] ? [S.override[role], 'studio'] : [DEF[role], 'default']);
+  return { live: S.key, mock: !S.key, note: S.key ? '' : 'Simulation mode: showing the curated catalog. The live model list appears once a key is added.', catalog: S.key ? { source: 'network', count: 126, age_s: 40, fetched_at: now() } : null, stale: [], unavailable: {}, substitutions: [],
+    roles: Object.keys(DEF).map((role) => ({ role, model: eff(role)[0], source: eff(role)[1], default: DEF[role], substituted: false, override: S.override[role] || null, pinned_by: null })),
+    apps: Object.fromEntries(Object.entries(APP_ROLES).map(([app, slots]) => [app, { overridden: !!Object.keys(S.appOverride[app] || {}).length, roles: slots.map(([role, label]) => ({ role, label, model: eff(role, app)[0], source: eff(role, app)[1], override: S.appOverride[app]?.[role] || null })) }])) };
+}
+const setOv = (tbl, ov) => { for (const [k, v] of Object.entries(ov || {})) { if (v) tbl[k] = v; else delete tbl[k]; } };
 export async function request(method, path, body) {
   await sleep(60 + Math.random() * 80);
   const [p, q = ''] = path.split('?'); const sp = new URLSearchParams(q);
@@ -257,11 +269,18 @@ export async function request(method, path, body) {
   if (p === '/arena/runs') return [{ id: 'arena_1', started_at: now() - 86400, status: 'done', result: { leaderboard: ARENA.map(([model, elo, quality, latency_ms]) => ({ model, elo, quality, latency_ms, ci: 18 })) } }];
   if (p === '/arena/route') {
     await sleep(500); const code = /code|python|bug|function|regex/i.test(body.prompt);
-    const c = (code ? [['qwen/qwen2.5-coder-32b-instruct', .88, 520, 3], ['mistralai/codestral-22b-instruct-v0.1', .84, 410, 2], ['meta/llama-3.3-70b-instruct', .79, 640, 3], ['meta/llama-3.1-8b-instruct', .6, 210, 1]] : [['meta/llama-3.1-405b-instruct', .9, 1750, 5], ['meta/llama-3.3-70b-instruct', .82, 640, 3], ['mistralai/mistral-large-2-instruct', .8, 1200, 4], ['meta/llama-3.1-8b-instruct', .58, 210, 1]]).map(([model, quality, latency, cost]) => ({ model, quality, latency, cost, utility: quality - latency / 12000 - cost * .02 }));
+    const c = (code ? [['poolside/laguna-xs-2.1', .88, 520, 3], ['mistralai/codestral-22b-instruct-v0.1', .84, 410, 2], ['google/gemma-4-31b-it', .79, 640, 3], ['nvidia/nemotron-3.5-lightning-30b-a3b', .6, 210, 1]] : [['nvidia/nemotron-3-super-120b-a12b', .9, 1750, 5], ['google/gemma-4-31b-it', .82, 640, 3], ['mistralai/mistral-large-4-1t-a52b', .8, 1200, 4], ['nvidia/nemotron-3.5-lightning-30b-a3b', .58, 210, 1]]).map(([model, quality, latency, cost]) => ({ model, quality, latency, cost, utility: quality - latency / 12000 - cost * .02 }));
     c.sort((a, b) => b.utility - a.utility);
     return { category: code ? 'coding' : 'general reasoning', chosen: c[0].model, candidates: c, reasons: [`Classified as ${code ? 'coding' : 'general reasoning'} by embedding kNN (0.${code ? 83 : 71})`, 'Utility = quality - latency penalty - cost penalty', `${c[0].model.split('/').pop()} leads the leaderboard for this category`] };
   }
   if (p === '/arena/run') { const r = newRun('arena', 'Mini arena'); setTimeout(() => emit(r, 'run.done', { result: {} }), 1500); return { run_id: r.id }; }
+  if (p === '/models/roles') return modelsPayload();
+  if (p === '/models/refresh') return modelsPayload();
+  if (p === '/models/options') { const role = sp.get('role'); const list = MODELS.filter((x) => sp.get('all') === '1' || x.roles.includes(role)); return { role, live: S.key, all: sp.get('all') === '1', note: S.key ? '' : 'Simulation mode: showing the curated catalog. The live model list appears once a key is added.', models: list.map((x) => ({ id: x.id, live: S.key, curated: true, preferred: x.id === DEF[role], deprecated: false, unavailable: false })) }; }
+  if (p === '/models/overrides' && method === 'PUT') { setOv(S.override, body.overrides); return modelsPayload(); }
+  if (m(/^\/models\/app\/([^/]+)$/)) { const app = m(/^\/models\/app\/([^/]+)$/)[1]; S.appOverride[app] ||= {}; if (method === 'DELETE') S.appOverride[app] = {}; else setOv(S.appOverride[app], body.overrides); return modelsPayload(); }
+  if (p === '/update/check') return { version: '0.2.1', kind: 'git', state: 'up-to-date', message: 'NIM Lab 0.2.1 is up to date (origin/claude/nimlab).', commits: [], can_update: false, behind: 0, ahead: 0, dirty: false };
+  if (p === '/uninstall') return { dry_run: true, home: '~/NIMLab', config_dir: '~/.config/nimlab', install: { kind: 'dev', instructions: 'Demo: nothing is ever removed.' }, outside: [], items: [['key', 'API key', 1, 0], ['data', 'Settings and caches', 12, 48e3], ['projects', 'Projects', 2, 9e5], ['atlas', 'Atlas database', 1, 2e6], ['app', 'Application', 0, 0]].map(([id, label, count, bytes]) => ({ id, label, paths: [], count, bytes, selected: false, note: '' })) };
   throw Object.assign(new Error('demo: unknown route ' + p), { status: 404 });
 }
 export function stream(runId, onEvent) {

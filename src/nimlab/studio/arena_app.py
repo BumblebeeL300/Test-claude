@@ -13,9 +13,10 @@ from nimlab.arena.llm import default_models
 from nimlab.arena.results import ItemResult
 from nimlab.arena.simulate import SimulatedClient
 from nimlab.arena.suites import list_suites
-from nimlab.core import default_registry
+from nimlab.core import default_registry, model_scope
 
 from .runs import Run
+from .scope import scoped_work
 from .state import StudioState
 
 __all__ = ["leaderboard_summary", "list_runs", "route", "start_run", "suite_names"]
@@ -93,7 +94,12 @@ async def route(state: StudioState, prompt: str) -> dict[str, Any]:
     return decision.model_dump(mode="json")
 
 
-def start_run(state: StudioState, suites: list[str] | str | None, models: list[str] | None) -> Run:
+def start_run(
+    state: StudioState,
+    suites: list[str] | str | None,
+    models: list[str] | None,
+    overrides: dict[str, str] | None = None,
+) -> Run:
     available = set(suite_names())
     names = (
         ["all"]
@@ -106,9 +112,10 @@ def start_run(state: StudioState, suites: list[str] | str | None, models: list[s
             f"unknown suite(s): {', '.join(unknown)}; available: {', '.join(sorted(available))}"
         )
     simulated = state.mock
-    chosen = [m.strip() for m in (models or []) if m and m.strip()] or default_models(
-        default_registry()
-    )
+    with model_scope("arena", overrides) as planning:
+        chosen = [m.strip() for m in (models or []) if m and m.strip()] or default_models(
+            default_registry()
+        )
 
     async def work(run: Run) -> dict[str, Any]:
         base = state.client()
@@ -157,5 +164,8 @@ def start_run(state: StudioState, suites: list[str] | str | None, models: list[s
         }
 
     return state.runs.start(
-        "arena", f"{len(chosen)} models on {', '.join(names)[:48]}", work, simulated=simulated
+        "arena",
+        f"{len(chosen)} models on {', '.join(names)[:48]}",
+        scoped_work("arena", overrides, work, planning),
+        simulated=simulated,
     )

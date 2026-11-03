@@ -141,12 +141,12 @@ async def test_reasoning_models_get_a_larger_token_budget(make_client) -> None:
     await Council(client).run(
         Q,
         "moa",
-        models=["deepseek-ai/deepseek-r1", "meta/llama-3.3-70b-instruct"],
+        models=["nvidia/nemotron-3-ultra-550b-a55b", "google/gemma-4-31b-it"],
         layers=0,
         max_tokens=500,
     )
     budgets = {c.model: c.kwargs["max_tokens"] for c in client.calls_of("chat", "proposer")}
-    assert budgets == {"deepseek-ai/deepseek-r1": 1500, "meta/llama-3.3-70b-instruct": 500}
+    assert budgets == {"nvidia/nemotron-3-ultra-550b-a55b": 1500, "google/gemma-4-31b-it": 500}
 
 
 async def test_result_exposes_trace_candidates_and_usage(make_client, panel, tmp_path) -> None:

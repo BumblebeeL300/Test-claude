@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import random
+import re
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import datetime, timezone
@@ -20,11 +21,13 @@ from .errors import (
     NIMAuthError,
     NIMError,
     NIMJSONError,
+    NIMModelUnavailableError,
     NIMRateLimitError,
     NIMResponseError,
     NIMTimeoutError,
 )
 from .logging import get_logger
+from .registry import ModelRegistry, default_registry
 from .results import ChatResult, RerankResult, ToolCall, Usage
 from .text import ThinkStreamFilter, extract_json, strip_think
 from .usage import UsageTracker
@@ -39,9 +42,19 @@ RERANK_BATCH_SIZE = 256
 BACKOFF_BASE = 0.5
 BACKOFF_MAX = 30.0
 RETRY_AFTER_MAX = 120.0  # a longer Retry-After is surfaced instead of waited out
-USER_AGENT = "nimlab/0.1"
+USER_AGENT = "nimlab"
 
 _log = get_logger("nimlab.client")
+
+# NVIDIA answers an unknown/retired model with 404 {"status":404,"title":"Not Found","detail":
+# "Function '<uuid>': Not found for account '<id>'"}; OpenAI-style gateways (and self-hosted NIMs)
+# use 400/404 {"error": {"message": "The model `x` does not exist"}}.
+_MODEL_GONE = re.compile(
+    r"not found for account|function .{0,80}not found|model.{0,60}(not found|does not exist|"
+    r"not available|unavailable|not supported|retired|deprecated|decommission)|"
+    r"(unknown|no such|invalid) model|not available for (this )?account",
+    re.IGNORECASE,
+)
 
 
 async def _sleep(seconds: float) -> None:
@@ -140,6 +153,21 @@ def _sse_delta(line: str) -> tuple[bool, str]:
     return False, _content_text(delta.get("content"))
 
 
+def _parse_rankings(data: Any) -> list[tuple[int, float]]:
+    """Rerank replies: NVIDIA ``{"rankings": [{"index", "logit"}]}`` (all hosted and NIM models)
+    or the Cohere/vLLM-style ``{"results": [{"index", "relevance_score"}]}``.
+    """
+    if isinstance(data, dict) and "rankings" in data:
+        items, keys = data["rankings"], ("logit", "score", "relevance_score")
+    else:
+        items, keys = data["results"], ("relevance_score", "logit", "score")
+    out: list[tuple[int, float]] = []
+    for r in items:
+        key = next(k for k in keys if k in r)
+        out.append((int(r["index"]), float(r[key])))
+    return out
+
+
 def _truncate(obj: Any, n: int = 500) -> str:
     text = obj if isinstance(obj, str) else json.dumps(obj, default=str)
     return text if len(text) <= n else text[:n] + "..."
@@ -162,9 +190,14 @@ class NIMClient:
     """
 
     def __init__(
-        self, config: NIMConfig | None = None, *, http_client: httpx.AsyncClient | None = None
+        self,
+        config: NIMConfig | None = None,
+        *,
+        http_client: httpx.AsyncClient | None = None,
+        registry: ModelRegistry | None = None,
     ) -> None:
         self.config: NIMConfig = config or NIMConfig.from_env()
+        self._registry = registry
         self.usage: UsageTracker = UsageTracker()
         self._http = http_client
         self._owns_http = http_client is None
@@ -187,6 +220,42 @@ class NIMClient:
     @property
     def mock(self) -> bool:
         return self.config.mock
+
+    @property
+    def registry(self) -> ModelRegistry:
+        """Registry used for the unavailable-model fallback (inside a Studio run: its scope)."""
+        return self._registry if self._registry is not None else default_registry()
+
+    def _substitute(self, model: str, exc: NIMModelUnavailableError) -> str | None:
+        """Mark ``model`` unavailable; return the next candidate if it was a role pick."""
+        reg = self.registry
+        reg.mark_unavailable(model, exc.message)
+        role = reg.role_of_pick(model)
+        if role is None:
+            _log.warning(
+                "model %s is not available (%s) and was chosen explicitly; not substituting",
+                model,
+                exc.message,
+            )
+            return None
+        alt = reg.next_candidate(role, exclude=[model])
+        if alt is None:
+            _log.warning(
+                "model %s is not available (%s) and no other %s model is known",
+                model,
+                exc.message,
+                role.value,
+            )
+            return None
+        reg.record_substitution(model, alt, role, exc.message)
+        _log.warning(
+            "model %s (default for role %r) is not available (%s); retrying once with %s",
+            model,
+            role.value,
+            exc.message,
+            alt,
+        )
+        return alt
 
     def _headers(self) -> dict[str, str]:
         headers = {"Accept": "application/json", "User-Agent": USER_AGENT}
@@ -238,6 +307,13 @@ class NIMClient:
                 f"server error: {message}", status_code=status, body=body, model=model
             )
             return err, True, None
+        if model != "(list_models)" and (
+            status in (404, 410) or (status in (400, 422) and _MODEL_GONE.search(message))
+        ):
+            err = NIMModelUnavailableError(
+                f"model not available: {message}", status_code=status, body=body, model=model
+            )
+            return err, False, None
         err = NIMResponseError(
             f"request rejected: {message}", status_code=status, body=body, model=model
         )
@@ -433,7 +509,39 @@ class NIMClient:
         response_format: dict[str, Any] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> ChatResult:
-        """One chat completion. ``<think>`` blocks are moved from ``content`` to ``reasoning``."""
+        """One chat completion. ``<think>`` blocks are moved from ``content`` to ``reasoning``.
+
+        A 404 / "model not available" marks the model unavailable for the session; if it was a
+        role pick, the call is retried once with the next candidate (``result.model`` names it).
+        """
+        kw: dict[str, Any] = {
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "tools": tools,
+            "tool_choice": tool_choice,
+            "response_format": response_format,
+            "extra": extra,
+        }
+        try:
+            return await self._chat_once(model, messages, **kw)
+        except NIMModelUnavailableError as exc:
+            alt = self._substitute(model, exc)
+            if alt is None:
+                raise
+            return await self._chat_once(alt, messages, **kw)
+
+    async def _chat_once(
+        self,
+        model: str,
+        messages: list[dict[str, Any]],
+        *,
+        temperature: float,
+        max_tokens: int,
+        tools: list[dict[str, Any]] | None,
+        tool_choice: Any,
+        response_format: dict[str, Any] | None,
+        extra: dict[str, Any] | None,
+    ) -> ChatResult:
         t0 = time.perf_counter()
         try:
             if self.config.mock:
@@ -522,11 +630,23 @@ class NIMClient:
                     extra=extra,
                     stream=True,
                 )
-                async for delta in self._stream_deltas(model, body):
-                    raw_chars += len(delta)
-                    piece = filt.feed(delta)
-                    if piece:
-                        yield piece
+                try:
+                    async for delta in self._stream_deltas(model, body):
+                        raw_chars += len(delta)
+                        piece = filt.feed(delta)
+                        if piece:
+                            yield piece
+                except NIMModelUnavailableError as exc:
+                    alt = None if raw_chars else self._substitute(model, exc)
+                    if alt is None:
+                        raise
+                    self.usage.record(model, None, time.perf_counter() - t0, error=True)
+                    model, body["model"] = alt, alt
+                    async for delta in self._stream_deltas(alt, body):
+                        raw_chars += len(delta)
+                        piece = filt.feed(delta)
+                        if piece:
+                            yield piece
             tail = filt.flush()
             if tail:
                 yield tail
@@ -640,7 +760,21 @@ class NIMClient:
         *,
         input_type: Literal["query", "passage"] = "passage",
     ) -> list[list[float]]:
-        """Embed texts (batches of 32). Use ``input_type="query"`` for search queries."""
+        """Embed texts (batches of 32). Use ``input_type="query"`` for search queries.
+
+        Falls back once to the next role candidate if the model is not available (see ``chat``).
+        """
+        try:
+            return await self._embed_once(model, texts, input_type)
+        except NIMModelUnavailableError as exc:
+            alt = self._substitute(model, exc)
+            if alt is None:
+                raise
+            return await self._embed_once(alt, texts, input_type)
+
+    async def _embed_once(
+        self, model: str, texts: list[str], input_type: Literal["query", "passage"]
+    ) -> list[list[float]]:
         if not texts:
             return []
         t0 = time.perf_counter()
@@ -675,7 +809,7 @@ class NIMClient:
         url = f"{self.config.rerank_base_url}/{model}/reranking"
         data = await self._request_json("POST", url, model=model, body=body)
         try:
-            ranked = [(int(r["index"]), float(r["logit"])) for r in data["rankings"]]
+            ranked = _parse_rankings(data)
         except (KeyError, TypeError, ValueError) as exc:
             raise NIMResponseError(
                 f"unexpected rerank response: {_truncate(data, 300)}", model=model
@@ -691,8 +825,20 @@ class NIMClient:
         """Rerank passages for a query; returns results sorted by descending score.
 
         ``index`` is the passage's position in ``passages``. Scores are model logits (real) or
-        overlap scores (mock): compare within one call only.
+        overlap scores (mock): compare within one call only. Falls back once to the next role
+        candidate if the model is not available (see ``chat``).
         """
+        try:
+            return await self._rerank_once(model, query, passages, top_n)
+        except NIMModelUnavailableError as exc:
+            alt = self._substitute(model, exc)
+            if alt is None:
+                raise
+            return await self._rerank_once(alt, query, passages, top_n)
+
+    async def _rerank_once(
+        self, model: str, query: str, passages: list[str], top_n: int | None
+    ) -> list[RerankResult]:
         if not passages:
             return []
         t0 = time.perf_counter()

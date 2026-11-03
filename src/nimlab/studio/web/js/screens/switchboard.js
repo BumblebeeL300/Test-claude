@@ -1,6 +1,7 @@
 // Switchboard: eight modules in two tiers around the NIM Core, patched together with live cables.
 import { h, clear, ago, fmtNum, shortModel, pop, reduced, clamp } from '../util.js';
 import { icon } from '../icons.js';
+import { describe } from '../descriptions.js';
 import { store, on, go, api, appStatus, isSim, refresh } from '../app.js';
 
 const MODS = [
@@ -28,7 +29,7 @@ export function mount(el) {
   const svg = h('svg.cables', { 'aria-hidden': 'true' });
   const core = h('button.module.core', { 'aria-label': 'NIM Core engine: open settings', on: { click: () => import('./settings.js').then((m) => m.openSettings()) } });
   const grid = h('div.rack-grid', core, MODS.map((m) => {
-    const card = h('button.module', { class: 'app-' + m.id, style: { gridArea: m.area }, 'aria-label': `${m.name}: ${m.tag}`, on: { click: () => go(m.route) } });
+    const desc = describe(m.route); const card = h('button.module', { class: 'app-' + m.id, style: { gridArea: m.area }, title: desc?.line, 'aria-label': `${m.name}: ${desc?.short || m.tag}`, on: { click: () => go(m.route) } });
     mods[m.id] = { card, m };
     return card;
   }));
@@ -51,17 +52,17 @@ export function mount(el) {
     card.append(
       h('i.screw.tl'), h('i.screw.tr'), h('i.screw.bl'), h('i.screw.br'),
       h('div.m-top', h('span.label', `MOD ${m.n}`), h('span.leds', h('span.lg', r.leds.ready, h('span.label', 'RDY')), h('span.lg', r.leds.busy, h('span.label', 'BSY')), h('span.lg', r.leds.key, h('span.label', 'KEY')))),
-      h('div.m-main', h('div.bezel', icon(m.id === 'forge' ? 'forge' : m.id)), h('div', h('h2', m.name), h('p', m.tag))),
+      h('div.m-main', h('div.bezel', icon(m.id === 'forge' ? 'forge' : m.id)), h('div', h('h2', m.name), h('p', describe(m.route)?.short || m.tag))),
       h('div.m-stats', h('div', h('span.label', 'Runs'), r.runs), h('div', h('span.label', 'Last run'), r.last), r.vu),
       h('div.m-foot', r.state, h('span.go', m.verb, icon('chevron'), h('kbd', '⌘' + m.key))));
     r.jack = h('i.jack'); card.append(r.jack);
   }
-  const c = { mode: h('span.mode'), key: h('code.mono'), models: h('b.num.big', '—'), net: h('span.led'), netl: h('span.label'), base: h('span.mono.dim') };
+  const c = { mode: h('span.mode'), key: h('code.mono'), models: h('b.num.big', '—'), net: h('span.led'), netl: h('span.label'), base: h('span.mono.dim'), notice: h('span.core-notice', { hidden: true, role: 'status' }) };
   core.append(h('i.screw.tl'), h('i.screw.tr'), h('i.screw.bl'), h('i.screw.br'),
     h('div.m-top', h('span.label', 'NIM CORE'), h('span.lg', c.net, c.netl)),
     h('div.core-dial', { html: '<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-width="1"/><circle class="ring" cx="60" cy="60" r="46" fill="none" stroke="var(--c-core)" stroke-width="3" stroke-dasharray="6 5" stroke-linecap="round"/><circle class="ring r2" cx="60" cy="60" r="34" fill="none" stroke="var(--c-atlas)" stroke-width="2" stroke-dasharray="2 7" stroke-linecap="round"/><circle cx="60" cy="60" r="8" fill="var(--c-core)"/></svg>' }),
     h('h2', 'NIM Engine'), c.mode,
-    h('div.core-stats', h('div', h('span.label', 'Models'), c.models), h('div', h('span.label', 'Key'), c.key)), c.base,
+    h('div.core-stats', h('div', h('span.label', 'Models'), c.models), h('div', h('span.label', 'Key'), c.key)), c.base, c.notice,
     h('i.jack.j-core'));
 
   // ---- paint ----
@@ -84,6 +85,8 @@ export function mount(el) {
     c.models.textContent = store.models.length || '—';
     if (isSim()) { c.net.className = 'led warn'; c.netl.textContent = 'OFFLINE · SIM'; } else { c.net.className = 'led ' + ({ ok: 'on', blocked: 'bad' }[s.network] || 'warn'); c.netl.textContent = { ok: 'ONLINE', blocked: 'BLOCKED' }[s.network] || 'UNPROBED'; }
     c.base.textContent = (s.base_url || '').replace(/^https?:\/\//, '');
+    const stale = s.models?.stale_count || 0; c.notice.hidden = !stale;
+    c.notice.textContent = `${stale} default model${stale === 1 ? '' : 's'} unavailable, auto-substituted`; c.notice.title = (s.models?.stale || []).map((x) => `${x.role}: ${x.default} -> ${x.substitute}`).join('\n');
     cables();
   }
   function paintRuns() {

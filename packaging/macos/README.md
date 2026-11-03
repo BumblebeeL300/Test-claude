@@ -29,7 +29,7 @@ open "packaging/macos/dist/NIM Lab Studio.app"
 ```
 
 Options: `--no-sign` (skip codesigning), `--clean` (delete `build/`, `dist/` and the build venv),
-`--python /path/to/python3`, `--no-venv` (use the current environment), `-h`.
+`--python /path/to/python3`, `--no-venv` (use the current environment), `--regen-icon`, `-h`.
 Environment: `NIMLAB_TARGET_ARCH=arm64|x86_64|universal2`, `NIMLAB_CODESIGN_IDENTITY="Developer ID
 Application: Your Name (TEAMID)"`.
 
@@ -37,8 +37,9 @@ What the script does:
 
 1. creates `.build-venv` and installs `nimlab[desktop]` (adds `pywebview` and `keyring`),
    `pyinstaller`, `pillow` and `pytest` (Forge runs your project's tests with the bundled pytest);
-2. `make_icon.py` draws a 1024 px icon (acid-chartreuse to magenta "N" on deep ink) and builds
-   `AppIcon.icns` with `iconutil` (without Pillow it still writes a fallback `AppIcon.png`);
+2. uses the committed `AppIcon.icns` (pass `--regen-icon`, or delete it, to redraw: `make_icon.py`
+   renders `web/app-icon.svg` via Playwright, cairosvg or rsvg, falls back to a pure-Python ICNS
+   writer, and uses `favicon.svg` for the 16 and 32 px sizes);
 3. `pyinstaller nimlab_studio.spec` builds a windowed one-dir app;
 4. ad-hoc `codesign` (or your Developer ID when `NIMLAB_CODESIGN_IDENTITY` is set);
 5. optional DMG with `hdiutil` (app plus an `Applications` shortcut).

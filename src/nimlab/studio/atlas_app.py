@@ -12,11 +12,13 @@ import re
 from pathlib import Path
 from typing import Any
 
-from nimlab.atlas.config import DEFAULT_COLLECTION
+from nimlab.atlas.config import DEFAULT_COLLECTION, ModelSet
 from nimlab.atlas.loaders import SUPPORTED_EXTENSIONS, media_type_for
 from nimlab.atlas.models import FileReport, IngestReport, SourceRef, StoreError
+from nimlab.core import default_registry
 
 from .runs import Run
+from .scope import scoped_work
 from .state import StudioState
 
 __all__ = [
@@ -137,11 +139,20 @@ def _source(s: SourceRef, *, full: bool) -> dict[str, Any]:
     return data
 
 
-def start_ask(state: StudioState, question: str, collection: str, mode: str, verify: bool) -> Run:
+def start_ask(
+    state: StudioState,
+    question: str,
+    collection: str,
+    mode: str,
+    verify: bool,
+    overrides: dict[str, str] | None = None,
+) -> Run:
     simulated = state.mock
 
     async def work(run: Run) -> dict[str, Any]:
         atlas = state.atlas()
+        # Re-resolve the embed / rerank / chat / ... models inside this run's model scope.
+        atlas.models = ModelSet.resolve(atlas.config, default_registry())
         final = None
         for attempt in (1, 2):
             stream = atlas.ask_stream(
@@ -196,5 +207,9 @@ def start_ask(state: StudioState, question: str, collection: str, mode: str, ver
 
     title = question.strip()[:80]
     return state.runs.start(
-        "atlas", title, work, simulated=simulated, meta={"collection": collection}
+        "atlas",
+        title,
+        scoped_work("atlas", overrides, work),
+        simulated=simulated,
+        meta={"collection": collection},
     )

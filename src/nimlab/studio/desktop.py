@@ -19,6 +19,7 @@ import sys
 import threading
 import time
 import webbrowser
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -238,6 +239,22 @@ def force_dark_appearance() -> bool:  # pragma: no cover - macOS only
     return True
 
 
+_ACTIVE: dict[str, Any] = {}
+
+
+def make_exit_hook(running: RunningServer) -> Callable[[], None]:
+    """What the uninstall endpoint calls to quit: close the window, then stop the server."""
+
+    def hook() -> None:
+        window = _ACTIVE.get("window")
+        if window is not None:
+            with contextlib.suppress(Exception):
+                window.destroy()
+        running.server.should_exit = True
+
+    return hook
+
+
 def open_window(url: str, *, dev: bool = False) -> None:  # pragma: no cover - needs a display
     """Create the native window and block until it is closed."""
     import webview
@@ -247,6 +264,7 @@ def open_window(url: str, *, dev: bool = False) -> None:  # pragma: no cover - n
     options = _supported(webview.create_window, window_options())
     window = webview.create_window(WINDOW_TITLE, url, js_api=api, **options)
     api.bind(window)
+    _ACTIVE["window"] = window
     webview.start(debug=dev)
 
 
@@ -263,6 +281,9 @@ def launch(
     """Start the server and the UI; returns a process exit code."""
     use_window = not browser and webview_available()
     running = start_server(settings, port=port, dev=dev)
+    studio_state = running.app.state.studio
+    studio_state.settings.allow_exit = True
+    studio_state.exit_hook = make_exit_hook(running)
     _say(f"NIM Lab Studio is running at {running.base_url}/")
     try:
         if use_window:

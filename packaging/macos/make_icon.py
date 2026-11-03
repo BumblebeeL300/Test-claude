@@ -1,149 +1,48 @@
 #!/usr/bin/env python3
-"""Generate the NIM Lab Studio app icon: a 1024 px "N" mark on deep ink.
+"""Build the NIM Lab Studio app icon from its SVG master.
 
-Outputs (next to this script, or into --out):
+The master is ``src/nimlab/studio/web/app-icon.svg`` (1024 x 1024: an ink faceplate on the macOS
+Big Sur+ grid with three patch cables converging on a glowing jack in a hex core, risograph grain
+and a cyan/magenta misregistration on the core). ``src/nimlab/studio/web/favicon.svg`` is the
+simplified geometry; it is used for the 16 and 32 px renders (so those are not downscales).
 
-* ``AppIcon.png``   1024 x 1024 master (always written)
-* ``AppIcon.iconset/``  the standard sizes (when Pillow is available)
-* ``AppIcon.icns``  built with ``iconutil`` on macOS, or by Pillow's ICNS writer elsewhere
+Outputs, written into ``--out`` (default: next to this script):
 
-The glyph is an acid-chartreuse to magenta gradient on #0B0A12. Pillow gives anti-aliased output;
-without Pillow a small pure-Python rasteriser writes a (hard-edged) PNG so the build never fails
-just because of the icon.
+* ``AppIcon-1024.png``   the 1024 master render
+* ``AppIcon.iconset/``   every iconset size (16 .. 512 plus @2x)
+* ``AppIcon.icns``       ``iconutil`` on macOS, otherwise a built-in pure-Python ICNS writer
+* ``docs/images/icon.png``  256 px, optimised (``--no-docs`` skips)
+
+Renderers, tried in order (``--renderer`` forces one):
+
+1. ``playwright``  headless Chromium screenshot with a transparent background (``pip install
+   playwright && playwright install chromium``). Handles the grain filter and blend modes.
+2. ``cairosvg``    ``pip install cairosvg``. Fallback: it ignores ``feTurbulence`` and blend modes,
+   so the grain and the misregistration glow are lost, but the icon still builds.
+3. ``rsvg-convert`` / ``resvg`` on PATH: same limitation as cairosvg.
+
+Nothing here is a runtime dependency of nimlab; run it by hand when the artwork changes (the
+generated files are committed). Pillow is used only to optimise ``docs/images/icon.png``.
 """
 
 from __future__ import annotations
 
 import argparse
+import glob
+import os
 import shutil
 import struct
 import subprocess
 import sys
-import zlib
+import tempfile
 from pathlib import Path
 
-SIZE = 1024
-INK = (11, 10, 18)
-CHARTREUSE = (198, 255, 61)
-GOLD = (255, 214, 102)  # mid stop: keeps the blend vivid instead of muddy brown
-MAGENTA = (255, 62, 165)
-TILE_RADIUS = 0.2237  # macOS "squircle" corner radius as a fraction of the tile (approximation)
-TILE_INSET = 0.098  # Apple's icon grid leaves ~10% margin around the tile
-
-Point = tuple[float, float]
-
-
-def glyph_polygons(size: int) -> list[list[Point]]:
-    """The "N": two vertical bars and a diagonal, plus a small spark. Coordinates in pixels."""
-    s = size / 1024
-    left, right = 330 * s, 694 * s
-    top, bottom = 290 * s, 734 * s
-    bar = 92 * s
-    n_left = [(left, top), (left + bar, top), (left + bar, bottom), (left, bottom)]
-    n_right = [(right - bar, top), (right, top), (right, bottom), (right - bar, bottom)]
-    diag = [(left, top), (left + bar * 1.25, top), (right, bottom), (right - bar * 1.25, bottom)]
-    cx, cy, r = 742 * s, 262 * s, 54 * s  # spark: a diamond above the right bar
-    spark = [(cx, cy - r * 1.5), (cx + r, cy), (cx, cy + r * 1.5), (cx - r, cy)]
-    return [n_left, diag, n_right, spark]
-
-
-def gradient(t: float) -> tuple[int, int, int]:
-    """Chartreuse -> gold -> magenta along ``t`` in [0, 1]."""
-    t = min(1.0, max(0.0, t))
-    a, b, u = (CHARTREUSE, GOLD, t * 2) if t < 0.5 else (GOLD, MAGENTA, t * 2 - 1)
-    return tuple(round(x + (y - x) * u) for x, y in zip(a, b, strict=True))  # type: ignore[return-value]
-
-
-def glyph_t(size: int):  # type: ignore[no-untyped-def]
-    """``t(x, y)``: a diagonal ramp across the glyph's bounding box (so both ends are saturated)."""
-    s = size / 1024
-    lo, hi = (330 + 290) * s, (694 + 734) * s
-    return lambda x, y: (x + y - lo) / (hi - lo)
-
-
-def render_pillow(size: int):  # type: ignore[no-untyped-def]
-    from PIL import Image, ImageDraw, ImageFilter
-
-    ss = 3  # supersample for smooth edges
-    big = size * ss
-    tile = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    inset = round(big * TILE_INSET)
-    box = (inset, inset, big - inset, big - inset)
-    radius = round((big - 2 * inset) * TILE_RADIUS)
-    d = ImageDraw.Draw(tile)
-    d.rounded_rectangle(box, radius=radius, fill=(*INK, 255))
-    # soft magenta glow behind the glyph so the tile is not a flat slab (clipped to the tile)
-    glow = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse(
-        (big * 0.22, big * 0.22, big * 0.78, big * 0.78), fill=(*MAGENTA, 70)
-    )
-    glow = glow.filter(ImageFilter.GaussianBlur(big * 0.07))
-    mask = Image.new("L", (big, big), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(box, radius=radius, fill=255)
-    tile = Image.composite(Image.alpha_composite(tile, glow), tile, mask)
-
-    # the glyph, filled with a diagonal chartreuse -> magenta gradient
-    gmask = Image.new("L", (big, big), 0)
-    gdraw = ImageDraw.Draw(gmask)
-    for poly in glyph_polygons(big):
-        gdraw.polygon(poly, fill=255)
-    ramp = glyph_t(big)
-    grad = Image.new("RGBA", (big, big))
-    px = grad.load()
-    ys = range(round(big * 0.1), round(big * 0.85))
-    for y in ys:
-        for x in range(round(big * 0.25), round(big * 0.85)):
-            px[x, y] = (*gradient(ramp(x, y)), 255)
-    tile.paste(grad, (0, 0), gmask)
-    return tile.resize((size, size), Image.LANCZOS)
-
-
-def _fill_polygon(rows: list[bytearray], poly: list[Point], colour_at, size: int) -> None:  # type: ignore[no-untyped-def]
-    """Even-odd scanline fill into RGBA rows (no anti-aliasing)."""
-    ys = [p[1] for p in poly]
-    for y in range(max(0, int(min(ys))), min(size, int(max(ys)) + 1)):
-        xs: list[float] = []
-        for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1], strict=True):
-            if (y0 <= y + 0.5 < y1) or (y1 <= y + 0.5 < y0):
-                xs.append(x0 + (y + 0.5 - y0) * (x1 - x0) / (y1 - y0))
-        xs.sort()
-        for xa, xb in zip(xs[::2], xs[1::2], strict=False):
-            for x in range(max(0, round(xa)), min(size, round(xb))):
-                r, g, b = colour_at(x, y)
-                rows[y][x * 4 : x * 4 + 4] = bytes((r, g, b, 255))
-
-
-def render_fallback_png(size: int) -> bytes:
-    """Pure-Python PNG: ink squircle-ish tile with the gradient glyph."""
-    inset = round(size * TILE_INSET)
-    radius = round((size - 2 * inset) * TILE_RADIUS)
-    rows = [bytearray(size * 4) for _ in range(size)]
-    lo, hi = inset, size - inset
-    for y in range(lo, hi):
-        for x in range(lo, hi):
-            dx = max(lo + radius - x, 0, x - (hi - radius - 1))
-            dy = max(lo + radius - y, 0, y - (hi - radius - 1))
-            if dx * dx + dy * dy <= radius * radius:
-                rows[y][x * 4 : x * 4 + 4] = bytes((*INK, 255))
-    ramp = glyph_t(size)
-    for poly in glyph_polygons(size):
-        _fill_polygon(rows, poly, lambda x, y: gradient(ramp(x, y)), size)
-    raw = b"".join(b"\x00" + bytes(r) for r in rows)
-
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        body = tag + data
-        return (
-            struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
-        )
-
-    ihdr = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", ihdr)
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
-    )
-
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parent.parent
+WEB = REPO / "src" / "nimlab" / "studio" / "web"
+MASTER = WEB / "app-icon.svg"
+SMALL = WEB / "favicon.svg"
+SMALL_MAX = 32  # renders at or below this many pixels use the hand-simplified favicon geometry
 
 ICONSET_SIZES = [
     ("icon_16x16.png", 16), ("icon_16x16@2x.png", 32), ("icon_32x32.png", 32),
@@ -151,47 +50,196 @@ ICONSET_SIZES = [
     ("icon_256x256.png", 256), ("icon_256x256@2x.png", 512), ("icon_512x512.png", 512),
     ("icon_512x512@2x.png", 1024),
 ]  # fmt: skip
+# ICNS PNG-payload element types -> pixel size (the OSType names the logical size and scale).
+ICNS_TYPES = [
+    (b"icp4", 16), (b"icp5", 32), (b"icp6", 64), (b"ic07", 128), (b"ic08", 256), (b"ic09", 512),
+    (b"ic10", 1024), (b"ic11", 32), (b"ic12", 64), (b"ic13", 256), (b"ic14", 512),
+]  # fmt: skip
+
+
+def _page(svg: str, size: int, pad: int) -> str:
+    return (
+        '<!doctype html><html><body style="margin:0;background:transparent">'
+        f"<style>svg{{position:absolute;left:{pad}px;top:{pad}px;"
+        f"width:{size - 2 * pad}px;height:{size - 2 * pad}px}}</style>{svg}</body></html>"
+    )
+
+
+class PlaywrightRenderer:
+    name = "playwright"
+
+    def __init__(self) -> None:
+        from playwright.sync_api import sync_playwright
+
+        self._cm = sync_playwright()
+        pw = self._pw = self._cm.start()
+        try:
+            self._browser = pw.chromium.launch()
+        except Exception:  # browsers installed for another playwright version: find any chromium
+            exe = next(
+                (
+                    p
+                    for root in (os.environ.get("PLAYWRIGHT_BROWSERS_PATH", ""), "/opt/pw-browsers")
+                    for p in glob.glob(f"{root}/chromium*/*/chrome*")
+                    if root and os.path.isfile(p) and os.access(p, os.X_OK)
+                ),
+                None,
+            )
+            if exe is None:
+                raise
+            self._browser = pw.chromium.launch(executable_path=exe)
+
+    def render(self, svg: str, size: int, pad: int = 0) -> bytes:
+        page = self._browser.new_page(viewport={"width": size, "height": size})
+        page.set_content(_page(svg, size, pad))
+        page.wait_for_timeout(150)
+        png = page.screenshot(omit_background=True)
+        page.close()
+        return png
+
+    def close(self) -> None:
+        self._browser.close()
+        self._pw.stop()
+
+
+class CairoRenderer:
+    name = "cairosvg"
+
+    def __init__(self) -> None:
+        import cairosvg  # noqa: F401
+
+    def render(self, svg: str, size: int, pad: int = 0) -> bytes:
+        import cairosvg
+
+        inner = size - 2 * pad
+        png = cairosvg.svg2png(bytestring=svg.encode(), output_width=inner, output_height=inner)
+        if not pad:
+            return png
+        from io import BytesIO
+
+        from PIL import Image
+
+        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        canvas.paste(Image.open(BytesIO(png)), (pad, pad))
+        buf = BytesIO()
+        canvas.save(buf, "PNG")
+        return buf.getvalue()
+
+    def close(self) -> None:
+        pass
+
+
+class CliRenderer:
+    name = "rsvg/resvg"
+
+    def __init__(self) -> None:
+        self.exe = shutil.which("rsvg-convert") or shutil.which("resvg")
+        if not self.exe:
+            raise ImportError("neither rsvg-convert nor resvg on PATH")
+
+    def render(self, svg: str, size: int, pad: int = 0) -> bytes:
+        inner = size - 2 * pad
+        with tempfile.TemporaryDirectory() as td:
+            src, dst = Path(td, "i.svg"), Path(td, "o.png")
+            src.write_text(svg)
+            if Path(self.exe).name == "rsvg-convert":
+                cmd = [self.exe, "-w", str(inner), "-h", str(inner), "-o", str(dst), str(src)]
+            else:
+                cmd = [self.exe, "-w", str(inner), "-h", str(inner), str(src), str(dst)]
+            subprocess.run(cmd, check=True)
+            png = dst.read_bytes()
+        if not pad:
+            return png
+        from io import BytesIO
+
+        from PIL import Image
+
+        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        canvas.paste(Image.open(BytesIO(png)), (pad, pad))
+        buf = BytesIO()
+        canvas.save(buf, "PNG")
+        return buf.getvalue()
+
+    def close(self) -> None:
+        pass
+
+
+def get_renderer(prefer: str | None):  # type: ignore[no-untyped-def]
+    order = {"playwright": PlaywrightRenderer, "cairosvg": CairoRenderer, "cli": CliRenderer}
+    names = [prefer] if prefer else list(order)
+    errors = []
+    for n in names:
+        try:
+            return order[n]()
+        except Exception as exc:  # any failure means "try the next renderer"
+            errors.append(f"{n}: {exc}")
+    raise SystemExit("no SVG renderer available:\n  " + "\n  ".join(errors))
+
+
+def render_size(r, size: int, master: str, small: str) -> bytes:  # type: ignore[no-untyped-def]
+    """Full artwork above SMALL_MAX; the simplified geometry (with a hinted 1 px margin) below."""
+    if size <= SMALL_MAX:
+        return r.render(small, size, pad=1)
+    return r.render(master, size)
+
+
+def write_icns(path: Path, pngs: dict[int, bytes]) -> None:
+    """Pure-Python ICNS: each element is an OSType, a big-endian length and a PNG payload."""
+    body = b"".join(t + struct.pack(">I", 8 + len(pngs[px])) + pngs[px] for t, px in ICNS_TYPES)
+    path.write_bytes(b"icns" + struct.pack(">I", 8 + len(body)) + body)
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    ap.add_argument("--out", type=Path, default=Path(__file__).parent, help="output directory")
+    ap.add_argument("--out", type=Path, default=HERE, help="output directory")
+    ap.add_argument("--renderer", choices=["playwright", "cairosvg", "cli"])
+    ap.add_argument("--no-docs", action="store_true", help="skip docs/images/icon.png")
     args = ap.parse_args(argv)
     out: Path = args.out
     out.mkdir(parents=True, exist_ok=True)
-    png = out / "AppIcon.png"
+    master, small = MASTER.read_text(), SMALL.read_text()
 
+    r = get_renderer(args.renderer)
+    print(f"renderer: {r.name}")
     try:
-        import PIL  # noqa: F401
-    except ImportError:
-        print("Pillow not found: writing a basic PNG only (pip install pillow for the full icon).")
-        png.write_bytes(render_fallback_png(SIZE))
-        print(f"wrote {png}")
-        return 0
+        cache: dict[int, bytes] = {}
+        for px in sorted({p for _, p in ICONSET_SIZES} | {p for _, p in ICNS_TYPES}):
+            cache[px] = render_size(r, px, master, small)
+    finally:
+        r.close()
 
-    master = render_pillow(SIZE)
-    master.save(png)
+    (out / "AppIcon-1024.png").write_bytes(cache[1024])
     iconset = out / "AppIcon.iconset"
     if iconset.exists():
         shutil.rmtree(iconset)
     iconset.mkdir()
-    from PIL import Image
-
     for name, px in ICONSET_SIZES:
-        master.resize((px, px), Image.LANCZOS).save(iconset / name)
+        (iconset / name).write_bytes(cache[px])
+
     icns = out / "AppIcon.icns"
     if sys.platform == "darwin" and shutil.which("iconutil"):
         subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(icns)], check=True)
         print(f"wrote {icns} (iconutil)")
     else:
+        write_icns(icns, cache)
+        print(f"wrote {icns} (built-in writer; on macOS this script uses iconutil)")
+    shutil.rmtree(iconset)  # the .icns is the deliverable; the iconset is regenerable scratch
+    print(f"wrote {out / 'AppIcon-1024.png'}")
+
+    docs = REPO / "docs" / "images"
+    if not args.no_docs and docs.is_dir() and out == HERE:
+        png = docs / "icon.png"
         try:
-            master.save(icns)  # Pillow's ICNS writer: good enough to test the build off-macOS
-            print(f"wrote {icns} (Pillow; on macOS this script uses iconutil)")
-        except Exception as exc:  # pragma: no cover
-            print(f"could not write {icns}: {exc}; the PNG is still available")
-    print(f"wrote {png}")
+            from io import BytesIO
+
+            from PIL import Image
+
+            Image.open(BytesIO(cache[256])).save(png, optimize=True)
+        except ImportError:
+            png.write_bytes(cache[256])
+        print(f"wrote {png}")
     return 0
 
 

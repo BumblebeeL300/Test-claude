@@ -28,7 +28,7 @@ from nimlab.core.client import RETRY_AFTER_MAX, parse_retry_after
 BASE = "https://integrate.api.nvidia.com/v1"
 RERANK = "https://ai.api.nvidia.com/v1/retrieval"
 CHAT_URL = f"{BASE}/chat/completions"
-CHAT = "meta/llama-3.3-70b-instruct"
+CHAT = "nvidia/nemotron-3-super-120b-a12b"
 MSGS = [{"role": "user", "content": "hello"}]
 
 
@@ -117,7 +117,7 @@ async def test_think_blocks_are_stripped_into_reasoning(
 ) -> None:
     raw = "<think>\nlet me think\nabout this\n</think>\n\nThe answer is 42."
     respx_mock.post(CHAT_URL).respond(200, json=completion(raw))
-    r = await client.chat("deepseek-ai/deepseek-r1", MSGS)
+    r = await client.chat("nvidia/nemotron-3-ultra-550b-a55b", MSGS)
     assert r.content == "The answer is 42."
     assert r.reasoning == "let me think\nabout this"
 
@@ -456,7 +456,7 @@ async def test_stream_chat_strips_think_split_across_chunks(
     pieces = ["<thi", "nk>secret ", "reasoning</th", "ink>\n\n", "The ", "answer."]
     payload = sse(*[delta(p) for p in pieces], "[DONE]")
     respx_mock.post(CHAT_URL).respond(200, text=payload)
-    text = "".join([c async for c in client.stream_chat("deepseek-ai/deepseek-r1", MSGS)])
+    text = "".join([c async for c in client.stream_chat("nvidia/nemotron-3-ultra-550b-a55b", MSGS)])
     assert text == "The answer."
 
 
@@ -543,7 +543,7 @@ async def test_chat_json_handles_reasoning_model_output(
         '```json\n{"answer": "ok", "score": 3}\n```'
     )
     respx_mock.post(CHAT_URL).respond(200, json=completion(raw))
-    assert await client.chat_json("deepseek-ai/deepseek-r1", MSGS, Verdict) == Verdict(
+    assert await client.chat_json("nvidia/nemotron-3-ultra-550b-a55b", MSGS, Verdict) == Verdict(
         answer="ok", score=3
     )
 
@@ -570,7 +570,7 @@ async def test_chat_json_merges_into_existing_system_message(
 
 # ------------------------------------------------------------------------------- embeddings
 EMBED_URL = f"{BASE}/embeddings"
-EMBED = "nvidia/llama-3.2-nv-embedqa-1b-v2"
+EMBED = "nvidia/nemotron-3.5-embed-1b"
 
 
 def embeddings_handler(request: httpx.Request) -> httpx.Response:
@@ -644,7 +644,7 @@ async def test_embed_failure_in_one_batch_fails_the_call(
 
 
 # ------------------------------------------------------------------------------- rerank
-RR = "nvidia/llama-3.2-nv-rerankqa-1b-v2"
+RR = "nvidia/nemotron-3.5-rerank-8b"
 RR_URL = f"{RERANK}/{RR}/reranking"
 
 

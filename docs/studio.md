@@ -90,6 +90,13 @@ call needs the token ([Security model](#security-model)).
 | `DELETE /api/key` | remove the stored key. `{ok, key}` |
 | `POST /api/key/test` | re-verify the key in use. Same shape as `POST /api/key` |
 | `GET /api/models` | `[{id, roles, cost_tier, context_window, notes}]` from the registry |
+| `GET /api/models/roles` | every role's effective model and source (`request/app/studio/env/toml/auto/default`), the per-app patch-bay slots (`apps`), live-catalog info, `stale` defaults and session `substitutions` |
+| `GET /api/models/options?role=&all=` | picker options for a role: live models filtered by name heuristics (`all=1`: every live model); the curated catalog in simulation mode |
+| `PUT /api/models/overrides` `{overrides: {role: id\|null}}` | global per-role overrides (`null` / `"auto"` clears); saved in `<home>/studio_settings.json` |
+| `PUT /api/models/app/{app}` `{overrides}` / `DELETE /api/models/app/{app}` | per-app overrides (win over the global ones) / reset the app to Auto |
+| `POST /api/models/refresh` | refetch `GET /v1/models` now (also done after `POST /api/key`) |
+| `POST /api/uninstall` `{remove_key, remove_data, remove_projects, remove_atlas, remove_app, dry_run, confirm}` | `dry_run` returns the plan (items, paths, counts, sizes); a real run needs `confirm: "UNINSTALL"`, removes only known paths, then schedules app removal and quits |
+| `GET /api/update/check` / `POST /api/update/apply` | git checkouts: fetch + compare with `claude/nimlab`, then `git pull --ff-only` + `pip install -e '.[desktop]'` |
 | `GET /api/usage` | `{models: {id: {calls, errors, retries, tokens_in, tokens_out, total_tokens, latency_s, avg_latency_s}}, total: {...}, rows: [...], runs: {app: n}}` for this session |
 | `GET /api/runs` | recent runs `[{id, app, title, status, started_at, finished_at, simulated}]`, newest first (`?limit=`) |
 | `GET /api/runs/{id}` | run summary plus `result` (app-specific), `error`, `event_count` |
@@ -101,14 +108,14 @@ call needs the token ([Security model](#security-model)).
 | `GET /api/projects/{id}/file?path=` | `{path, size, lines, language, content}` |
 | `GET /api/projects/{id}/diff` | `{project, has_report, status, summary, diff, files, started_at}` from the last Forge report |
 | `POST /api/projects/{id}/reveal` | macOS: `open -R <path>`; elsewhere a no-op. `{ok, path, revealed}` |
-| `POST /api/council/run` `{question, strategy, models?}` | `{run_id}`. Strategies: `moa`, `debate`, `best-of-n`, `critic` (`GET /api/council/strategies`) |
+| `POST /api/council/run` `{question, strategy, models?, model_overrides?}` | `{run_id}`. Strategies: `moa`, `debate`, `best-of-n`, `critic` (`GET /api/council/strategies`) |
 | `GET /api/atlas/collections` | `[{name, documents, chunks, embed_model, dim, created_at, files}]` |
 | `POST /api/atlas/ingest` | multipart files (field `files`, optional `collection`) **or** JSON `{path, collection?}`. Returns the ingest report `{collection, files, added, updated, unchanged, errors, chunks, elapsed_s, ok}` |
 | `POST /api/atlas/ask` `{question, collection?, mode, verify}` | `{run_id}`; `mode` is `simple` or `agentic` |
 | `GET /api/arena/runs` | saved runs with leaderboards (newest first, at most 20) |
 | `GET /api/arena/suites` | bundled suite names |
 | `POST /api/arena/route` `{prompt}` | routing decision: category, chosen model, candidates with utility terms, reasons |
-| `POST /api/arena/run` `{suites, models}` | `{run_id}`; `suites` is a list of bundled names or `"all"` |
+| `POST /api/arena/run` `{suites, models, model_overrides?}` | `{run_id}`; `suites` is a list of bundled names or `"all"` |
 
 `AppInfo` (in `status.apps`): `{id, name, tagline, color, glyph, status: "ready"|"needs-key"|"busy",
 runs, last_run_at}`. Every app works without a key (simulation), so `status` is `ready` unless a run is
@@ -252,3 +259,15 @@ blocked networks), SSE replay/resume/live/heartbeat/cancel, a simulated Forge bu
 real files, one failing test then green), a scripted-client Forge build through the real-client path,
 project browsing and path traversal, Council/Atlas/Arena runs in mock mode, token/Host/Origin checks,
 the desktop module without pywebview, a real uvicorn start/stop, and the CLI.
+
+
+## Model overrides on runs
+
+Every run-starting endpoint (`/forge/build`, `/council/run`, `/atlas/ask`, `/arena/run`, `/prism/run` (form
+field `model_overrides` as JSON), `/sentinel/scan`, `/loom/run`, `/distill/run`) accepts an optional
+`model_overrides: {role: model}`; Forge also takes `planner`, `coder` and `reviewer`. The run executes in a
+`nimlab.core.model_scope`, so `default_registry().pick(role)` honours, highest first: this request, the app's
+saved override (the patch bay), the global override (Settings), env, `nimlab.toml`, live discovery, the
+curated default. A finished run's result carries `model_info: {picked: [{role, model, source}],
+substitutions: [{requested, used, role}], overrides}`; the web UI shows it as "Last run via ..." on the app's
+plate. Explicit model lists in a request (`models`, a Forge `planner`...) win over every override.

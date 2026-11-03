@@ -46,10 +46,11 @@ def test_chunk_signature_changes_with_anything_that_alters_chunks_or_vectors():
 
 
 def test_model_set_uses_registry_defaults_and_overrides(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("NIMLAB_MODEL_SAFETY")  # pinned by this suite's conftest
     models = ModelSet.resolve(AtlasConfig())
-    assert models.embed == "nvidia/llama-3.2-nv-embedqa-1b-v2"
-    assert models.rerank == "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-    assert models.safety == "nvidia/llama-3.1-nemoguard-8b-content-safety"
+    assert models.embed == "nvidia/nemotron-3.5-embed-1b"
+    assert models.rerank == "nvidia/nemotron-3.5-rerank-8b"
+    assert models.safety == "nvidia/nemotron-3.5-content-safety"
     assert models.fast != models.chat
     monkeypatch.setenv("NIMLAB_MODEL_CHAT", "env/chat-model")
     assert ModelSet.resolve(AtlasConfig()).chat == "env/chat-model"

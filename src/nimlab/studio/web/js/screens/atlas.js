@@ -2,6 +2,7 @@
 import { h, clear, esc, pop, reduced, clamp, autogrow } from '../util.js';
 import { icon } from '../icons.js';
 import { store, on, api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 
 const A = { runId: null, events: [], status: 'idle', stop: null, ui: null, collection: '', question: '', mode: 'agentic', verify: true, shelf: {} };
 const IDEAS = ['What are the key obligations in these documents?', 'Summarise anything that mentions refunds or credits', 'Where do these documents contradict each other?'];
@@ -89,7 +90,7 @@ export function mount(el, params) {
   async function ask() {
     const question = q.value.trim(); if (!question) { toast('Ask something first', 'warn'); q.focus(); return; }
     askBtn.disabled = true;
-    try { const r = await api.post('/atlas/ask', { question, collection: A.collection || undefined, mode: A.mode, verify: A.verify }); A.question = question; present(); A.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
+    try { const r = await api.post('/atlas/ask', { question, collection: A.collection || undefined, mode: A.mode, verify: A.verify, model_overrides: await modelOverrides('atlas') }); A.question = question; present(); A.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
     catch (e) { toast('Couldn’t ask: ' + e.message, 'bad'); askBtn.disabled = false; }
   }
   const ui = { apply }; A.ui = ui;

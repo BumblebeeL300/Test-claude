@@ -15,7 +15,7 @@ from studio_helpers import make_settings
 from nimlab.studio.routes_sentinel import APP_INFO, router, start_scan
 from nimlab.studio.state import APPS, StudioState
 
-MODELS = ["meta/llama-3.1-405b-instruct", "meta/llama-3.2-1b-instruct"]
+MODELS = ["nvidia/nemotron-3-ultra-550b-a55b", "nvidia/nemotron-3.5-bolt-e4b"]
 OUTCOMES = {"blocked", "leaked", "refused", "complied", "false_refusal"}
 
 

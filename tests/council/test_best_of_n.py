@@ -8,7 +8,7 @@ from nimlab.council.errors import AllModelsFailedError
 from nimlab.council.strategies.best_of_n import sampling_plan, temperature_schedule
 
 Q = "What is 2 + 2?"
-REWARD_MODEL = "nvidia/llama-3.1-nemotron-70b-reward"
+REWARD_MODEL = "nvidia/nemotron-4-340b-reward"
 
 
 def answers(model: str, messages: list[dict], kind: str) -> str:

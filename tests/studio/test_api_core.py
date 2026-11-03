@@ -22,7 +22,7 @@ MODELS_URL = "https://integrate.api.nvidia.com/v1/models"
 class TestStatus:
     def test_shape_in_mock_mode(self, client: TestClient) -> None:
         data = client.get("/api/status").json()
-        assert set(data) == {"version", "mode", "key", "base_url", "network", "apps"}
+        assert set(data) == {"version", "mode", "key", "base_url", "network", "apps", "models"}
         assert data["mode"] == "mock"
         assert data["key"] == {"set": False, "source": None, "masked": None}
         assert data["network"] == "unknown"
@@ -170,7 +170,7 @@ class TestModelsAndUsage:
         assert set(first) == {"id", "roles", "cost_tier", "context_window", "notes"}
         assert isinstance(first["roles"], list) and first["roles"] == sorted(first["roles"])
         ids = {r["id"] for r in rows}
-        assert "meta/llama-3.3-70b-instruct" in ids
+        assert "nvidia/nemotron-3-super-120b-a12b" in ids
 
     def test_usage_starts_empty_then_accumulates(self, client: TestClient) -> None:
         empty = client.get("/api/usage").json()
@@ -269,7 +269,7 @@ class TestRuns:
             json={
                 "question": "x?",
                 "strategy": "debate",
-                "models": ["meta/llama-3.3-70b-instruct"],
+                "models": ["nvidia/nemotron-3-super-120b-a12b"],
             },
         ).json()["run_id"]
         detail = finish(client, rid)

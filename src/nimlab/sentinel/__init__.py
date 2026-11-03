@@ -5,7 +5,7 @@ Public API::
     from nimlab.sentinel import Sentinel, Shield, Redactor
 
     async with Sentinel() as lab:                      # offline simulation without NVIDIA_API_KEY
-        run = await lab.scan(["meta/llama-3.3-70b-instruct"])
+        run = await lab.scan(["nvidia/nemotron-3-super-120b-a12b"])
         print(run.scorecards[0].grade)
 
     async with Shield(client) as shield:               # screen any chat call

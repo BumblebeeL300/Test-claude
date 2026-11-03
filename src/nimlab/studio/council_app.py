@@ -21,6 +21,7 @@ from nimlab.council.events import (
 from nimlab.council.strategies import get_strategy, list_strategies
 
 from .runs import Run
+from .scope import scoped_work
 from .simulate import current_step
 from .state import StudioState
 
@@ -125,7 +126,11 @@ class _Observer:
 
 
 def start_council(
-    state: StudioState, question: str, strategy: str, models: list[str] | None
+    state: StudioState,
+    question: str,
+    strategy: str,
+    models: list[str] | None,
+    overrides: dict[str, str] | None = None,
 ) -> Run:
     strategy = validate_strategy(strategy)
     simulated = state.mock
@@ -167,4 +172,9 @@ def start_council(
             "simulated": simulated,
         }
 
-    return state.runs.start("council", question.strip()[:80], work, simulated=simulated)
+    return state.runs.start(
+        "council",
+        question.strip()[:80],
+        scoped_work("council", overrides, work),
+        simulated=simulated,
+    )

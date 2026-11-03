@@ -26,7 +26,7 @@ Plus one embedding call per consensus measurement. N = panel size, L = layers, R
 nimlab council strategies                       # list strategies and their options
 nimlab council ask "Is a tomato a fruit?"       # default strategy: moa, default panel
 nimlab council ask "Prove sqrt(2) is irrational" -s debate --rounds 3 --threshold 0.92 \
-    --models deepseek-ai/deepseek-r1,meta/llama-3.3-70b-instruct,qwen/qwq-32b \
+    --models nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3-super-120b-a12b,deepseek-ai/deepseek-v4.1-flash \
     --json-out trace.json --html-out trace.html
 nimlab council ask "Write a haiku about GPUs" -s best-of-n --n 6
 nimlab council ask "Explain TCP slow start" -s critic --max-iterations 4
@@ -140,7 +140,7 @@ flowchart LR
 1. `--n` candidates are sampled concurrently; models rotate through the panel and temperatures sweep
    across `temperature_range` (default 0.3 to 1.0) so no (model, temperature) pair repeats.
 2. Each candidate is scored by the NVIDIA reward model (`Role.REWARD`, e.g.
-   `nvidia/llama-3.1-nemotron-70b-reward`): the `[user: question, assistant: candidate]` pair is sent
+   `nvidia/nemotron-4-340b-reward`): the `[user: question, assistant: candidate]` pair is sent
    as a chat and the reply (`reward:-12.3`) is parsed by `nimlab.council.reward.parse_reward`.
 3. If the reward model is unavailable, errors, replies with something unparseable, or the client is
    in **mock mode**, the candidate is graded by an LLM-as-judge rubric (`RubricScore`, 0-10) via
@@ -208,7 +208,7 @@ traces are deterministic even though calls run concurrently.
 trace = result.trace                         # nimlab.council.Trace (pydantic v2)
 trace.save("trace.json"); Trace.load("trace.json")
 trace.to_json(); Trace.from_json(text)       # exact round trip
-trace.steps_for("meta/llama-3.3-70b-instruct"); trace.steps_of(StepType.CRITIQUE)
+trace.steps_for("nvidia/nemotron-3-super-120b-a12b"); trace.steps_of(StepType.CRITIQUE)
 trace.usage                                  # per-model calls/tokens for THIS run
 ```
 

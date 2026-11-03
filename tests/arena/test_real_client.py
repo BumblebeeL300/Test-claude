@@ -20,7 +20,7 @@ from nimlab.arena.suites import Suite
 from nimlab.core import NIMAuthError, NIMClient, NIMConfig
 
 CHAT_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-GOOD, BAD = "meta/llama-3.3-70b-instruct", "meta/llama-3.1-8b-instruct"
+GOOD, BAD = "nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3.5-lightning-30b-a3b"
 ANSWERS = {"What is 6*7?": "42", "What is 5+5?": "10"}
 
 
@@ -199,6 +199,6 @@ def test_proxy_over_the_real_client_streams_sse_and_forwards_the_request(
             },
         )
         assert auto.headers["x-nimlab-category"] == "coding"
-        assert auto.headers["x-nimlab-routed-model"] == "qwen/qwen2.5-coder-32b-instruct"
+        assert auto.headers["x-nimlab-routed-model"] == "poolside/laguna-xs-2.1"
     sent = json.loads(mock_nim.calls[0].request.content)
     assert sent["model"] == GOOD and sent["temperature"] == 0.1 and sent["stream"] is False

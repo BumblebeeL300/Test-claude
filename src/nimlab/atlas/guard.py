@@ -1,9 +1,11 @@
 """Safety guard around NVIDIA's NemoGuard content-safety model.
 
 The model is prompted with its documented instruction template and answers with JSON-ish text such
-as ``{"User Safety": "unsafe", "Safety Categories": "Violence, Criminal Planning"}``. Real-world
+as ``{"User Safety": "unsafe", "Safety Categories": "Violence, Criminal Planning"}``. The newer
+``nemotron-3.5-content-safety`` instead takes the plain conversation and answers with lines
+(``User Safety: unsafe`` / ``Response Safety: safe`` / ``Safety Categories: ...``). Real-world
 replies are messy (fences, prose, truncated JSON, Llama-Guard style ``unsafe\\nS1``), so parsing is
-deliberately forgiving.
+deliberately forgiving and handles both shapes.
 """
 
 from __future__ import annotations
@@ -75,8 +77,25 @@ REFUSAL_ANSWER = (
 )
 
 
-def build_guard_messages(user_text: str, response_text: str | None = None) -> list[dict[str, Any]]:
-    """Single user message in the format NemoGuard content-safety was trained on."""
+def uses_conversation_format(model: str | None) -> bool:
+    """True for ``nemotron-3.x-content-safety``: it takes the raw conversation (its chat template
+    adds the policy) and answers ``User Safety: ...`` lines. NemoGuard 8B, Safety Guard v3 and
+    Llama Guard take the instruction template below instead.
+    """
+    return bool(model and re.search(r"nemotron-3(\.\d+)?-content-safety", model.lower()))
+
+
+def build_guard_messages(
+    user_text: str, response_text: str | None = None, model: str | None = None
+) -> list[dict[str, Any]]:
+    """Messages for the safety model: the NemoGuard instruction template, or (for
+    ``nemotron-3.5-content-safety``) the plain user / assistant turns.
+    """
+    if uses_conversation_format(model):
+        msgs: list[dict[str, Any]] = [{"role": "user", "content": user_text}]
+        if response_text is not None:
+            msgs.append({"role": "assistant", "content": response_text})
+        return msgs
     categories = "\n".join(f"{code}: {name}." for code, name in CATEGORIES.items())
     response = f"\nresponse: agent: {response_text}\n" if response_text is not None else ""
     prompt = _TEMPLATE.format(categories=categories, user=user_text, response=response)
@@ -178,7 +197,7 @@ class SafetyGuard:
         try:
             result = await self.client.chat(
                 self.model,
-                build_guard_messages(user_text, response_text),
+                build_guard_messages(user_text, response_text, self.model),
                 temperature=0.0,
                 max_tokens=96,
             )

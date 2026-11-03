@@ -111,9 +111,9 @@ class TestText:
             {"role": "system", "content": "You are one expert member of a council of AI models"},
             {"role": "user", "content": "How should we version an API?"},
         ]
-        a = sim.compose_council_text("meta/llama-3.3-70b-instruct", msgs)
-        b = sim.compose_council_text("deepseek-ai/deepseek-r1", msgs)
-        assert a != b and a == sim.compose_council_text("meta/llama-3.3-70b-instruct", msgs)
+        a = sim.compose_council_text("nvidia/nemotron-3-super-120b-a12b", msgs)
+        b = sim.compose_council_text("nvidia/nemotron-3-ultra-550b-a55b", msgs)
+        assert a != b and a == sim.compose_council_text("nvidia/nemotron-3-super-120b-a12b", msgs)
         assert "version an API" in a and len(a.split()) > 40
 
     def test_critique_and_aggregate_shapes(self) -> None:
@@ -163,7 +163,9 @@ class TestStudioClient:
     async def test_passthrough_when_not_simulating(self) -> None:
         base = NIMClient(NIMConfig(mock=True))
         client = sim.StudioClient(base, simulate=False)
-        res = await client.chat("meta/llama-3.3-70b-instruct", [{"role": "user", "content": "hi"}])
+        res = await client.chat(
+            "nvidia/nemotron-3-super-120b-a12b", [{"role": "user", "content": "hi"}]
+        )
         assert res.content and client.mock is True
         assert client.usage is base.usage
 
@@ -173,7 +175,7 @@ class TestStudioClient:
         token = sim.current_step.set(7)
         try:
             res = await client.chat(
-                "qwen/qwen2.5-coder-32b-instruct",
+                "poolside/laguna-xs-2.1",
                 [
                     {"role": "system", "content": "You are one expert member of a council"},
                     {"role": "user", "content": "Why is the sky blue?"},

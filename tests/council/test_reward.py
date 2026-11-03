@@ -40,3 +40,18 @@ def test_parse_reward_valid(text: str, expected: float) -> None:
 )
 def test_parse_reward_malformed_returns_none(text: str | None) -> None:
     assert parse_reward(text) is None
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # Nemotron-4-340B-Reward replies with per-attribute scores (mean of the quality ones)
+        ("helpfulness:3.0,correctness:3.5,coherence:4.0,complexity:1.0,verbosity:2.0", 3.5),
+        ("helpfulness: 2.0, correctness: 2.0, coherence: 2.0", 2.0),
+        ("Helpfulness=1.5\ncorrectness=2.5", 2.0),  # missing attributes are skipped
+        ("complexity:1.0,verbosity:2.0", None),  # no quality attribute at all
+        ("reward:-2.5,helpfulness:4", -2.5),  # the older single-reward shape still wins
+    ],
+)
+def test_parse_reward_attribute_format(text: str, expected: float | None) -> None:
+    assert parse_reward(text) == expected

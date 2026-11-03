@@ -23,8 +23,8 @@ from nimlab.distill.prompts import (
 from nimlab.distill.scoring import parse_reward
 from nimlab.distill.sim import SimClient, answer_quality
 
-BIG = "meta/llama-3.3-70b-instruct"
-SMALL = "meta/llama-3.1-8b-instruct"
+BIG = "nvidia/nemotron-3-super-120b-a12b"
+SMALL = "nvidia/nemotron-3.5-lightning-30b-a3b"
 REWARD = default_registry().pick("reward")
 
 

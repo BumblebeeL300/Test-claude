@@ -9,22 +9,29 @@ from nimlab.core import ModelInfo, ModelRegistry, Role, default_registry
 from nimlab.core.registry import CURATED_MODELS, DEFAULTS
 
 REQUIRED_IDS = [
+    # Refreshed 2026-11-03 from integrate.api.nvidia.com/v1/models and build.nvidia.com.
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+    "poolside/laguna-xs-2.1",
+    "deepseek-ai/deepseek-v4.1-flash",
+    "google/gemma-4-31b-it",
+    "nvidia/nemotron-3.5-embed-1b",
+    "nvidia/nemotron-3.5-rerank-8b",
+    "nvidia/llama-nemotron-rerank-vl-1b-v2",
+    "nvidia/nemotron-4-340b-reward",
+    "nvidia/nemotron-3.5-content-safety",
+    "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+]
+
+RETIRED_IDS = [
     "meta/llama-3.3-70b-instruct",
-    "meta/llama-3.1-405b-instruct",
-    "nvidia/llama-3.3-nemotron-super-49b-v1",
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1",
+    "meta/llama-3.1-8b-instruct",
     "deepseek-ai/deepseek-r1",
     "qwen/qwen2.5-coder-32b-instruct",
-    "qwen/qwq-32b",
-    "mistralai/mixtral-8x22b-instruct-v0.1",
     "microsoft/phi-4-mini-instruct",
-    "meta/llama-3.1-8b-instruct",
-    "meta/llama-3.2-90b-vision-instruct",
     "nvidia/llama-3.2-nv-embedqa-1b-v2",
-    "nvidia/nv-embedqa-e5-v5",
-    "nvidia/llama-3.2-nv-rerankqa-1b-v2",
-    "nvidia/llama-3.1-nemotron-70b-reward",
-    "nvidia/llama-3.1-nemoguard-8b-content-safety",
 ]
 
 
@@ -42,6 +49,24 @@ def test_required_models_present() -> None:
         info = reg.get(model_id)
         assert info.id == model_id and info.roles and info.context_window > 0
         assert 1 <= info.cost_tier <= 5
+
+
+def test_retired_ids_are_not_in_the_catalog_but_have_replacements() -> None:
+    from nimlab.core.registry import RETIRED
+
+    reg = default_registry()
+    for model_id in RETIRED_IDS:
+        assert model_id not in reg, model_id
+        assert RETIRED[model_id] in reg
+
+
+def test_deprecated_models_are_never_defaults() -> None:
+    reg = default_registry()
+    for role in Role:
+        picked = reg.pick(role)
+        if role is not Role.REWARD:  # NVIDIA deprecated every hosted reward model
+            assert not reg.get(picked).deprecated, (role, picked)
+    assert reg.get("nvidia/nemotron-4-340b-reward").deprecated
 
 
 def test_ids_unique() -> None:
@@ -71,14 +96,14 @@ def test_by_role_default_first_then_cost() -> None:
     assert coders[0].id == reg.pick(Role.CODER)
     assert all(Role.CODER in m.roles for m in coders)
     chat = reg.by_role("chat")  # str accepted
-    assert chat[0].id == "meta/llama-3.3-70b-instruct"
+    assert chat[0].id == "nvidia/nemotron-3-super-120b-a12b"
     rest = chat[1:]
     assert [m.cost_tier for m in rest] == sorted(m.cost_tier for m in rest)
 
 
 def test_by_role_moves_override_to_front(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NIMLAB_MODEL_CHAT", "meta/llama-3.1-405b-instruct")
-    assert default_registry().by_role(Role.CHAT)[0].id == "meta/llama-3.1-405b-instruct"
+    monkeypatch.setenv("NIMLAB_MODEL_CHAT", "nvidia/nemotron-3-ultra-550b-a55b")
+    assert default_registry().by_role(Role.CHAT)[0].id == "nvidia/nemotron-3-ultra-550b-a55b"
 
 
 def test_pick_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -86,7 +111,7 @@ def test_pick_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
     reg = default_registry()
     assert reg.pick(Role.CODER) == "acme/custom-coder"  # not in the catalog: still allowed
     assert "acme/custom-coder" not in reg
-    assert reg.pick(Role.CHAT) == "meta/llama-3.3-70b-instruct"  # other roles unaffected
+    assert reg.pick(Role.CHAT) == "nvidia/nemotron-3-super-120b-a12b"  # other roles unaffected
 
 
 def test_pick_accepts_string_roles() -> None:
@@ -102,7 +127,7 @@ def test_toml_override(tmp_path: Path) -> None:
     reg = ModelRegistry(config_path=toml)
     assert reg.pick(Role.CODER) == "toml/coder"
     assert reg.pick(Role.REASONING) == "toml/reasoner"
-    assert reg.pick(Role.CHAT) == "meta/llama-3.3-70b-instruct"
+    assert reg.pick(Role.CHAT) == "nvidia/nemotron-3-super-120b-a12b"
 
 
 def test_toml_discovered_in_cwd() -> None:
@@ -169,9 +194,12 @@ def test_iteration_and_len() -> None:
 
 def test_live_snapshot_helpers(tmp_path: Path) -> None:
     snap = tmp_path / "live.txt"
-    snap.write_text("meta/llama-3.3-70b-instruct\n\n# comment\nsome/other\n")
+    snap.write_text("nvidia/nemotron-3-super-120b-a12b\n\n# comment\nsome/other\n")
     live = ModelRegistry.load_live_ids(snap)
-    assert live == {"meta/llama-3.3-70b-instruct", "some/other"}
+    assert live == {"nvidia/nemotron-3-super-120b-a12b", "some/other"}
     missing = default_registry().missing_from(live)
-    assert "meta/llama-3.3-70b-instruct" not in missing and "qwen/qwq-32b" in missing
+    assert (
+        "nvidia/nemotron-3-super-120b-a12b" not in missing
+        and "deepseek-ai/deepseek-v4.1-flash" in missing
+    )
     assert ModelRegistry.load_live_ids(tmp_path / "absent.txt") == set()

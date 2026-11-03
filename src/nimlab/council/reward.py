@@ -14,20 +14,34 @@ from .schemas import RubricScore
 _NUMBER = r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?"
 _LABELLED = re.compile(rf"reward\s*[:=]\s*({_NUMBER})", re.IGNORECASE)
 _BARE = re.compile(rf"\s*({_NUMBER})\s*")
+# Nemotron-4-340B-Reward replies with per-attribute scores:
+# "helpfulness:3.2,correctness:3.5,coherence:3.7,complexity:1.4,verbosity:1.8"
+_ATTRIBUTE = re.compile(
+    rf"(helpfulness|correctness|coherence|complexity|verbosity)\s*[:=]\s*({_NUMBER})",
+    re.IGNORECASE,
+)
+_QUALITY = ("helpfulness", "correctness", "coherence")
 
 
 def parse_reward(text: str | None) -> float | None:
-    """Extract the scalar from a reward model reply such as ``reward:-12.3``.
+    """Extract the scalar from a reward model reply.
 
-    Accepts ``reward: 1.5`` / ``reward=1.5`` (any case, anywhere in the text) and a bare number.
-    Returns ``None`` for anything else (including ``nan`` / ``inf``), signalling the caller to
-    fall back to the rubric judge.
+    Accepts ``reward: 1.5`` / ``reward=1.5`` (Llama-3.1-Nemotron-70B-Reward; any case, anywhere in
+    the text), a bare number, and the per-attribute reply of Nemotron-4-340B-Reward
+    (``helpfulness:3.2,correctness:3.5,coherence:3.7,...``), scored as the mean of helpfulness,
+    correctness and coherence. Returns ``None`` for anything else (including ``nan`` / ``inf``),
+    signalling the caller to fall back to the rubric judge.
     """
     if not text:
         return None
     match = _LABELLED.search(text) or _BARE.fullmatch(text)
     if not match:
-        return None
+        attrs = {m.group(1).lower(): float(m.group(2)) for m in _ATTRIBUTE.finditer(text)}
+        parts = [attrs[k] for k in _QUALITY if k in attrs]
+        if not parts:
+            return None
+        mean = sum(parts) / len(parts)
+        return mean if mean == mean and abs(mean) != float("inf") else None
     try:
         value = float(match.group(1))
     except ValueError:  # pragma: no cover - regex guarantees a float literal

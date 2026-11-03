@@ -12,7 +12,7 @@ from nimlab.sentinel.cli import app
 from nimlab.sentinel.store import RunStore
 
 runner = CliRunner()
-MODELS = "meta/llama-3.3-70b-instruct,meta/llama-3.2-1b-instruct"
+MODELS = "nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3.5-bolt-e4b"
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "sentinel"
 
 
@@ -77,7 +77,9 @@ def test_scan_prints_scorecard_saves_run_and_writes_html(tmp_path: Path, runs: s
         str(html),
     )
     assert "simulated" in result.output.lower() and "Saved run" in result.output
-    assert "llama-3.3-70b-instruct" in result.output and "llama-3.2-1b-instruct" in result.output
+    assert (
+        "nemotron-3-super-120b-a12b" in result.output and "nemotron-3.5-bolt-e4b" in result.output
+    )
     assert html.is_file() and html.read_text(encoding="utf-8").count('class="radar"') == 2
     store = RunStore(runs)
     run = store.load("latest")
@@ -89,7 +91,7 @@ def test_scan_single_suite_and_unknown_suite(runs: str) -> None:
         "--mock",
         "scan",
         "--models",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
         "--suite",
         "jailbreak",
         "--runs-dir",
@@ -107,7 +109,7 @@ def test_scan_with_custom_suite_file_and_shield(runs: str) -> None:
         "--mock",
         "scan",
         "--models",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
         "--suite",
         str(EXAMPLE / "custom_suite.json"),
         "--shield",
@@ -124,7 +126,7 @@ def test_report_from_a_saved_run(tmp_path: Path, runs: str) -> None:
     out = invoke(
         "report", run_id, "--runs-dir", runs, "--html-out", str(tmp_path / "r.html")
     ).output
-    assert "llama-3.3-70b-instruct" in out and (tmp_path / "r.html").is_file()
+    assert "nemotron-3-super-120b-a12b" in out and (tmp_path / "r.html").is_file()
     assert "Sentinel" in invoke("report", "--runs-dir", runs).output  # defaults to latest
     assert "no such" in invoke("report", "nope", "--runs-dir", runs, expect=1).output.lower()
 
@@ -146,7 +148,7 @@ def test_shield_passes_a_normal_prompt_and_redacts_output_pii() -> None:
         "shield",
         "What is a good way to learn Python?",
         "--model",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
     ).output
     assert "reply" in out and "BLOCKED" not in out and "output_pii" in out
 

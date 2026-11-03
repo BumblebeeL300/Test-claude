@@ -14,10 +14,10 @@ from nimlab.arena.suites import load_suites
 
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "arena" / "custom_suite.json"
 MODELS = [
-    "meta/llama-3.1-405b-instruct",
-    "deepseek-ai/deepseek-r1",
-    "qwen/qwen2.5-coder-32b-instruct",
-    "meta/llama-3.1-8b-instruct",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "poolside/laguna-xs-2.1",
+    "nvidia/nemotron-3.5-lightning-30b-a3b",
 ]
 
 

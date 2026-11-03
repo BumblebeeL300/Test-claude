@@ -273,7 +273,7 @@ async def test_plan_validation(distiller: Distiller) -> None:
 async def test_default_and_custom_model_panels(distiller: Distiller) -> None:
     _, _, panel, fmt = distiller.plan("instruction_diversity")
     assert len(panel) == 2 and fmt == "openai-chat"
-    assert distiller.plan("eval_set")[2] == ["deepseek-ai/deepseek-r1"]
+    assert distiller.plan("eval_set")[2] == ["nvidia/nemotron-3-ultra-550b-a55b"]
     assert distiller.plan("preference_pairs")[3] == "dpo"
     _, _, panel, _ = distiller.plan("preference_pairs", models=["a/x", "b/y", "a/x"])
     assert panel == ["a/x", "b/y"]
@@ -326,14 +326,14 @@ async def test_gateway_bounds_concurrency_and_tallies_usage() -> None:
 
 def test_cost_estimate_uses_cost_tiers() -> None:
     cheap = {
-        "meta/llama-3.1-8b-instruct": {
+        "nvidia/nemotron-3.5-lightning-30b-a3b": {
             "calls": 1,
             "prompt_tokens": 1_000_000,
             "completion_tokens": 0,
         }
     }
     pricey = {
-        "meta/llama-3.1-405b-instruct": {
+        "nvidia/nemotron-3-ultra-550b-a55b": {
             "calls": 1,
             "prompt_tokens": 1_000_000,
             "completion_tokens": 0,

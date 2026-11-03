@@ -34,6 +34,7 @@ _KEEP_ENV = (
     "NIMLAB_CONFIG_DIR",
     "NIMLAB_DISABLE_KEYRING",
     "NIMLAB_STUDIO_HOME",
+    "NIMLAB_DISCOVERY",
 )
 
 
@@ -59,6 +60,9 @@ def _isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[N
     monkeypatch.setenv("NIMLAB_CONFIG_DIR", str(tmp_path / "nimlab-config"))
     monkeypatch.setenv("NIMLAB_DISABLE_KEYRING", "1")
     monkeypatch.setenv("NIMLAB_STUDIO_HOME", str(tmp_path / "nimlab-home"))
+    # Live model discovery (GET /v1/models) is off by default in tests; tests that exercise it
+    # build ``ModelRegistry(live=True, ...)`` against respx mocks.
+    monkeypatch.setenv("NIMLAB_DISCOVERY", "0")
     monkeypatch.chdir(tmp_path)
     _reset_global_state()
     yield

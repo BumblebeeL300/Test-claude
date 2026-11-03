@@ -1,7 +1,9 @@
 // Settings sheet (⌘,): key management, engine, appearance, model catalog, about.
 import { h, clear, shortModel, fmtNum, debounce } from '../util.js';
 import { icon } from '../icons.js';
+import { DESCRIPTIONS } from '../descriptions.js';
 import { store, api, toast, refresh, setTheme, effectiveTheme, on, lsGet, maybeIgnite } from '../app.js';
+import { rolePickers, loadRoles } from '../components/models.js';
 
 let open = null;
 export function mount() {}
@@ -16,14 +18,15 @@ export function openSettings() {
   const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeSettings(); } }; document.addEventListener('keydown', esc, true);
   open = { scrim, sheet, esc, prev, offs };
 
-  const keyBox = h('div.set-sec'), engine = h('div.set-sec'), look = h('div.set-sec'), models = h('div.set-sec'), about = h('div.set-sec');
-  body.append(keyBox, engine, look, models, about);
+  const appsBox = h('div.set-sec'), keyBox = h('div.set-sec'), engine = h('div.set-sec'), look = h('div.set-sec'), models = h('div.set-sec'), about = h('div.set-sec'), danger = h('div.set-sec.danger-zone');
+  body.append(keyBox, engine, look, appsBox, models, about, danger);
+  appsBox.append(h('div.label', 'Apps'), h('div.set-apps', Object.entries(DESCRIPTIONS).map(([id, d]) => h('div.set-app', { class: 'app-' + (id === 'foundry' ? 'forge' : id) }, icon(id === 'foundry' ? 'forge' : id), h('b', d.name), h('span', d.line)))));
 
   // ---- key ----
   const probe = h('div.probe.mono', { 'aria-live': 'polite' });
   function paintKey() {
     const k = store.status?.key || {}; clear(keyBox);
-    const rep = h('form.rep', { hidden: true, on: { submit: async (e) => { e.preventDefault(); const v = inp.value.trim(); if (!v) return; save.disabled = true; try { const r = await api.post('/key', { api_key: v }); if (!r.ok) throw new Error(r.error || 'rejected'); toast(r.verified === false ? 'Saved, but couldn’t reach NVIDIA (unverified)' : `Key replaced · ${r.model_count ?? '?'} models online`, r.verified === false ? 'warn' : 'ok'); await refresh(['status', 'models']); paintKey(); paintModels(); } catch (er) { toast(er.message, 'bad'); save.disabled = false; } } } });
+    const rep = h('form.rep', { hidden: true, on: { submit: async (e) => { e.preventDefault(); const v = inp.value.trim(); if (!v) return; save.disabled = true; try { const r = await api.post('/key', { api_key: v }); if (!r.ok) throw new Error(r.error || 'rejected'); toast(r.verified === false ? 'Saved, but couldn’t reach NVIDIA (unverified)' : `Key replaced · ${r.model_count ?? '?'} models online`, r.verified === false ? 'warn' : 'ok'); await refresh(['status', 'models']); loadRoles(true).catch(() => {}); paintKey(); paintModels(); } catch (er) { toast(er.message, 'bad'); save.disabled = false; } } } });
     const inp = h('input.field.mono', { type: 'password', placeholder: 'nvapi-…', 'aria-label': 'New API key', autocomplete: 'off', spellcheck: 'false' }); const save = h('button.btn.primary.sm', { type: 'submit' }, 'Save to Keychain');
     rep.append(inp, save, h('button.btn.sm.ghost', { type: 'button', on: { click: () => (rep.hidden = true) } }, 'Cancel'));
     const confirm = h('div.confirm', { hidden: true }, h('span', 'Remove the key from the Keychain? The Studio drops to simulation.'), h('button.btn.sm.danger', { on: { click: async () => { try { await api.del('/key'); toast('Key removed. Simulation mode is on.', 'warn'); await refresh(['status']); paintKey(); } catch (e) { toast(e.message, 'bad'); } } } }, 'Remove'), h('button.btn.sm.ghost', { on: { click: () => (confirm.hidden = true) } }, 'Keep'));
@@ -58,14 +61,104 @@ export function openSettings() {
     f.forEach((m) => list.append(h('div.mrow', h('code.mono', m.id), h('span.rl', (m.roles || []).join(' · ')), h('span.tier', { title: `cost tier ${m.cost_tier}` }, Array.from({ length: 5 }, (_, i) => h('i', { class: i < (m.cost_tier || 0) ? 'on' : '' }))), h('span.num.dim', m.context_window ? fmtNum(m.context_window) + ' ctx' : ''))));
   }
   const search = h('input.field.sm', { type: 'search', placeholder: 'Filter models…', 'aria-label': 'Filter models', on: { input: debounce(() => { needle = search.value.trim().toLowerCase(); paintModels(); }, 80) } });
-  models.append(h('div.label', 'Model catalog'), h('div.mhead', search, chips), list);
+  const roleBox = rolePickers(); offs.push(() => roleBox._dispose?.());
+  models.append(h('div.label', 'Model for each role'), h('p.fine', 'Auto picks the first preferred model your endpoint actually serves. A model chosen here applies everywhere, unless an app overrides it in its own patch bay.'), roleBox, h('div.label', { style: { marginTop: '10px' } }, 'Model catalog'), h('div.mhead', search, chips), list);
   about.append(h('div.label', 'About'), h('div.kv', h('span', 'NIM Lab Studio'), h('code.mono', 'v' + (store.status?.version || '?'))),
     h('div.keys', [['⌘K', 'Command palette'], ['⌘1–9', 'Switch module'], ['⌘,', 'Settings'], ['⌘↵', 'Run / send']].map(([k, t]) => h('span', h('kbd', k), t))),
-    h('p.fine', 'Eight apps on NVIDIA NIM: Council, Atlas, Forge, Arena, Prism, Sentinel, Loom, Distill. Everything here runs on your machine.'));
+    h('p.fine', 'Eight apps on NVIDIA NIM: Council, Atlas, Forge, Arena, Prism, Sentinel, Loom, Distill. Everything here runs on your machine.'), updateBox());
+  paintDanger();
   paintKey(); paintEngine(); paintLook();
   if (!store.models.length) refresh(['models']).then(paintModels); paintModels();
   offs.push(on('status', () => { paintEngine(); }));
   sheet.querySelector('button')?.focus();
+}
+
+// ---- updates (About) ----
+function updateBox() {
+  const out = h('div.upd', { 'aria-live': 'polite' }); const btn = h('button.btn.sm', { type: 'button', on: { click: check } }, icon('refresh'), 'Check for updates');
+  out.append(h('span.fine', 'Version ' + (store.status?.version || '?')));
+  async function check() {
+    btn.disabled = true; clear(out).append(h('span.fine', h('span.led.busy'), ' checking…'));
+    try { paint(await api.get('/update/check')); } catch (e) { clear(out).append(h('span.fine', h('span.led.bad'), ' ' + e.message)); }
+    btn.disabled = false;
+  }
+  function paint(u) {
+    clear(out);
+    const ok = u.state === 'up-to-date' || u.state === 'ahead';
+    out.append(h('div.fine', h('span.led', { class: ok ? 'on' : u.state === 'behind' ? 'warn' : 'bad' }), h('span', `v${u.version}: ${u.message}`)));
+    (u.commits || []).forEach((c) => out.append(h('code.mono.upd-c', c)));
+    if (u.instructions) out.append(h('code.mono.upd-c', u.instructions));
+    if (u.can_update) out.append(h('button.btn.sm.primary', { type: 'button', on: { click: (e) => apply(e.currentTarget) } }, 'Update now'));
+  }
+  async function apply(b) {
+    b.disabled = true; b.textContent = 'Updating…';
+    try {
+      const r = await api.post('/update/apply');
+      clear(out).append(h('div.fine', h('span.led', { class: r.ok ? 'on' : 'bad' }), r.message));
+      (r.steps || []).forEach((s) => out.append(h('div.fine', h('span.led', { class: s.ok ? 'on' : 'bad' }), s.step)));
+      if (r.ok && r.restart) out.append(h('p.fine', 'Quit and reopen NIM Lab Studio to use the new version.'));
+    } catch (e) { clear(out).append(h('div.fine', h('span.led.bad'), e.message)); }
+  }
+  return h('div.upd-box', h('div.kv', h('span', 'Updates'), btn, h('span')), out);
+}
+
+// ---- danger zone: uninstall ----
+const human = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + ' GB' : n >= 1e6 ? (n / 1e6).toFixed(1) + ' MB' : n >= 1e3 ? (n / 1e3).toFixed(0) + ' KB' : n + ' B');
+function paintDanger() {
+  const box = document.querySelector('.danger-zone'); if (!box) return; clear(box);
+  box.append(h('div.label', { style: { color: 'var(--bad)' } }, 'Danger zone'),
+    h('div.kv', h('span', 'Uninstall'), h('button.btn.sm.danger', { type: 'button', id: 'uninstall-btn', on: { click: openUninstall } }, icon('trash'), 'Uninstall NIM Lab…'), h('small', 'Removes your key, settings and caches. Your projects stay unless you tick them.')));
+}
+async function openUninstall() {
+  const defaults = { remove_key: true, remove_data: true, remove_projects: false, remove_atlas: false, remove_app: false };
+  const opt = { ...defaults }; let plan;
+  try { plan = await api.post('/uninstall', { ...opt, dry_run: true }); } catch (e) { return toast(e.message, 'bad'); }
+  const scrim = h('div.scrim', { on: { mousedown: close } });
+  const box = h('div.sheet.uninstall', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Uninstall NIM Lab' });
+  document.body.append(scrim, box);
+  const typed = h('input.field.mono', { type: 'text', placeholder: 'UNINSTALL', 'aria-label': 'Type UNINSTALL to confirm', autocomplete: 'off', spellcheck: 'false', on: { input: sync } });
+  const go = h('button.btn.danger', { type: 'button', disabled: true, on: { click: run } }, icon('trash'), 'Uninstall');
+  const rows = h('div.un-items');
+  function item(id) { return plan.items.find((i) => i.id === id); }
+  const LABEL = { key: 'API key (Keychain and credentials file)', data: 'Settings, history and caches', projects: 'Forge projects and saved Loom pipelines', atlas: 'The Atlas database', app: 'The application itself' };
+  const OPT = { key: 'remove_key', data: 'remove_data', projects: 'remove_projects', atlas: 'remove_atlas', app: 'remove_app' };
+  function paintRows() {
+    clear(rows);
+    for (const id of ['key', 'data', 'projects', 'atlas', 'app']) {
+      const it = item(id); if (!it) continue;
+      const cb = h('input', { type: 'checkbox', id: 'un-' + id, checked: opt[OPT[id]], on: { change: () => { opt[OPT[id]] = cb.checked; refreshPlan(); } } });
+      const detail = id === 'app' ? (plan.install?.instructions || '') : `${it.count} item${it.count === 1 ? '' : 's'} · ${human(it.bytes)}`;
+      rows.append(h('label.un-item', { for: 'un-' + id, class: id === 'projects' ? 'warn' : '' }, cb,
+        h('span', h('b', LABEL[id]), h('small', detail), it.paths?.length ? h('code.mono', it.paths.slice(0, 3).join('  ·  ') + (it.paths.length > 3 ? '  …' : '')) : null)));
+    }
+    plan.outside?.forEach((l) => rows.append(h('p.fine', icon('key'), l)));
+  }
+  async function refreshPlan() { try { plan = await api.post('/uninstall', { ...opt, dry_run: true }); paintRows(); } catch (e) { toast(e.message, 'bad'); } }
+  function sync() { go.disabled = typed.value.trim() !== 'UNINSTALL'; }
+  box.append(h('header.set-h', h('div', h('div.label', { style: { color: 'var(--bad)' } }, 'Danger zone'), h('h2', 'Uninstall NIM Lab')), h('button.btn.sm.icon.ghost', { 'aria-label': 'Close', on: { click: close } }, icon('x'))),
+    h('div.set-body', h('p.fine', 'This will remove exactly the items ticked below. Nothing outside NIM Lab’s own folders is touched.'), rows,
+      h('p.fine', 'Type ', h('b.mono', 'UNINSTALL'), ' to confirm.'), typed, h('div.un-actions', h('button.btn.ghost', { type: 'button', on: { click: close } }, 'Cancel'), go)));
+  paintRows(); typed.focus();
+  const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } }; document.addEventListener('keydown', esc, true);
+  function close() { document.removeEventListener('keydown', esc, true); scrim.remove(); box.remove(); }
+  async function run() {
+    go.disabled = true;
+    try {
+      const r = await api.post('/uninstall', { ...opt, dry_run: false, confirm: typed.value.trim() });
+      close(); goodbye(r);
+    } catch (e) { toast(e.message, 'bad', 6000); sync(); }
+  }
+}
+function goodbye(r) {
+  const el = h('div.goodbye', { role: 'alertdialog', 'aria-label': 'NIM Lab was uninstalled' },
+    h('div.gb-in', h('h1', 'Goodbye.'), h('p', 'NIM Lab’s files were removed.'),
+      r.removed?.length ? h('ul.gb-list', r.removed.slice(0, 8).map((p) => h('li.mono', p))) : null,
+      r.refused?.length ? h('p.fine', 'Not removed: ' + r.refused.join('; ')) : null,
+      r.errors?.length ? h('p.fine', 'Problems: ' + r.errors.join('; ')) : null,
+      r.app_removal_scheduled ? h('p', 'The app itself will be removed as soon as it quits.') : (r.app_instructions ? h('p.fine', r.app_instructions) : null),
+      h('p.fine', r.exiting ? 'Quitting…' : 'You can close this window now.')));
+  document.body.append(el);
+  try { window.pywebview?.api?.quit?.(); } catch {}
 }
 export function closeSettings() {
   if (!open) return; const { scrim, sheet, esc, prev, offs } = open; open = null; offs.forEach((f) => f()); document.removeEventListener('keydown', esc, true);

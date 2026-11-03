@@ -19,7 +19,7 @@ from nimlab.core import (
 )
 from nimlab.core.tools import parse_docstring
 
-CHAT = "meta/llama-3.3-70b-instruct"
+CHAT = "nvidia/nemotron-3-super-120b-a12b"
 USER = [{"role": "user", "content": "do the thing"}]
 
 

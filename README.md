@@ -1,4 +1,4 @@
-# NIM Lab
+# <img src="docs/images/icon.png" alt="" width="96" align="center"> NIM Lab
 
 **Eight applications built on NVIDIA NIM, sharing one async core.** NIM Lab is a Python monorepo that
 shows what you can build when many open models are one API call away: a multi-model *council* that
@@ -111,7 +111,7 @@ nimlab forge inspect /tmp/forge-demo
 
 # Arena: benchmark, rank and route
 nimlab arena suites
-nimlab arena run --suite math_reasoning --models meta/llama-3.3-70b-instruct,deepseek-ai/deepseek-r1
+nimlab arena run --suite math_reasoning --models nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3-ultra-550b-a55b
 nimlab arena report --html-out leaderboard.html
 nimlab arena route "write a python function"
 nimlab arena serve                          # OpenAI-compatible proxy on http://127.0.0.1:8000, model "nimlab/auto"
@@ -125,7 +125,7 @@ nimlab prism describe examples/prism/sample_chart.png
 
 # Sentinel: blast-test models, then screen a prompt and redact PII
 nimlab sentinel suites
-nimlab sentinel scan --models meta/llama-3.3-70b-instruct --suite injection,pii_leakage --html-out scorecard.html
+nimlab sentinel scan --models nvidia/nemotron-3-super-120b-a12b --suite injection,pii_leakage --html-out scorecard.html
 nimlab sentinel redact examples/sentinel/pii_sample.txt
 
 # Loom: list, lint and run a bundled pipeline, or export it as a script
@@ -177,37 +177,77 @@ nimlab studio --browser         # always the browser
 
 ## Model roles and overrides
 
-Every app asks the registry for a model by *role*, never by hard-coded id.
+Every app asks the registry for a model by *role*, never by hard-coded id. The table lists the preferred
+default of each role as refreshed on 2026-11-03 against `integrate.api.nvidia.com/v1/models` and
+build.nvidia.com (see the comments in `src/nimlab/core/registry.py` for the source of every id):
 
-| Role | Default | Used for |
+| Role | Preferred default | Used for |
 | --- | --- | --- |
-| `chat` | `meta/llama-3.3-70b-instruct` | general answers, aggregation, review |
-| `reasoning` | `deepseek-ai/deepseek-r1` | planning, debate judging, math |
-| `coder` | `qwen/qwen2.5-coder-32b-instruct` | writing code and tests |
-| `vision` | `meta/llama-3.2-90b-vision-instruct` | image prompts |
-| `fast` | `meta/llama-3.1-8b-instruct` | cheap sub-tasks |
-| `embed` | `nvidia/llama-3.2-nv-embedqa-1b-v2` | retrieval, consensus, routing |
-| `rerank` | `nvidia/llama-3.2-nv-rerankqa-1b-v2` | passage reranking |
-| `reward` | `nvidia/llama-3.1-nemotron-70b-reward` | best-of-N scoring |
-| `safety` | `nvidia/llama-3.1-nemoguard-8b-content-safety` | guardrails |
+| `chat` | `nvidia/nemotron-3-super-120b-a12b` | general answers, aggregation, review |
+| `reasoning` | `nvidia/nemotron-3-ultra-550b-a55b` | planning, debate judging, math |
+| `coder` | `poolside/laguna-xs-2.1` | writing code and tests |
+| `vision` | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | image prompts |
+| `fast` | `nvidia/nemotron-3.5-lightning-30b-a3b` | cheap sub-tasks |
+| `embed` | `nvidia/nemotron-3.5-embed-1b` | retrieval, consensus, routing |
+| `rerank` | `nvidia/nemotron-3.5-rerank-8b` | passage reranking |
+| `reward` | `nvidia/nemotron-4-340b-reward` (deprecated by NVIDIA; the judge takes over if it goes) | best-of-N scoring |
+| `safety` | `nvidia/nemotron-3.5-content-safety` | guardrails |
 
-Override precedence, highest first: a command-line flag (for example `--coder`), the environment variable
-`NIMLAB_MODEL_<ROLE>`, the `[models]` table of `nimlab.toml` (or the file named by `NIMLAB_CONFIG`), then the
-built-in default.
+NVIDIA retires hosted models every few weeks (and keeps some retired ids in `/v1/models`), so the defaults
+are *preferences*, not promises. With a key, NIM Lab lists your endpoint's models once (cached for 24 h in
+`~/NIMLab/models_cache.json`), uses the first preferred default that is actually served, falls back to the
+best name match for the role (`embed`, `rerank`, `reward`, `guard`/`safety`, `vision`/`vl`, `coder`,
+`r1`/`reasoning`/`thinking`, `instruct`, with the size parsed from the name), and, if a call still answers
+404 / "model not found", marks that model unavailable for the session and retries once with the next
+candidate (with a warning naming both models).
+
+`nimlab models --live` shows each role's chosen model and where it came from, flags curated ids missing
+from the live catalog and suggests replacements; `nimlab models --refresh` refetches the list.
+
+Selection precedence, highest first:
+
+1. a per-request override (a run's `model_overrides`), then the app's own override (Studio patch bay),
+2. the global per-role override from Studio *Settings > Models*,
+3. the environment variable `NIMLAB_MODEL_<ROLE>`, then the `[models]` table of `nimlab.toml`,
+4. the first preferred default your endpoint serves, then the best heuristic match,
+5. the curated default.
 
 ```bash
-export NIMLAB_MODEL_CODER=qwen/qwen3-coder-480b-a35b-instruct
+export NIMLAB_MODEL_CODER=poolside/laguna-xs-2.1   # pin a role from the shell
 ```
 
-```toml
-# nimlab.toml
-[models]
-coder = "qwen/qwen3-coder-480b-a35b-instruct"
-chat  = "meta/llama-3.1-405b-instruct"
-```
+### Switching models inside Studio
 
-Other settings (`NIM_BASE_URL`, `NIM_TIMEOUT`, `NIM_MAX_RETRIES`, `NIM_MAX_CONCURRENCY`, `NIMLAB_MOCK`, ...) are
-documented in [`.env.example`](.env.example) and [docs/core.md](docs/core.md).
+* **Settings > Models**: one picker per role (a searchable list of your live models filtered for that role,
+  "All models" to see everything, "Auto" as the default). Changes apply instantly and persist in
+  `~/NIMLab/studio_settings.json`.
+* **Patch bay on every app**: the plate at the top of each app shows the models that app uses (Foundry
+  PLANNER / CODER / REVIEWER, Atlas EMBED / RERANK / ANSWER, Prism VISION, ...). Click a chip to pick a model
+  for *that app only*; "Reset to Auto" clears it. The choice is sent with each run, and the plate shows
+  "Last run via ..." including any automatic substitution.
+* **`⌘K`**: "Switch model for <role>..." and "Switch <app> model...".
+* Without a key the pickers show the curated catalog (the live list appears once a key is added); choices
+  still persist and show up in simulated results. When the live catalog shows that a default is gone, the
+  Switchboard shows an amber "N default models unavailable, auto-substituted" notice.
+
+## Updating
+
+* **From a git checkout** (editable install): `nimlab update` (or Studio *Settings > About > Check for
+  updates*) runs `git fetch`, shows how many new commits `origin/claude/nimlab` has and, on "Update now" /
+  `--yes`, runs `git pull --ff-only` and `pip install -e '.[desktop]'`, then asks you to restart. It refuses
+  to touch a dirty or diverged tree and says so; offline or no git is reported, not raised.
+* **Packaged `.app`**: pull the latest source and rebuild with `packaging/macos/build_app.sh`.
+* **pip install**: `python -m pip install -U nimlab`.
+
+## Uninstalling
+
+`nimlab uninstall [--dry-run] [--keep-projects/--remove-projects] [--yes]` or Studio *Settings > Danger zone >
+Uninstall NIM Lab...* (you must type `UNINSTALL`). It removes exactly the listed items: the stored API key,
+settings / history / caches in `~/NIMLab` and `~/.config/nimlab`, and, only if you tick them, your Forge
+projects and saved Loom pipelines, the Atlas database and the application itself (the `.app` is moved to the
+Trash after the window closes; a pip install is removed with `pip uninstall` once the process has exited;
+editable installs get instructions). Nothing outside those folders is ever deleted and symlinks are never
+followed.
 
 ## Project layout
 
@@ -265,13 +305,15 @@ CI runs ruff, mypy and the test suite on Python 3.10 to 3.13 with `NIMLAB_MOCK=1
 
 ## Status
 
-Early (0.2.0). Be aware of what has and has not been verified:
+Early (0.2.1). Be aware of what has and has not been verified:
 
 - **Verified offline only.** The code has been exercised in mock mode and against HTTP-mocked tests. Live
   NIM calls have **not** been exercised yet; this was built in an environment without an API key or access
   to the NVIDIA endpoints. Expect to fix small things on first contact with the real API.
-- **Check the model catalog.** Model ids are curated from the public catalog and may not match what your
-  key can use. Run `nimlab models --live` to see which are served and override roles as needed.
+- **Check the model catalog.** The curated ids were refreshed on 2026-11-03 from NVIDIA's public pages and
+  `/v1/models` listing, but never called with a key from the environment they were written in. Live
+  discovery and the 404 fallback keep things working as NVIDIA's catalog changes; run
+  `nimlab models --live` on your machine to see what your key can use.
 - **The Forge sandbox is a guard rail, not an isolation boundary.** It confines paths, scrubs the
   environment and allowlists commands, but code the agent writes still runs on your machine. Use a
   container or VM for untrusted tasks or models.

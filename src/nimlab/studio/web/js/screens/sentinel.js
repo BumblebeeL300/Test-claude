@@ -3,6 +3,7 @@
 import { h, clear, esc, shortModel, pop, reduced, debounce } from '../util.js';
 import { icon } from '../icons.js';
 import { store, api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 
 const CATS = [
   ['prompt_injection', 'Injection'], ['jailbreak', 'Jailbreak'], ['system_prompt_extraction', 'Extraction'],
@@ -212,7 +213,7 @@ export async function mount(el) {
     if (!S.suites?.size) { toast('Pick at least one attack suite', 'warn'); return; }
     runBtn.disabled = true;
     try {
-      const r = await api.post('/sentinel/scan', { models: [...(S.models || [])], suites: [...S.suites], shield: S.shield });
+      const r = await api.post('/sentinel/scan', { models: [...(S.models || [])], suites: [...S.suites], shield: S.shield, model_overrides: await modelOverrides('sentinel') });
       clear(chamber); attach(r.run_id);
     } catch (e) { runBtn.disabled = false; toast('Could not start: ' + e.message, 'bad'); }
   }

@@ -48,6 +48,8 @@ export function stream(runId, onEvent, onEnd) {
     if (ev.type == null && m.type && m.type !== 'message') ev.type = m.type;
     const key = ev.seq ?? `${ev.type}:${ev.ts}`; if (seen.has(key)) return; seen.add(key);
     try { onEvent(ev); } catch (e) { console.error('event handler', e, ev); }
+    const info = (ev.data?.result || ev.result)?.model_info;
+    if (ev.type === 'run.done' && info) window.dispatchEvent(new CustomEvent('nimlab:run-done', { detail: { runId, info } }));
     if (TERMINAL.has(ev.type)) finish();
   };
   es.onmessage = handle;

@@ -3,6 +3,7 @@
 import { h, clear, reduced, shortModel } from '../util.js';
 import { icon } from '../icons.js';
 import { api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 import { codeBlock } from '../highlight.js';
 
 /** Registration data for the integrator (rail button + router + palette). */
@@ -275,7 +276,7 @@ export function mount(el, params) {
     for (const [k, v] of Object.entries(o)) if (v !== '' && v != null) fd.append(k, v);
     files.forEach((f) => fd.append('images', f.file, f.file.name));
     running = true; updateGo();
-    try { const r = await api.post('/prism/run', fd); P.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
+    try { fd.append('model_overrides', JSON.stringify(await modelOverrides('prism'))); const r = await api.post('/prism/run', fd); P.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
     catch (e) { running = false; updateGo(); toast('Couldn’t develop: ' + e.message, 'bad'); }
   }
 

@@ -18,10 +18,10 @@ from nimlab.arena.suites import load_suites
 from nimlab.core import NIMClient, NIMConfig
 from nimlab.core.errors import NIMAuthError, NIMError, NIMRateLimitError, NIMResponseError
 
-BIG = "meta/llama-3.1-405b-instruct"
-SMALL = "meta/llama-3.2-1b-instruct"
-CODER = "qwen/qwen2.5-coder-32b-instruct"
-REASONER = "deepseek-ai/deepseek-r1"
+BIG = "nvidia/nemotron-3-ultra-550b-a55b"
+SMALL = "nvidia/nemotron-3.5-bolt-e4b"
+CODER = "poolside/laguna-xs-2.1"
+REASONER = "nvidia/nemotron-3-ultra-550b-a55b"
 
 
 def test_profiles_are_deterministic_and_reflect_model_size_and_role() -> None:
@@ -37,7 +37,10 @@ def test_profiles_are_deterministic_and_reflect_model_size_and_role() -> None:
     assert model_profile(REASONER).p_correct("math_reasoning") > model_profile(REASONER).p_correct(
         "coding"
     )
-    assert model_profile(REASONER).ttft_s > 2 * model_profile("meta/llama-3.3-70b-instruct").ttft_s
+    assert (
+        model_profile(REASONER).ttft_s
+        > 2 * model_profile("nvidia/nemotron-3.5-lightning-30b-a3b").ttft_s
+    )
     unknown = model_profile("acme/mystery-model")
     assert 1 <= unknown.tier <= 5 and 0.05 <= unknown.p_correct("coding") <= 0.98
 
@@ -73,13 +76,13 @@ async def test_stronger_models_score_higher_on_every_deterministic_suite() -> No
 async def test_specialists_win_their_own_category() -> None:
     runner = Runner(SimulatedClient(time_scale=0.0), settings=RunSettings(concurrency=16))
     suites = [load_suites()["coding"], load_suites()["math_reasoning"]]
-    run = await runner.run([CODER, "meta/llama-3.3-70b-instruct"], suites)
+    run = await runner.run([CODER, "nvidia/nemotron-3-super-120b-a12b"], suites)
 
     def score(model: str, suite: str) -> float:
         rs = run.for_model(model, suite)
         return sum(r.score for r in rs) / len(rs)
 
-    assert score(CODER, "coding") > score("meta/llama-3.3-70b-instruct", "coding")
+    assert score(CODER, "coding") > score("nvidia/nemotron-3-super-120b-a12b", "coding")
 
 
 async def test_wrong_answers_are_plausible_and_fail_their_graders() -> None:
@@ -182,7 +185,7 @@ async def test_unknown_prompts_fall_back_to_the_core_mock_and_embeddings_work() 
     assert "".join(pieces)
     vecs = await client.embed("embed-model", ["hello world", "hello there"], input_type="query")
     assert len(vecs) == 2 and len(vecs[0]) == len(vecs[1]) > 100
-    assert "meta/llama-3.3-70b-instruct" in await client.list_models()
+    assert "nvidia/nemotron-3-super-120b-a12b" in await client.list_models()
     assert client.mock is True
 
 
@@ -222,7 +225,7 @@ def test_make_client_chooses_the_simulator_in_mock_mode_and_the_real_client_othe
 
 def test_default_models_are_distinct_registry_picks() -> None:
     models = default_models()
-    assert len(models) == len(set(models)) == 4 and "deepseek-ai/deepseek-r1" in models
+    assert len(models) == len(set(models)) == 4 and "nvidia/nemotron-3-ultra-550b-a55b" in models
     assert len(default_models(limit=2)) == 2
 
 

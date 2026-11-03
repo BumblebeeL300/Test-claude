@@ -3,7 +3,7 @@
 ::
 
     async with Shield(client) as shield:
-        reply = await shield.chat("meta/llama-3.3-70b-instruct", messages)
+        reply = await shield.chat("nvidia/nemotron-3-super-120b-a12b", messages)
         print(reply.content, reply.blocked, [c.name for c in reply.checks if c.triggered])
 
 Checks (each one can be ``block``, ``redact``, ``annotate`` or ``off``):

@@ -9,7 +9,7 @@ Arena answers three questions about the models behind NVIDIA NIM:
 Everything runs **fully offline** in mock mode (`NIMLAB_MOCK=1`, `--mock`, or automatically when `NVIDIA_API_KEY` is unset); see [Mock mode](#mock-mode-the-offline-simulator).
 
 ```bash
-nimlab --mock arena run --models meta/llama-3.3-70b-instruct,deepseek-ai/deepseek-r1 --concurrency 8
+nimlab --mock arena run --models nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3-ultra-550b-a55b --concurrency 8
 nimlab --mock arena report --html-out leaderboard.html
 nimlab --mock arena route "Write a function that merges overlapping intervals"
 nimlab --mock arena serve --port 8000     # then point any OpenAI client at http://127.0.0.1:8000/v1
@@ -208,8 +208,8 @@ elo_i = 1000 + 400 * log10(p_i)          (mean rating 1000; 400 points = 10:1 od
 **Elo without a judge.** If a run has no battles, the leaderboard derives games from the graded scores: for every item, every pair of models that both answered plays one game (higher score wins, scores within 0.05 tie). The report states which source was used.
 
 ```bash
-nimlab arena battle --models meta/llama-3.1-405b-instruct,meta/llama-3.1-8b-instruct,qwen/qwq-32b \
-    --suite summarization --judge-model meta/llama-3.3-70b-instruct
+nimlab arena battle --models nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3.5-lightning-30b-a3b,deepseek-ai/deepseek-v4.1-flash \
+    --suite summarization --judge-model nvidia/nemotron-3-super-120b-a12b
 ```
 
 ## Reports
@@ -279,17 +279,17 @@ Every `RoutingDecision` carries the category, classifier, confidence, the neares
 ```text
 $ nimlab arena route "Write a Python function that merges overlapping intervals"
  Routing decision
- deepseek-ai/deepseek-r1
+ nvidia/nemotron-3-ultra-550b-a55b
  category coding via knn (confidence 86%) - source leaderboard - profile balanced
   * Classified as 'coding' by embedding kNN (vote share 86%); nearest exemplar: "Write a Python function that reverses a linked list." (similarity 0.48).
   * Using leaderboard run merged-20261101T214503Z: quality is measured on the 'coding' suite (mock/simulated data).
   * Profile 'balanced': utility = quality - 0.02 x latency(s) - 0.03 x cost_tier.
-  * deepseek-ai/deepseek-r1 has the highest utility 0.694 (quality 0.917, latency 5.14s, cost tier 4).
-  * Runner-up qwen/qwen2.5-coder-32b-instruct scored 0.676 (margin 0.017).
+  * nvidia/nemotron-3-ultra-550b-a55b has the highest utility 0.694 (quality 0.917, latency 5.14s, cost tier 4).
+  * Runner-up poolside/laguna-xs-2.1 scored 0.676 (margin 0.017).
  Candidates
   Model                              Quality  Latency  Cost  Utility
-  -> deepseek-ai/deepseek-r1           0.917    5.14s     4    0.694
-     qwen/qwen2.5-coder-32b-instruct   0.771    1.71s     2    0.676
+  -> nvidia/nemotron-3-ultra-550b-a55b           0.917    5.14s     4    0.694
+     poolside/laguna-xs-2.1   0.771    1.71s     2    0.676
      ...
 ```
 
@@ -319,7 +319,7 @@ curl -s http://127.0.0.1:8000/v1/chat/completions \
   -d '{"model": "nimlab/auto",
        "messages": [{"role": "user", "content": "Write a function that merges overlapping intervals"}]}'
 # HTTP/1.1 200 OK
-# x-nimlab-routed-model: qwen/qwen2.5-coder-32b-instruct
+# x-nimlab-routed-model: poolside/laguna-xs-2.1
 # x-nimlab-category: coding
 # ...
 
@@ -377,7 +377,7 @@ from nimlab.arena import Arena
 async def main() -> None:
     async with Arena(concurrency=8) as arena:            # mock mode unless NVIDIA_API_KEY is set
         run = await arena.run(
-            ["meta/llama-3.3-70b-instruct", "deepseek-ai/deepseek-r1"],
+            ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b"],
             suites="all",                                # or ["coding", "factual_qa"], or Suite objects
         )
         board = arena.leaderboard(run)
@@ -385,7 +385,7 @@ async def main() -> None:
             print(s.rank, s.model, round(s.overall, 3), s.elo, s.latency_p50_s)
 
         battles = await arena.battle(
-            ["meta/llama-3.3-70b-instruct", "deepseek-ai/deepseek-r1", "qwen/qwq-32b"],
+            ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "deepseek-ai/deepseek-v4.1-flash"],
             "summarization",
         )
         arena.report(battles, html_out="leaderboard.html")

@@ -47,9 +47,9 @@ nimlab forge run -f examples/forge/extend_wordstats.md -w /tmp/wordstats --rollb
 
 # 3. Choose the models and the debugging budget
 nimlab forge run -f examples/forge/markdown_table_parser.md -w ./mdtable \
-    --planner nvidia/llama-3.3-nemotron-super-49b-v1 \
-    --coder qwen/qwen2.5-coder-32b-instruct \
-    --reviewer meta/llama-3.3-70b-instruct --max-iters 8
+    --planner nvidia/nemotron-3-super-120b-a12b \
+    --coder poolside/laguna-xs-2.1 \
+    --reviewer nvidia/nemotron-3-super-120b-a12b --max-iters 8
 
 # 4. Look at the result again later
 nimlab forge inspect ./mdtable --diff
@@ -312,9 +312,9 @@ unchanged runs; `error` covers fatal problems (authentication, a crashed non-opt
 
 | Role | Registry role | Default | Override |
 |---|---|---|---|
-| planner / root-cause analysis | `Role.REASONING` | `deepseek-ai/deepseek-r1` | `--planner`, `NIMLAB_MODEL_REASONING` |
-| coder | `Role.CODER` | `qwen/qwen2.5-coder-32b-instruct` | `--coder`, `NIMLAB_MODEL_CODER` |
-| reviewer | `Role.CHAT`, another family | `meta/llama-3.3-70b-instruct` | `--reviewer`, `NIMLAB_MODEL_CHAT` |
+| planner / root-cause analysis | `Role.REASONING` | `nvidia/nemotron-3-ultra-550b-a55b` | `--planner`, `NIMLAB_MODEL_REASONING` |
+| coder | `Role.CODER` | `poolside/laguna-xs-2.1` | `--coder`, `NIMLAB_MODEL_CODER` |
+| reviewer | `Role.CHAT`, another family | `nvidia/nemotron-3-super-120b-a12b` | `--reviewer`, `NIMLAB_MODEL_CHAT` |
 
 The default reviewer is the first `CHAT`/`FAST`/`REASONING` model whose vendor prefix differs from
 the coder's, so the reviewer does not share the coder's blind spots. Reasoning models emit `<think>`
@@ -335,7 +335,7 @@ MOCK MODE: offline, placeholder model output. Set NVIDIA_API_KEY for real runs.
 > verify    round 1: no tests collected
 > debug     fix round 1/6 ...
 > verify    stall: same failures 2x (NO_TESTS)
-> escalate  root-cause analysis #1 by deepseek-ai/deepseek-r1
+> escalate  root-cause analysis #1 by nvidia/nemotron-3-ultra-550b-a55b
 ...
 FAILED  2.1s  3 fix round(s)  2 escalation(s)   (exit code 0 in mock mode)
 ```
