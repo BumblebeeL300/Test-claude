@@ -60,8 +60,8 @@ export function openSettings() {
   const search = h('input.field.sm', { type: 'search', placeholder: 'Filter models…', 'aria-label': 'Filter models', on: { input: debounce(() => { needle = search.value.trim().toLowerCase(); paintModels(); }, 80) } });
   models.append(h('div.label', 'Model catalog'), h('div.mhead', search, chips), list);
   about.append(h('div.label', 'About'), h('div.kv', h('span', 'NIM Lab Studio'), h('code.mono', 'v' + (store.status?.version || '?'))),
-    h('div.keys', [['⌘K', 'Command palette'], ['⌘1–5', 'Switch module'], ['⌘,', 'Settings'], ['⌘↵', 'Run / send']].map(([k, t]) => h('span', h('kbd', k), t))),
-    h('p.fine', 'Four apps on NVIDIA NIM: Council, Atlas, Forge, Arena. Everything here runs on your machine.'));
+    h('div.keys', [['⌘K', 'Command palette'], ['⌘1–9', 'Switch module'], ['⌘,', 'Settings'], ['⌘↵', 'Run / send']].map(([k, t]) => h('span', h('kbd', k), t))),
+    h('p.fine', 'Eight apps on NVIDIA NIM: Council, Atlas, Forge, Arena, Prism, Sentinel, Loom, Distill. Everything here runs on your machine.'));
   paintKey(); paintEngine(); paintLook();
   if (!store.models.length) refresh(['models']).then(paintModels); paintModels();
   offs.push(on('status', () => { paintEngine(); }));

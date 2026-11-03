@@ -25,7 +25,7 @@ __all__ = ["APP_IDS", "TERMINAL_TYPES", "Run", "RunManager", "iso_now", "sse_for
 
 _log = logging.getLogger("nimlab.studio")
 
-APP_IDS = ("council", "atlas", "forge", "arena")
+APP_IDS = ("council", "atlas", "forge", "arena", "prism", "sentinel", "loom", "distill")
 TERMINAL_TYPES = ("run.done", "run.failed")
 ACTIVE = ("queued", "running")
 MAX_EVENTS_PER_RUN = 20000

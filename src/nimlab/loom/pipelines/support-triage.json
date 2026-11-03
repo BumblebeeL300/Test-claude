@@ -1,0 +1,241 @@
+{
+  "version": 1,
+  "name": "support-triage",
+  "title": "Support triage",
+  "description": "Classify a ticket with a JSON schema, branch to a specialised responder and merge the reply.",
+  "nodes": [
+    {
+      "id": "ticket",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "Hi, I was charged twice for my March subscription and I'd like one of the payments refunded please.",
+        "description": "The customer's message"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 40.0,
+        "y": 147.0
+      }
+    },
+    {
+      "id": "classify",
+      "type": "json",
+      "label": "Classify",
+      "params": {
+        "template": "Classify this support ticket.\n\nTicket:\n{{ticket}}",
+        "system": "You triage customer support tickets.",
+        "role": "fast",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": [
+                "billing",
+                "technical",
+                "account",
+                "other"
+              ]
+            },
+            "urgency": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high"
+              ]
+            },
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "category",
+            "urgency",
+            "summary"
+          ]
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 336.0,
+        "y": 147.0
+      }
+    },
+    {
+      "id": "is_billing",
+      "type": "branch",
+      "label": "Billing?",
+      "params": {
+        "condition": "value[\"category\"] == \"billing\""
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 632.0,
+        "y": 52.0
+      }
+    },
+    {
+      "id": "is_technical",
+      "type": "branch",
+      "label": "Technical?",
+      "params": {
+        "condition": "value[\"category\"] == \"technical\""
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 928.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "billing_reply",
+      "type": "prompt",
+      "label": "Billing agent",
+      "params": {
+        "system": "You are a billing specialist. Be exact about money, apologise once, state the next step and a timeframe.",
+        "template": "Ticket:\n{{ticket}}\n\nTriage notes:\n{{info.summary}} (urgency: {{info.urgency}})\n\nWrite the reply.",
+        "role": "chat"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 928.0,
+        "y": 230.0
+      }
+    },
+    {
+      "id": "tech_reply",
+      "type": "prompt",
+      "label": "Tech support",
+      "params": {
+        "system": "You are a senior support engineer. Give numbered troubleshooting steps and ask for the one detail you still need.",
+        "template": "Ticket:\n{{ticket}}\n\nTriage notes:\n{{info.summary}} (urgency: {{info.urgency}})\n\nWrite the reply.",
+        "role": "coder"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1224.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "general_reply",
+      "type": "prompt",
+      "label": "General agent",
+      "params": {
+        "system": "You are a friendly support agent. Keep it short and warm.",
+        "template": "Ticket:\n{{ticket}}\n\nTriage notes:\n{{info.summary}}\n\nWrite the reply.",
+        "role": "fast"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1224.0,
+        "y": 230.0
+      }
+    },
+    {
+      "id": "pick",
+      "type": "merge",
+      "label": "First reply",
+      "params": {},
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1520.0,
+        "y": 147.0
+      }
+    },
+    {
+      "id": "reply",
+      "type": "output",
+      "params": {
+        "name": "reply"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1816.0,
+        "y": 147.0
+      }
+    },
+    {
+      "id": "classification",
+      "type": "output",
+      "params": {
+        "name": "classification"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 632.0,
+        "y": 242.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "ticket.value",
+      "to": "classify.ticket"
+    },
+    {
+      "from": "classify.data",
+      "to": "is_billing.value"
+    },
+    {
+      "from": "is_billing.then",
+      "to": "billing_reply.info"
+    },
+    {
+      "from": "is_billing.else",
+      "to": "is_technical.value"
+    },
+    {
+      "from": "is_technical.then",
+      "to": "tech_reply.info"
+    },
+    {
+      "from": "is_technical.else",
+      "to": "general_reply.info"
+    },
+    {
+      "from": "ticket.value",
+      "to": "billing_reply.ticket"
+    },
+    {
+      "from": "ticket.value",
+      "to": "tech_reply.ticket"
+    },
+    {
+      "from": "ticket.value",
+      "to": "general_reply.ticket"
+    },
+    {
+      "from": "billing_reply.text",
+      "to": "pick.in"
+    },
+    {
+      "from": "tech_reply.text",
+      "to": "pick.in"
+    },
+    {
+      "from": "general_reply.text",
+      "to": "pick.in"
+    },
+    {
+      "from": "pick.out",
+      "to": "reply.value"
+    },
+    {
+      "from": "classify.data",
+      "to": "classification.value"
+    }
+  ]
+}

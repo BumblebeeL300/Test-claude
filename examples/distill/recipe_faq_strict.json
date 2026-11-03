@@ -1,0 +1,12 @@
+{
+  "name": "faq_strict",
+  "kind": "qa_from_docs",
+  "description": "A stricter grounded-QA recipe: shorter excerpts, answers must be well supported, tighter near-duplicate threshold.",
+  "temperatures": [0.2, 0.5],
+  "max_tokens": 400,
+  "chunk_chars": 600,
+  "chunk_overlap": 60,
+  "filters": {"min_reward": -6.0, "min_judge": 7.0, "min_chars": 40, "min_grounding": 0.7},
+  "dedup": {"threshold": 0.88, "field": "both"},
+  "decontaminate": {"ngram": 6, "min_overlap": 0.4}
+}

@@ -58,7 +58,8 @@ button, a, [role=button], summary { cursor: pointer; }
 .pywebview-drag-region { -webkit-app-region: drag; app-region: drag; }
 
 .rail { grid-area: rail; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0; border-right: 1px solid var(--hair); background: color-mix(in srgb, var(--panel) 70%, transparent); z-index: 20; }
-.rail .sp { flex: 1; }
+.rail .sp { flex: 1; min-height: 4px; }
+@media (min-width: 761px) and (max-height: 700px) { .rail { gap: 3px; padding: 8px 0; } .rail-btn { width: 40px; height: 40px; } }
 .rail-btn { position: relative; width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; color: color-mix(in srgb, var(--accent) 62%, var(--dim)); transition: color .2s, background .2s, transform .35s var(--ease-spring); }
 .rail-btn svg { width: 22px; height: 22px; }
 .rail-btn:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); transform: translateY(-1px) scale(1.06); }
@@ -82,7 +83,7 @@ kbd { font: 600 10.5px var(--font-mono); padding: 2px 5px; border-radius: 5px; b
 @media (max-width: 760px) {
   #app { grid-template-columns: 1fr; grid-template-rows: var(--titlebar) 1fr 58px; grid-template-areas: "title" "main" "rail"; }
   .rail { flex-direction: row; justify-content: space-around; padding: 6px; border-right: 0; border-top: 1px solid var(--hair); }
-  .rail .sp { display: none; }
+  .rail .sp { display: none; } .rail-btn { width: 38px; height: 40px; }
   .rail-btn[aria-current=page]::before { left: 12px; right: 12px; top: -7px; bottom: auto; width: auto; height: 3px; }
   .rail-btn .tip { display: none; }
   .titlebar { padding-left: 78px; gap: 8px; }

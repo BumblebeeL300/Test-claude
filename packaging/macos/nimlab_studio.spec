@@ -25,9 +25,25 @@ APP_NAME = "NIM Lab Studio"
 BUNDLE_ID = "dev.nimlab.studio"
 ICON = HERE / "AppIcon.icns"
 
-# Everything under src/nimlab that is not Python: studio/web (the UI), atlas/ui, council and arena
-# report templates, arena suites + exemplars.json, core/data, py.typed.
+# Everything under src/nimlab that is not Python: studio/web (the UI), atlas/ui, council, arena,
+# sentinel and distill report templates, arena and sentinel suites, distill recipes, loom pipelines,
+# arena exemplars.json, core/data, py.typed. `collect_data_files` walks the whole package, so new
+# JSON / Jinja data files are picked up without listing them; the check below fails the build
+# loudly if one of the tool data folders ever goes missing (they are loaded with importlib.resources).
 datas = collect_data_files("nimlab", include_py_files=False)
+_REQUIRED_DATA = (
+    "nimlab/sentinel/suites",
+    "nimlab/sentinel/templates",
+    "nimlab/loom/pipelines",
+    "nimlab/distill/recipes",
+    "nimlab/distill/templates",
+    "nimlab/arena/suites",
+    "nimlab/studio/web",
+)
+_bundled = {Path(dest).as_posix() for _src, dest in datas}
+_missing = [d for d in _REQUIRED_DATA if not any(b == d or b.startswith(d + "/") for b in _bundled)]
+if _missing:
+    raise SystemExit(f"nimlab_studio.spec: package data missing from the bundle: {_missing}")
 
 hiddenimports = (
     collect_submodules("nimlab")  # app plugins are imported by name (importlib), so list them all

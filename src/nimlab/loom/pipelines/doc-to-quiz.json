@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "name": "doc-to-quiz",
+  "title": "Document to quiz",
+  "description": "Chunk a document, generate questions for each chunk with map, drop near-duplicates using embeddings and output the quiz.",
+  "nodes": [
+    {
+      "id": "document",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "A patch bay is a panel that brings the inputs and outputs of studio equipment to one place. Each jack on the front is wired to a device at the back, so an engineer can reroute a signal with a short cable instead of crawling behind the rack.\n\nMost patch bays are normalled. Without a cable the top jack feeds the bottom jack, so a microphone preamp reaches the recorder automatically. Plugging a cable in breaks that connection, which lets you insert a compressor or send the signal somewhere else.\n\nModular synthesisers take the same idea further. Every module only does one thing, such as an oscillator, a filter or an envelope, and the sound is built by patching cables between them. The cables carry control voltage as well as audio, so any output can modulate any input.\n\nThe reward is flexibility: the same set of modules can be a bass, a drum or a drone, depending on how they are patched. The cost is that nothing is hidden, and you must understand the path the signal takes.",
+        "description": "The text to quiz on"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 40.0,
+        "y": 123.0
+      }
+    },
+    {
+      "id": "chunks",
+      "type": "chunk",
+      "label": "Chunk",
+      "params": {
+        "max_chars": 420,
+        "overlap": 40
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 336.0,
+        "y": 111.0
+      }
+    },
+    {
+      "id": "generate",
+      "type": "map",
+      "label": "Write questions",
+      "params": {
+        "step": {
+          "type": "json",
+          "params": {
+            "template": "Write 2 quiz questions with short answers that test understanding of this passage.\n\nPassage:\n{{item}}",
+            "role": "fast",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "questions": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "question": {
+                        "type": "string"
+                      },
+                      "answer": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "question",
+                      "answer"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "questions"
+              ]
+            }
+          }
+        },
+        "concurrency": 4
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 632.0,
+        "y": 111.0
+      }
+    },
+    {
+      "id": "flat",
+      "type": "python_fn",
+      "label": "Flatten",
+      "params": {
+        "fn": "flatten_field",
+        "args": {
+          "field": "questions"
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 928.0,
+        "y": 123.0
+      }
+    },
+    {
+      "id": "only_q",
+      "type": "python_fn",
+      "label": "Questions only",
+      "params": {
+        "fn": "pluck",
+        "args": {
+          "field": "question"
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1224.0,
+        "y": 123.0
+      }
+    },
+    {
+      "id": "dedupe",
+      "type": "embed",
+      "label": "Dedupe",
+      "params": {
+        "role": "embed",
+        "dedupe_threshold": 0.85
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1520.0,
+        "y": 99.0
+      }
+    },
+    {
+      "id": "numbered",
+      "type": "python_fn",
+      "label": "Number",
+      "params": {
+        "fn": "numbered"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1816.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "quiz",
+      "type": "output",
+      "params": {
+        "name": "quiz"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 2112.0,
+        "y": 123.0
+      }
+    },
+    {
+      "id": "total",
+      "type": "output",
+      "params": {
+        "name": "question_count"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1816.0,
+        "y": 206.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "document.value",
+      "to": "chunks.text"
+    },
+    {
+      "from": "chunks.chunks",
+      "to": "generate.items"
+    },
+    {
+      "from": "generate.results",
+      "to": "flat.value"
+    },
+    {
+      "from": "flat.result",
+      "to": "only_q.value"
+    },
+    {
+      "from": "only_q.result",
+      "to": "dedupe.texts"
+    },
+    {
+      "from": "dedupe.unique",
+      "to": "numbered.value"
+    },
+    {
+      "from": "numbered.result",
+      "to": "quiz.value"
+    },
+    {
+      "from": "dedupe.count",
+      "to": "total.value"
+    }
+  ]
+}

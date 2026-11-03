@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "name": "translate-backcheck",
+  "title": "Translate and back-check",
+  "description": "Translate, translate back, have a judge compare meaning, and retry with the judge's notes if the score is low.",
+  "nodes": [
+    {
+      "id": "text",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "The bridge will close for repairs on Monday morning, so please plan an alternative route.",
+        "description": "Text to translate"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 40.0,
+        "y": 88.0
+      }
+    },
+    {
+      "id": "language",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "French",
+        "description": "Target language"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 40.0,
+        "y": 254.0
+      }
+    },
+    {
+      "id": "translate",
+      "type": "prompt",
+      "label": "Translate",
+      "params": {
+        "system": "You are a professional translator. Reply with the translation only.",
+        "template": "Translate into {{language}}:\n\n{{text}}",
+        "role": "chat",
+        "temperature": 0.1
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 336.0,
+        "y": 159.0
+      }
+    },
+    {
+      "id": "back",
+      "type": "prompt",
+      "label": "Back-translate",
+      "params": {
+        "system": "You are a professional translator. Reply with the translation only.",
+        "template": "Translate into English:\n\n{{translation}}",
+        "role": "fast",
+        "temperature": 0.1
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 632.0,
+        "y": 171.0
+      }
+    },
+    {
+      "id": "judge",
+      "type": "json",
+      "label": "Compare",
+      "params": {
+        "system": "You compare a text with its round-trip translation and judge whether the meaning survived.",
+        "template": "Original:\n{{original}}\n\nRound trip:\n{{round_trip}}\n\nScore 1-10 how well the meaning was preserved and list any differences.",
+        "role": "reasoning",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "score": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "differences": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "score",
+            "differences"
+          ]
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 928.0,
+        "y": 76.0
+      }
+    },
+    {
+      "id": "good",
+      "type": "branch",
+      "label": "Score >= 6?",
+      "params": {
+        "condition": "value[\"score\"] >= 6"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1224.0,
+        "y": 76.0
+      }
+    },
+    {
+      "id": "fix",
+      "type": "prompt",
+      "label": "Retranslate",
+      "params": {
+        "system": "You are a professional translator. Reply with the improved translation only.",
+        "template": "Improve this {{language}} translation of the text below, fixing these problems:\n{{report.differences | bullets}}\n\nText:\n{{text}}\n\nCurrent translation:\n{{translation}}",
+        "role": "chat",
+        "temperature": 0.1
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1520.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "keep",
+      "type": "template",
+      "label": "Annotate",
+      "params": {
+        "template": "{{translation}}\n\n[back-check passed: {{report.score}}/10]"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1520.0,
+        "y": 278.0
+      }
+    },
+    {
+      "id": "final_pick",
+      "type": "merge",
+      "label": "Final text",
+      "params": {},
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1816.0,
+        "y": 171.0
+      }
+    },
+    {
+      "id": "final",
+      "type": "output",
+      "params": {
+        "name": "translation"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 2112.0,
+        "y": 171.0
+      }
+    },
+    {
+      "id": "report_out",
+      "type": "output",
+      "params": {
+        "name": "report"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1224.0,
+        "y": 266.0
+      }
+    },
+    {
+      "id": "round_out",
+      "type": "output",
+      "params": {
+        "name": "round_trip"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 928.0,
+        "y": 266.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "text.value",
+      "to": "translate.text"
+    },
+    {
+      "from": "language.value",
+      "to": "translate.language"
+    },
+    {
+      "from": "translate.text",
+      "to": "back.translation"
+    },
+    {
+      "from": "text.value",
+      "to": "judge.original"
+    },
+    {
+      "from": "back.text",
+      "to": "judge.round_trip"
+    },
+    {
+      "from": "judge.data",
+      "to": "good.value"
+    },
+    {
+      "from": "good.then",
+      "to": "keep.report"
+    },
+    {
+      "from": "translate.text",
+      "to": "keep.translation"
+    },
+    {
+      "from": "good.else",
+      "to": "fix.report"
+    },
+    {
+      "from": "translate.text",
+      "to": "fix.translation"
+    },
+    {
+      "from": "text.value",
+      "to": "fix.text"
+    },
+    {
+      "from": "language.value",
+      "to": "fix.language"
+    },
+    {
+      "from": "keep.text",
+      "to": "final_pick.in"
+    },
+    {
+      "from": "fix.text",
+      "to": "final_pick.in"
+    },
+    {
+      "from": "final_pick.out",
+      "to": "final.value"
+    },
+    {
+      "from": "judge.data",
+      "to": "report_out.value"
+    },
+    {
+      "from": "back.text",
+      "to": "round_out.value"
+    }
+  ]
+}

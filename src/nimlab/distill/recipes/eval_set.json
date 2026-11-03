@@ -1,0 +1,17 @@
+{
+  "name": "eval_set",
+  "kind": "eval_set",
+  "description": "Hard evaluation questions with reference answers from a strong reasoning model. A weaker model also answers, and the reward gap becomes a 0-1 difficulty estimate.",
+  "seed_role": "reasoning",
+  "generator_role": "reasoning",
+  "temperatures": [0.2],
+  "max_tokens": 900,
+  "domains": ["software engineering", "data science", "personal finance", "climate and energy"],
+  "topics_per_domain": 4,
+  "subtopics_per_topic": 4,
+  "default_format": "openai-chat",
+  "include_meta": true,
+  "filters": {"min_reward": -7.0, "min_judge": 6.5, "min_chars": 80, "max_chars": 5000, "min_difficulty": 0.3},
+  "dedup": {"exact": true, "near": true, "threshold": 0.9, "field": "prompt"},
+  "decontaminate": {"enabled": true, "ngram": 8, "min_overlap": 0.5, "check": "prompt"}
+}

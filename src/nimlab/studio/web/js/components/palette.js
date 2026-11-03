@@ -13,6 +13,10 @@ function items() {
     { t: 'Ask Atlas…', s: 'Atlas', kw: 'ask', ic: 'atlas', j: A('atlas'), run: (q) => { setPrefill('atlas', q); go('atlas'); } },
     { t: 'Convene council…', s: 'Council', kw: 'convene', ic: 'council', j: A('council'), run: (q) => { setPrefill('council', q); go('council'); } },
     { t: 'Route prompt…', s: 'Arena', kw: 'route', ic: 'route', j: A('arena'), run: (q) => { setPrefill('arena', q); go('arena'); } },
+    { t: 'Analyze image…', s: 'Prism', kw: 'analyze', ic: 'prism', j: A('prism'), run: () => go('prism') },
+    { t: 'Run safety scan…', s: 'Sentinel', kw: 'scan', ic: 'sentinel', j: A('sentinel'), run: () => go('sentinel') },
+    { t: 'New pipeline…', s: 'Loom', kw: 'pipeline', ic: 'loom', j: A('loom'), run: () => go('loom') },
+    { t: 'Generate dataset…', s: 'Distill', kw: 'generate', ic: 'distill', j: A('distill'), run: () => go('distill') },
     { t: 'Settings', s: '⌘,', ic: 'settings', j: 'var(--c-core)', run: () => import('../screens/settings.js').then((m) => m.openSettings()) },
     { t: 'Toggle theme', s: 'ink / paper', ic: 'sun', j: 'var(--c-core)', run: toggleTheme },
     ...APPS.map((a) => ({ t: `Go to ${a.name}`, s: '⌘' + a.key, ic: a.icon, j: `var(--c-${a.app || 'core'})`, run: () => go(a.id) })),
@@ -36,7 +40,7 @@ export function openPalette() {
   if (open) return closePalette();
   const prev = document.activeElement;
   const all = items(); let sel = 0, shown = [];
-  const input = h('input', { type: 'text', placeholder: 'Plug into…  build, ask, convene, route, settings', 'aria-label': 'Command palette', autocomplete: 'off', spellcheck: 'false', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list' });
+  const input = h('input', { type: 'text', placeholder: 'Plug into…  build, ask, convene, route, analyze, scan, settings', 'aria-label': 'Command palette', autocomplete: 'off', spellcheck: 'false', role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-list' });
   const listEl = h('div.palette-list#pal-list', { role: 'listbox' });
   const scrim = h('div.scrim', { on: { mousedown: closePalette } });
   const box = h('div.palette', { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Command palette' },

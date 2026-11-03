@@ -15,6 +15,10 @@
   --c-atlas: #22E1FF;
   --c-forge: #C6FF3D;
   --c-arena: #FF8A3D;
+  --c-prism: #B07CFF;
+  --c-sentinel: #FF4D4D;
+  --c-loom: #3DFFB4;
+  --c-distill: #FFC83D;
   --c-core: #8B7BFF;
   --on-signal: #0B0A12;
   --ok: #5CF2A0;
@@ -54,6 +58,10 @@
   --c-atlas: #00708F;
   --c-forge: #4B7300;
   --c-arena: #B34700;
+  --c-prism: #6A3FD0;
+  --c-sentinel: #C62828;
+  --c-loom: #00855A;
+  --c-distill: #8A5F00;
   --c-core: #5340D6;
   --on-signal: #FFFFFF;
   --ok: #0B7A43;
@@ -73,6 +81,7 @@
     --hair: rgba(30,20,60,.11); --hair-2: rgba(30,20,60,.2);
     --text: #1A1630; --dim: #5B5675; --faint: #665F83;
     --c-council: #C0106B; --c-atlas: #00708F; --c-forge: #4B7300; --c-arena: #B34700; --c-core: #5340D6;
+    --c-prism: #6A3FD0; --c-sentinel: #C62828; --c-loom: #00855A; --c-distill: #8A5F00;
     --on-signal: #FFFFFF; --ok: #0B7A43; --bad: #C41E3A; --warn: #8A5F00;
     --glass: rgba(251,248,241,.78); --glass-strong: rgba(251,248,241,.94);
     --shadow: 0 1px 0 rgba(255,255,255,.9) inset, 0 14px 30px -18px rgba(40,25,90,.35);
@@ -85,3 +94,7 @@
 .app-forge   { --accent: var(--c-forge); }
 .app-arena   { --accent: var(--c-arena); }
 .app-core    { --accent: var(--c-core); }
+.app-prism   { --accent: var(--c-prism); }
+.app-sentinel { --accent: var(--c-sentinel); }
+.app-loom    { --accent: var(--c-loom); }
+.app-distill { --accent: var(--c-distill); }
