@@ -1,0 +1,17 @@
+{
+  "name": "preference_pairs",
+  "kind": "preference_pairs",
+  "description": "DPO-style preference data: two different models answer each prompt, the reward model ranks them, and clear winners become chosen/rejected pairs.",
+  "seed_role": "chat",
+  "generator_role": "chat",
+  "temperatures": [0.5, 0.8, 1.0],
+  "max_tokens": 600,
+  "domains": ["software engineering", "data science", "personal finance", "health and fitness", "cooking", "climate and energy"],
+  "topics_per_domain": 3,
+  "subtopics_per_topic": 4,
+  "responses_per_prompt": 2,
+  "default_format": "dpo",
+  "filters": {"min_reward": -10.0, "min_judge": 5.0, "min_chars": 60, "max_chars": 4000, "min_margin": 0.5},
+  "dedup": {"exact": true, "near": true, "threshold": 0.9, "field": "prompt"},
+  "decontaminate": {"enabled": true, "ngram": 8, "min_overlap": 0.5, "check": "prompt"}
+}

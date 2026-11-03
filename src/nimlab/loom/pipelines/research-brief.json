@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "name": "research-brief",
+  "title": "Research brief",
+  "description": "Decompose a topic into research questions, answer them in parallel with map, then synthesise one brief.",
+  "nodes": [
+    {
+      "id": "topic",
+      "type": "input",
+      "params": {
+        "type": "string",
+        "default": "How do solid-state batteries work, and when will they matter?",
+        "description": "What to research"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 40.0,
+        "y": 135.0
+      }
+    },
+    {
+      "id": "decompose",
+      "type": "json",
+      "label": "Decompose",
+      "params": {
+        "template": "Break this topic into exactly 4 focused research questions that together cover it.\n\nTopic: {{topic}}",
+        "system": "You are a careful research planner.",
+        "role": "chat",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "questions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 3,
+              "maxItems": 5
+            }
+          },
+          "required": [
+            "questions"
+          ]
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 362.0,
+        "y": 135.0
+      }
+    },
+    {
+      "id": "qs",
+      "type": "python_fn",
+      "label": "Questions",
+      "params": {
+        "fn": "get_field",
+        "args": {
+          "field": "questions"
+        }
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 684.0,
+        "y": 135.0
+      }
+    },
+    {
+      "id": "answers",
+      "type": "map",
+      "label": "Answer each",
+      "params": {
+        "step": {
+          "type": "prompt",
+          "params": {
+            "template": "Context: {{topic}}\n\nAnswer this question in 3 or 4 factual sentences.\n\nQuestion: {{item}}",
+            "role": "fast",
+            "max_tokens": 400
+          }
+        },
+        "concurrency": 4
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1006.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "synth",
+      "type": "prompt",
+      "label": "Synthesise",
+      "params": {
+        "system": "You write crisp research briefs for busy readers.",
+        "template": "Write a one-page brief on: {{topic}}\n\nUse these findings, one per question:\n{{findings | bullets}}\n\nStructure: a two-sentence summary, three key points, one open question.",
+        "role": "reasoning",
+        "max_tokens": 900
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1328.0,
+        "y": 123.0
+      }
+    },
+    {
+      "id": "brief",
+      "type": "output",
+      "params": {
+        "name": "brief"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1650.0,
+        "y": 135.0
+      }
+    },
+    {
+      "id": "questions",
+      "type": "output",
+      "params": {
+        "name": "questions"
+      },
+      "defaults": {},
+      "retries": 0,
+      "pos": {
+        "x": 1006.0,
+        "y": 230.0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "topic.value",
+      "to": "decompose.topic"
+    },
+    {
+      "from": "decompose.data",
+      "to": "qs.value"
+    },
+    {
+      "from": "qs.result",
+      "to": "answers.items"
+    },
+    {
+      "from": "topic.value",
+      "to": "answers.topic"
+    },
+    {
+      "from": "answers.results",
+      "to": "synth.findings"
+    },
+    {
+      "from": "topic.value",
+      "to": "synth.topic"
+    },
+    {
+      "from": "synth.text",
+      "to": "brief.value"
+    },
+    {
+      "from": "qs.result",
+      "to": "questions.value"
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{ title }}</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #6f6e68;
+  --hair: #e4e3de; --track: #efe9d6; --accent: #b77d00; --gray: #b7b6ac; --warn-bg: #fff6df; --warn-ink: #6b4a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #121211; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #9a998f;
+    --hair: #2e2e2b; --track: #2c2615; --accent: #ffc83d; --gray: #55544d; --warn-bg: #2d2412; --warn-ink: #f2cf85;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #9a998f;
+  --hair: #2e2e2b; --track: #2c2615; --accent: #ffc83d; --gray: #55544d; --warn-bg: #2d2412; --warn-ink: #f2cf85;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
+h2 { font-size: 1.1rem; margin: 0 0 4px; }
+.sub, .note, caption { color: var(--ink-2); }
+.sub { margin: 0 0 16px; overflow-wrap: anywhere; }
+.muted { color: var(--ink-3); }
+.banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 10px 14px; margin: 0 0 16px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 0 0 16px; }
+.kpi, .card { background: var(--surface); border: 1px solid var(--hair); border-radius: 12px; }
+.kpi { padding: 12px 14px; min-width: 0; }
+.kpi .l { color: var(--ink-2); font-size: 0.82rem; }
+.kpi .v { font-size: 1.35rem; font-weight: 650; overflow-wrap: anywhere; line-height: 1.25; }
+.kpi .s { color: var(--ink-3); font-size: 0.82rem; }
+.card { padding: 16px; margin: 0 0 16px; }
+.card > .note { margin: 0 0 12px; font-size: 0.9rem; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+caption { text-align: left; font-size: 0.82rem; padding-bottom: 6px; }
+th, td { padding: 7px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--hair); }
+th { color: var(--ink-2); font-weight: 600; font-size: 0.8rem; }
+th:first-child, td:first-child, th.l, td.l { text-align: left; }
+td.num { font-variant-numeric: tabular-nums; }
+td.wrap-text { white-space: normal; text-align: left; min-width: 18rem; max-width: 40rem; }
+td.model { text-align: left; font-weight: 600; max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
+tbody tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; font-size: 0.72rem; padding: 1px 7px; border-radius: 999px; background: var(--track); color: var(--ink-2); margin-left: 6px; font-weight: 500; vertical-align: 1px; }
+.bar { display: inline-block; width: 84px; height: 8px; border-radius: 4px; background: var(--track); vertical-align: middle; margin-right: 8px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.fun { display: grid; grid-template-columns: minmax(8rem, 12rem) 1fr; gap: 6px 14px; align-items: center; }
+.fun .lab { font-weight: 600; }
+.fun .lab small { display: block; font-weight: 400; color: var(--ink-3); }
+.fun .track { background: var(--track); border-radius: 6px; height: 26px; position: relative; overflow: hidden; }
+.fun .track i { display: block; height: 100%; background: var(--accent); border-radius: 6px 0 0 6px; min-width: 2px; }
+.fun .track b { position: absolute; left: 10px; top: 3px; font-size: 0.85rem; color: var(--ink); mix-blend-mode: normal; text-shadow: 0 0 3px var(--surface); }
+.reasons { margin: 0 0 8px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 6px; grid-column: 2; }
+.chart { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 520px; font-family: inherit; }
+svg text { fill: var(--ink-2); font-size: 12px; }
+svg .t-muted { fill: var(--ink-3); }
+svg .grid { stroke: var(--hair); stroke-width: 1; }
+svg .axis { stroke: var(--ink-3); stroke-width: 1; }
+svg .bar-all { fill: var(--gray); }
+svg .bar-kept { fill: var(--accent); pointer-events: none; }
+svg .bar-all:hover, svg .bar-all:focus { fill: var(--ink-3); outline: none; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; font-size: 0.82rem; color: var(--ink-2); margin: 10px 0 0; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+.sample { border-top: 1px solid var(--hair); padding: 10px 0; }
+.sample:first-of-type { border-top: 0; }
+.sample q { display: block; font-weight: 600; margin: 0 0 4px; quotes: none; overflow-wrap: anywhere; }
+.sample p { margin: 0; color: var(--ink-2); font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sample .meta { color: var(--ink-3); font-size: 0.8rem; margin-top: 4px; }
+#tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--surface); padding: 6px 10px; border-radius: 8px; font-size: 0.82rem; line-height: 1.35; max-width: 300px; display: none; }
+#tip b { display: block; font-size: 0.98rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.foot { color: var(--ink-3); font-size: 0.82rem; margin-top: 24px; }
+.foot code, code { background: var(--track); padding: 1px 5px; border-radius: 4px; }
+@media (max-width: 560px) {
+  .wrap { padding: 16px 16px 40px; }
+  h1 { font-size: 1.35rem; }
+  .card { padding: 12px; }
+  .fun { grid-template-columns: 1fr; }
+  .reasons { grid-column: 1; }
+  th, td { padding: 6px 8px; }
+}
+@media (forced-colors: active) {
+  .bar > i, .fun .track i, svg .bar-kept { forced-color-adjust: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>{{ title }}</h1>
+  <p class="sub">Run <code>{{ run_id }}</code>{% if created %} &middot; {{ created }}{% endif %} &middot; recipe kind <code>{{ kind }}</code> &middot; exported as <code>{{ fmt }}</code></p>
+  {% if simulated %}<div class="banner" role="note"><strong>Simulated data.</strong> This run used the offline simulator, so the text, reward scores and costs come from a deterministic simulation. They demonstrate the pipeline and say nothing about real model quality.</div>{% endif %}
+
+  <section class="kpis" aria-label="Highlights">
+    {% for k in kpis %}
+    <div class="kpi"><div class="l">{{ k.label }}</div><div class="v">{{ k.value }}</div><div class="s">{{ k.sub }}</div></div>
+    {% endfor %}
+  </section>
+
+  <section class="card" id="funnel" aria-labelledby="h-funnel">
+    <h2 id="h-funnel">Pipeline funnel</h2>
+    <p class="note">How many candidates survive each stage. The bar shows the share of the original candidates; chips list why samples were dropped.</p>
+    <div class="fun">
+      {% for row in funnel %}
+      <div class="lab">{{ row.label }}<small>{{ row.in }} in &middot; {{ row.dropped }} dropped</small></div>
+      <div class="track" role="img" aria-label="{{ row.label }}: {{ row.out }} of {{ funnel[0].in }}"><i style="width:{{ row.pct }}%"></i><b>{{ row.out }}</b></div>
+      {% if row.reasons %}
+      <ul class="reasons">{% for r in row.reasons %}<li class="pill" title="{{ r.why }}">{{ r.code }} {{ r.n }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {% for h in histograms %}
+  <section class="card" aria-label="{{ h.title }}">
+    <h2>{{ h.title }}</h2>
+    <p class="note">Distribution of {{ h.total }} scored samples; the bright part of each bar is what survived all filters ({{ h.kept }} kept).</p>
+    <div class="chart">{{ h.svg|safe }}</div>
+    <div class="legend"><span><i class="sw" style="background:var(--gray)"></i>All scored</span><span><i class="sw" style="background:var(--accent)"></i>Kept</span></div>
+  </section>
+  {% endfor %}
+
+  <section class="card" id="models" aria-labelledby="h-models">
+    <h2 id="h-models">Generator models</h2>
+    <p class="note">Mean score uses the {{ dominant or 'n/a' }} scale, so compare rows only with each other.</p>
+    <div class="scroll">
+      <table>
+        <caption class="sr">Per-model yield</caption>
+        <thead><tr><th class="l">Model</th><th>Generated</th><th>Kept</th><th class="l">Kept rate</th><th>Mean score</th></tr></thead>
+        <tbody>
+        {% for m in models %}
+          <tr><td class="model" title="{{ m.model }}">{{ m.short }}</td><td class="num">{{ m.generated }}</td><td class="num">{{ m.kept }}</td>
+          <td class="l num"><span class="bar" aria-hidden="true"><i style="width:{{ m.pct }}%"></i></span>{{ m.rate }}</td><td class="num">{{ m.mean }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="diversity" aria-labelledby="h-div">
+    <h2 id="h-div">Diversity and length</h2>
+    <p class="note">Distinct-n is the share of unique word n-grams across all kept prompts (1.0 means no phrase is ever repeated). Pairwise distance is the average cosine distance between prompt embeddings.</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="l">Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Distinct-1 / 2 / 3 (prompts)</td><td class="num">{{ '%.3f' % distinct[0] }} / {{ '%.3f' % distinct[1] }} / {{ '%.3f' % distinct[2] }}</td></tr>
+        {% if lengths %}<tr><td>Response length (chars): mean / median / min / max</td><td class="num">{{ lengths.mean }} / {{ lengths.median|int }} / {{ lengths.min|int }} / {{ lengths.max|int }}</td></tr>{% endif %}
+      </tbody>
+    </table></div>
+  </section>
+
+  {% if top %}
+  <section class="card" id="samples" aria-labelledby="h-top">
+    <h2 id="h-top">Highest-scoring samples</h2>
+    {% for s in top %}
+    <div class="sample"><q>{{ s.prompt }}</q><p>{{ s.response[:420] }}{% if s.response|length > 420 %}&hellip;{% endif %}</p>
+    <div class="meta">{{ s.score_source }} {{ s.score }} &middot; {{ s.model }}{% if s.topic %} &middot; {{ s.topic }}{% endif %}</div></div>
+    {% endfor %}
+    <h2 id="h-bottom" style="margin-top:16px">Lowest-scoring samples that were kept</h2>
+    {% for s in bottom %}
+    <div class="sample"><q>{{ s.prompt }}</q><p>{{ s.response[:420] }}{% if s.response|length > 420 %}&hellip;{% endif %}</p>
+    <div class="meta">{{ s.score_source }} {{ s.score }} &middot; {{ s.model }}{% if s.topic %} &middot; {{ s.topic }}{% endif %}</div></div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="card" id="usage" aria-labelledby="h-usage">
+    <h2 id="h-usage">Usage</h2>
+    <p class="note">Calls and tokens per model. Costs are estimates from the registry cost tiers, not billing data. Token counts for JSON and embedding calls are estimated (characters / 4).</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="l">Model</th><th>Calls</th><th>Prompt tokens</th><th>Completion tokens</th></tr></thead>
+      <tbody>
+      {% for u in usage_rows %}
+        <tr><td class="model" title="{{ u.model }}">{{ u.short }}</td><td class="num">{{ u.calls }}</td><td class="num">{{ u.prompt_tokens }}</td><td class="num">{{ u.completion_tokens }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="config" aria-labelledby="h-conf">
+    <h2 id="h-conf">Filters and thresholds</h2>
+    <div class="scroll"><table>
+      <thead><tr><th class="l">Group</th><th class="l">Settings</th></tr></thead>
+      <tbody>
+        <tr><td>Filters</td><td class="wrap-text">{% for k, v in filters.items() %}<code>{{ k }}={{ v }}</code> {% endfor %}</td></tr>
+        <tr><td>Dedup</td><td class="wrap-text">{% for k, v in dedup.items() %}<code>{{ k }}={{ v }}</code> {% endfor %}</td></tr>
+        <tr><td>Decontamination</td><td class="wrap-text">{% for k, v in decontam.items() %}<code>{{ k }}={{ v }}</code> {% endfor %}</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <p class="foot">Generated by <code>nimlab distill report</code>. Reward-model scores are unbounded (higher is better); judge scores run 0&ndash;10. Neither is ground truth.</p>
+</div>
+<div id="tip" role="tooltip"></div>
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+  function show(el, x, y) {
+    tip.textContent = '';
+    var b = document.createElement('b'); b.textContent = el.getAttribute('data-v') || '';
+    tip.appendChild(b);
+    tip.appendChild(document.createTextNode(el.getAttribute('data-l') || ''));
+    tip.style.display = 'block';
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, x + 14)) + 'px';
+    tip.style.top = Math.max(8, Math.min(window.innerHeight - h - 8, y + 14)) + 'px';
+  }
+  function hide() { tip.style.display = 'none'; }
+  document.addEventListener('pointermove', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (el) show(el, e.clientX, e.clientY); else hide();
+  });
+  document.addEventListener('focusin', function (e) {
+    var el = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect(); show(el, r.left, r.bottom);
+  });
+  document.addEventListener('focusout', hide);
+})();
+</script>
+</body>
+</html>

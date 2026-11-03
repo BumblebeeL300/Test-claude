@@ -1,0 +1,16 @@
+{
+  "name": "instruction_diversity",
+  "kind": "instruction_diversity",
+  "description": "A broad instruction-tuning set: a topic tree is expanded into subtopics, each subtopic into varied user requests, and every request gets a response.",
+  "seed_role": "chat",
+  "generator_role": "chat",
+  "temperatures": [0.4, 0.7, 1.0],
+  "max_tokens": 700,
+  "domains": ["software engineering", "data science", "personal finance", "health and fitness", "cooking", "climate and energy"],
+  "topics_per_domain": 4,
+  "subtopics_per_topic": 4,
+  "default_format": "openai-chat",
+  "filters": {"min_reward": -8.0, "min_judge": 6.0, "min_chars": 60, "max_chars": 4000, "language": "en"},
+  "dedup": {"exact": true, "near": true, "threshold": 0.9, "field": "prompt"},
+  "decontaminate": {"enabled": true, "ngram": 8, "min_overlap": 0.5, "check": "prompt"}
+}
