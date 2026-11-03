@@ -10,7 +10,7 @@ from distill_helpers import DOCS, EXAMPLES
 from typer.testing import CliRunner
 
 from nimlab.distill.cli import app
-from nimlab.distill.export import to_json, Record
+from nimlab.distill.export import Record, to_json
 
 runner = CliRunner()
 
@@ -66,7 +66,11 @@ def test_run_report_inspect_dedup_workflow(tmp_path: Path, runs: str) -> None:
     assert "example 2" in ins.output and "records" in ins.output
 
     dup = tmp_path / "dups.jsonl"
-    rows = [Record("Explain unit testing to a beginner", "r1"), Record("explain unit testing to a beginner!", "r2"), Record("Bake bread", "r3")]
+    rows = [
+        Record("Explain unit testing to a beginner", "r1"),
+        Record("explain unit testing to a beginner!", "r2"),
+        Record("Bake bread", "r3"),
+    ]
     dup.write_text("\n".join(json.dumps(to_json(r, "openai-chat")) for r in rows) + "\n")
     out = tmp_path / "unique.jsonl"
     res = invoke("dedup", str(dup), "--threshold", "0.92", "--mock", "--out", str(out))
@@ -101,9 +105,23 @@ def test_resume_a_finished_run_and_unknown_run(runs: str) -> None:
 
 def test_errors_are_reported_cleanly(runs: str, tmp_path: Path) -> None:
     assert "unknown recipe" in invoke("run", "nope", "--mock", "--runs-dir", runs, expect=1).output
-    bad = invoke("run", "instruction_diversity", "--format", "dpo", "--mock", "--runs-dir", runs, expect=1)
+    bad = invoke(
+        "run", "instruction_diversity", "--format", "dpo", "--mock", "--runs-dir", runs, expect=1
+    )
     assert "dpo format needs" in bad.output
-    assert "does not exist" in invoke("run", "qa_from_docs", "--docs", str(tmp_path / "x"), "--mock", "--runs-dir", runs, expect=1).output
+    assert (
+        "does not exist"
+        in invoke(
+            "run",
+            "qa_from_docs",
+            "--docs",
+            str(tmp_path / "x"),
+            "--mock",
+            "--runs-dir",
+            runs,
+            expect=1,
+        ).output
+    )
     assert "cannot read" in invoke("inspect", str(tmp_path / "missing.jsonl"), expect=1).output
     empty = tmp_path / "empty.jsonl"
     empty.write_text("")

@@ -29,7 +29,7 @@ def canary_hits(text: str, canaries: list[str]) -> list[str]:
 
 
 def prompt_overlap(prompt: str, text: str, min_words: int = 8) -> list[tuple[int, int]]:
-    """Character spans of ``text`` repeating ``min_words`` or more consecutive words of ``prompt``."""
+    """Character spans of ``text`` that repeat ``min_words``+ consecutive words of ``prompt``."""
     p_words = [w.lower() for w in _WORD.findall(prompt)]
     if len(p_words) < min_words:
         return []

@@ -82,7 +82,7 @@
 @media (max-width: 760px) { .sn-red-grid { grid-template-columns: minmax(0, 1fr); } }
 .sn-col { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .sn-in { height: auto; min-height: 220px; padding: 10px 12px; font: 500 12.5px/1.65 var(--font-mono); resize: vertical; }
-.sn-red-bar { display: flex; align-items: center; gap: 8px; } .sn-style { width: auto; height: 28px; font-size: 12px; padding: 0 8px; }
+.sn-red-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; } .sn-style { width: auto; max-width: 160px; height: 28px; font-size: 12px; padding: 0 8px; }
 .sn-doc { min-height: 220px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--hair-2); background: color-mix(in srgb, var(--ink) 70%, transparent); font: 500 12.5px/1.65 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .sn-bar { position: relative; display: inline-block; background: transparent; color: transparent; border-radius: 3px; padding: 0 1px; isolation: isolate; }
 .sn-bar .o { transition: color .35s; }

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from distill_helpers import run_recipe
 
-from nimlab.distill import DistillResult, Distiller
+from nimlab.distill import Distiller, DistillResult
 from nimlab.distill.card import render_card
 from nimlab.distill.models import Sample
 from nimlab.distill.quality import build_report, compute_funnel, histogram
@@ -122,7 +122,7 @@ async def test_dataset_card_has_provenance(result: DistillResult) -> None:
     meta = result.meta
     assert card.startswith("---\nlicense: TODO")
     assert "SIMULATED DATA" in card and "  - simulated" in card
-    for model in meta.models + [meta.reward_model, meta.judge_model, meta.embed_model]:
+    for model in [*meta.models, meta.reward_model, meta.judge_model, meta.embed_model]:
         assert model in card
     assert "`instruction_diversity`" in card
     for heading in ("## Provenance", "## Pipeline and filters", "## Counts", "## Licence"):

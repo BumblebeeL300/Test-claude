@@ -482,7 +482,9 @@ class SimClient:
             return rng.choice(_FRAGMENTS)
         if roll < 0.085:
             return _SPANISH.format(t=subject)
-        points = [p.format(t=subject if i % 2 == 0 else "this topic") for i, p in enumerate(_POINTS)]
+        points = [
+            p.format(t=subject if i % 2 == 0 else "this topic") for i, p in enumerate(_POINTS)
+        ]
         rng.shuffle(points)
         count = 1 + round(q * 5)
         if roll < 0.11:

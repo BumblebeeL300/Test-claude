@@ -70,7 +70,9 @@ def test_recipes_endpoint(client: TestClient) -> None:
 
 
 def test_run_lifecycle_and_events(app: FastAPI, client: TestClient) -> None:
-    run_id = start(client, n=40, models=["meta/llama-3.3-70b-instruct", "meta/llama-3.1-8b-instruct"])
+    run_id = start(
+        client, n=40, models=["meta/llama-3.3-70b-instruct", "meta/llama-3.1-8b-instruct"]
+    )
     detail = wait_done(client, run_id)
     assert detail["status"] == "done" and detail["simulated"] is True
     assert detail["result"]["n_final"] > 0 and len(detail["result"]["funnel"]) == 5
@@ -130,7 +132,10 @@ def test_samples_endpoint_stages_and_paging(client: TestClient) -> None:
 
     scored = client.get(f"/api/distill/runs/{run_id}/samples", params={"stage": "score"}).json()
     assert scored["total"] >= kept
-    assert client.get(f"/api/distill/runs/{run_id}/samples", params={"stage": "all"}).json()["total"] == 50
+    assert (
+        client.get(f"/api/distill/runs/{run_id}/samples", params={"stage": "all"}).json()["total"]
+        == 50
+    )
     bad = client.get(f"/api/distill/runs/{run_id}/samples", params={"stage": "nope"})
     assert bad.status_code == 422
     assert client.get(f"/api/distill/runs/{run_id}/samples", params={"limit": 0}).status_code == 422
@@ -142,11 +147,16 @@ def test_export_download(client: TestClient, fmt: str) -> None:
     kept = wait_done(client, run_id)["result"]["n_final"]
     resp = client.get(f"/api/distill/runs/{run_id}/export", params={"format": fmt})
     assert resp.status_code == 200
-    assert "attachment" in resp.headers["content-disposition"] and fmt in resp.headers["content-disposition"]
+    assert (
+        "attachment" in resp.headers["content-disposition"]
+        and fmt in resp.headers["content-disposition"]
+    )
     lines = resp.text.splitlines()
     assert len(lines) == kept
     first = json.loads(lines[0])
-    assert {"openai-chat": "messages", "alpaca": "instruction", "sharegpt": "conversations"}[fmt] in first
+    assert {"openai-chat": "messages", "alpaca": "instruction", "sharegpt": "conversations"}[
+        fmt
+    ] in first
 
 
 def test_dpo_export_for_preference_runs(client: TestClient) -> None:
@@ -191,7 +201,9 @@ def test_unknown_run_and_unsafe_ids(client: TestClient) -> None:
     assert client.get("/api/distill/runs/..%2f..%2fetc/samples").status_code in (404, 422)
 
 
-def test_export_of_an_unfinished_run_is_refused(app: FastAPI, client: TestClient, tmp_path: Path) -> None:
+def test_export_of_an_unfinished_run_is_refused(
+    app: FastAPI, client: TestClient, tmp_path: Path
+) -> None:
     import asyncio
 
     from nimlab.distill import Distiller

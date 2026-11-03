@@ -99,7 +99,9 @@ def test_score_threshold_depends_on_source() -> None:
 def test_grounding_filter() -> None:
     cfg = FilterConfig(min_grounding=0.6)
     ctx = "Exponential backoff doubles the waiting time after every failed attempt."
-    grounded = sample(response="Backoff doubles the waiting time after each failed attempt.", context=ctx)
+    grounded = sample(
+        response="Backoff doubles the waiting time after each failed attempt.", context=ctx
+    )
     assert check_grounding(grounded, cfg) is None
     invented = sample(response="Quantum entanglement powers distributed ledgers.", context=ctx)
     assert check_grounding(invented, cfg)[0] == "ungrounded"  # type: ignore[index]

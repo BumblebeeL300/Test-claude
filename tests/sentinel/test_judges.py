@@ -1,5 +1,7 @@
 """The judges: canary leak, refusal (heuristic + LLM), injection success, citation, NemoGuard."""
 
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 from typing import Any

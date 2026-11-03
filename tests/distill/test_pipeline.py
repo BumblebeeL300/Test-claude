@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Callable
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -12,9 +13,9 @@ import pytest
 from distill_helpers import DOCS, run_recipe
 
 from nimlab.core import NIMClient, NIMConfig
-from nimlab.distill import DistillError, Distiller, RunOptions
-from nimlab.distill.gateway import Gateway
+from nimlab.distill import Distiller, DistillError, RunOptions
 from nimlab.distill.costs import Tally, estimate_cost, summarize
+from nimlab.distill.gateway import Gateway
 from nimlab.distill.models import SAMPLE_STAGES, STAGES
 from nimlab.distill.sim import SimClient
 from nimlab.distill.store import RunStore, StoreError
@@ -36,7 +37,7 @@ async def test_full_mock_run_produces_a_dataset_and_visible_drops(
     assert funnel[0].in_ == 120
     outs = [f.out for f in funnel]
     assert outs == sorted(outs, reverse=True) and outs[-1] == len(result.kept)
-    for prev, row in zip(funnel, funnel[1:], strict=False):
+    for prev, row in pairwise(funnel):
         assert row.in_ == prev.out
     assert sum(result.report.drop_reasons.values()) == len(result.dropped)
     filtered = {r for f in funnel for r in f.reasons}
@@ -142,7 +143,9 @@ async def test_events_follow_the_documented_protocol(
     last_funnel = [d for t, d in events if t == "funnel"][-1]
     assert last_funnel["kept"] == len(result.kept) and last_funnel["stages"][0]["in"] == 60
     # per stage ordering: stage.start precedes the events of that stage
-    assert types.index("stage.start") < types.index("sample.generated") < types.index("sample.scored")
+    assert (
+        types.index("stage.start") < types.index("sample.generated") < types.index("sample.scored")
+    )
 
 
 async def test_runs_are_deterministic_and_seed_dependent(runs_dir: Path) -> None:
@@ -234,7 +237,9 @@ async def test_cancellation_leaves_a_resumable_checkpoint(runs_dir: Path) -> Non
             started.set()
 
     slow = Distiller(SimClient(delay=0.01), runs_dir=runs_dir, on_event=hook)
-    task = asyncio.create_task(slow.run("instruction_diversity", n=60, run_id="c", options={"domains": ["cooking"]}))
+    task = asyncio.create_task(
+        slow.run("instruction_diversity", n=60, run_id="c", options={"domains": ["cooking"]})
+    )
     await asyncio.wait_for(started.wait(), 5)
     await asyncio.sleep(0.05)
     task.cancel()
@@ -320,8 +325,20 @@ async def test_gateway_bounds_concurrency_and_tallies_usage() -> None:
 
 
 def test_cost_estimate_uses_cost_tiers() -> None:
-    cheap = {"meta/llama-3.1-8b-instruct": {"calls": 1, "prompt_tokens": 1_000_000, "completion_tokens": 0}}
-    pricey = {"meta/llama-3.1-405b-instruct": {"calls": 1, "prompt_tokens": 1_000_000, "completion_tokens": 0}}
+    cheap = {
+        "meta/llama-3.1-8b-instruct": {
+            "calls": 1,
+            "prompt_tokens": 1_000_000,
+            "completion_tokens": 0,
+        }
+    }
+    pricey = {
+        "meta/llama-3.1-405b-instruct": {
+            "calls": 1,
+            "prompt_tokens": 1_000_000,
+            "completion_tokens": 0,
+        }
+    }
     assert estimate_cost(pricey) > estimate_cost(cheap) > 0
     assert estimate_cost({"unknown/model": {"prompt_tokens": 1_000_000}}) == 0.6
     s = summarize(cheap)
@@ -336,7 +353,9 @@ async def test_export_other_formats_after_the_run(distiller: Distiller, tmp_path
     plain = await distiller.run("instruction_diversity", n=30)
     with pytest.raises(DistillError, match="dpo"):
         distiller.export(plain.run_id, "dpo")
-    meta_path = distiller.export(plain.run_id, "openai-chat", tmp_path / "m.jsonl", include_meta=True)
+    meta_path = distiller.export(
+        plain.run_id, "openai-chat", tmp_path / "m.jsonl", include_meta=True
+    )
     assert "metadata" in json.loads(meta_path.read_text().splitlines()[0])
     assert distiller.load(plain.run_id).meta.id == plain.run_id
     assert [m.id for m in distiller.list_runs()][:2] == sorted(
@@ -348,7 +367,9 @@ async def test_real_mode_without_key_falls_back_to_the_simulator(runs_dir: Path)
     client = NIMClient(NIMConfig(mock=True))
     d = Distiller(client, runs_dir=runs_dir)
     result = await d.run("instruction_diversity", n=20)
-    assert result.meta.simulated and client.usage.total_calls > 0  # usage flows to the shared tracker
+    assert (
+        result.meta.simulated and client.usage.total_calls > 0
+    )  # usage flows to the shared tracker
     assert d.uses_simulator()
     await client.aclose()
 

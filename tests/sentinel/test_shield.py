@@ -1,5 +1,7 @@
 """Shield: block / redact / annotate modes on every check, plus the library API."""
 
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 from typing import Any

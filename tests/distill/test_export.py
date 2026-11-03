@@ -110,7 +110,7 @@ def test_read_dataset_errors_and_json_arrays(tmp_path: Path) -> None:
         read_dataset(tmp_path / "missing.jsonl")
     bad = tmp_path / "bad.jsonl"
     bad.write_text('{"messages": []}\nnot json\n')
-    with pytest.raises(ExportError, match="bad.jsonl:2"):
+    with pytest.raises(ExportError, match=r"bad\.jsonl:2"):
         read_dataset(bad)
     arr = tmp_path / "rows.json"
     arr.write_text(json.dumps([to_json(RECORDS[0], "alpaca")]))
@@ -121,8 +121,12 @@ def test_read_texts_accepts_many_eval_formats(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("first question\n\nsecond question\n")
     assert read_texts(tmp_path / "a.txt") == ["first question", "second question"]
     (tmp_path / "b.jsonl").write_text(
-        json.dumps({"question": "q1"}) + "\n" + json.dumps("plain string") + "\n"
-        + json.dumps(to_json(RECORDS[0], "openai-chat")) + "\n"
+        json.dumps({"question": "q1"})
+        + "\n"
+        + json.dumps("plain string")
+        + "\n"
+        + json.dumps(to_json(RECORDS[0], "openai-chat"))
+        + "\n"
     )
     assert read_texts(tmp_path / "b.jsonl") == ["q1", "plain string", "What is 2+2?"]
     (tmp_path / "c.json").write_text(json.dumps([{"prompt": "p1"}, {"instruction": "i1"}, {}]))

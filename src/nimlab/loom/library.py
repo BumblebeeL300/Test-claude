@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
-NODE_W, ROW_H, HEAD_H, LCD_H = 232, 24, 34, 64
+NODE_W, ROW_H, HEAD_H, LCD_H = 232, 24, 34, 70
 COL_GAP, ROW_GAP = 90, 36
 
 

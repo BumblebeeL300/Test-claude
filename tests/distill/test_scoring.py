@@ -100,4 +100,9 @@ async def test_pair_scores_share_one_scale() -> None:
     same = FakeClient(["reward:2.0", "reward:-1.0"])
     pair = await scorer_for(same).score_pair("q", "a", "b")
     assert pair is not None and [s.value for s in pair] == [2.0, -1.0]
-    assert await scorer_for(FakeClient(["x", "x"], judge=NIMResponseError("d", status_code=500))).score_pair("q", "a", "b") is None
+    assert (
+        await scorer_for(
+            FakeClient(["x", "x"], judge=NIMResponseError("d", status_code=500))
+        ).score_pair("q", "a", "b")
+        is None
+    )

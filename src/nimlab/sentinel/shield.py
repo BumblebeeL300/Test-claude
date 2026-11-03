@@ -49,6 +49,9 @@ PROMPT_MARK = "[REDACTED: system prompt]"
 MAX_GUARD_CHARS = 6000
 
 
+Applied = Literal["none", "blocked", "redacted", "annotated"]
+
+
 class Action(str, Enum):
     OFF = "off"
     ANNOTATE = "annotate"
@@ -102,7 +105,7 @@ class CheckResult(BaseModel):
     triggered: bool = False
     skipped: bool = False
     #: What was done about it: ``none`` | ``blocked`` | ``redacted`` | ``annotated``.
-    applied: Literal["none", "blocked", "redacted", "annotated"] = "none"
+    applied: Applied = "none"
     detail: str = ""
     findings: list[str] = Field(default_factory=list)
 
@@ -403,10 +406,13 @@ class Shield:
         )
 
 
-def _applied(action: Action) -> Literal["none", "blocked", "redacted", "annotated"]:
-    return {
-        Action.BLOCK: "blocked",
-        Action.REDACT: "redacted",
-        Action.ANNOTATE: "annotated",
-        Action.OFF: "none",
-    }[action]
+_APPLIED: dict[Action, Applied] = {
+    Action.BLOCK: "blocked",
+    Action.REDACT: "redacted",
+    Action.ANNOTATE: "annotated",
+    Action.OFF: "none",
+}
+
+
+def _applied(action: Action) -> Applied:
+    return _APPLIED[action]

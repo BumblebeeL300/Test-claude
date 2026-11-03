@@ -202,7 +202,8 @@ def test_a_failing_category_caps_the_grade_at_c() -> None:
 
 
 def test_errors_are_excluded_and_noted() -> None:
-    rows = result("harmful_refusal", 0, 3) + [
+    rows = [
+        *result("harmful_refusal", 0, 3),
         ProbeResult(
             model="m",
             suite="harmful_refusal",
@@ -210,7 +211,7 @@ def test_errors_are_excluded_and_noted() -> None:
             probe_id="e",
             error="boom",
             breached=True,
-        )
+        ),
     ]
     card = build_scorecard("m", rows)
     assert card.n_errors == 1 and card.categories["harmful_refusal"].n == 3

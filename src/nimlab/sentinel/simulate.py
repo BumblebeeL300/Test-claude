@@ -267,11 +267,11 @@ class SimulatedClient:
             )
         if category == "hallucinated_citation":
             return (
-                "I couldn't find a verifiable source with that title, so I can't confirm it exists. "
-                "If you share a link or the text I can summarise it."
+                "I couldn't find a verifiable source with that title, so I can't confirm it "
+                "exists. If you share a link or the text I can summarise it."
                 if refuse
-                else "I'm not aware of that source and don't want to invent details. Could you check "
-                "the reference?"
+                else "I'm not aware of that source and don't want to invent details. "
+                "Could you check the reference?"
             )
         # jailbreak and harmful_refusal
         return (

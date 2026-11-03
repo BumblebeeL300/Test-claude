@@ -120,7 +120,7 @@ export async function mount(el) {
       const segs = Array.from({ length: 24 }, () => h('i.seg.on'));
       const meter = h('div.sn-meter', { role: 'meter', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': 100, 'aria-label': `Shield integrity of ${shortModel(model)}` }, segs);
       const num = h('b.num.sn-int', '100%');
-      const grade = h('span.sn-grade', { 'data-g': '' }, '?');
+      const grade = h('span.sn-grade', { 'data-g': '', title: 'Grade appears when the scan finishes' }, '–');
       const bay = h('article.sn-bay', { 'data-m': model, style: { '--mc': PALETTE[i % PALETTE.length] } },
         h('header', h('i.sn-swatch'), h('b.mono', shortModel(model)), h('small.dim.mono', model.includes('/') ? model.split('/')[0] : ''), h('span.grow'), h('span.sn-integrity', h('span.label', 'Shield'), meter, num), grade), h('div.sn-groups', groups));
       chamber.append(pop(bay, { y: 14, delay: i * 70 }));
@@ -162,7 +162,7 @@ export async function mount(el) {
   }
   let raf = 0; const queueRadar = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; paintRadar(); }); };
   function paintRadar() {
-    const models = plan?.models || []; const W = 360, cx = W / 2, cy = W / 2, R = 118, n = AXES.length;
+    const models = plan?.models || []; const W = 440, H = 360, cx = W / 2, cy = H / 2, R = 112, n = AXES.length;
     const P = (i, f) => { const a = -Math.PI / 2 + (2 * Math.PI * i) / n; return [cx + R * f * Math.cos(a), cy + R * f * Math.sin(a)]; };
     let g = [0.25, 0.5, 0.75, 1].map((f) => `<polygon class="rg${f === 1 ? ' o' : ''}" points="${AXES.map((_, i) => P(i, f).map((v) => v.toFixed(1)).join(',')).join(' ')}"/>`).join('');
     g += AXES.map((_, i) => { const [x, y] = P(i, 1); return `<line class="sp" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`; }).join('');
@@ -174,7 +174,7 @@ export async function mount(el) {
       g += pts.map((p, i) => vals[i] == null ? '' : `<circle class="dot" style="--mc:${color}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2"><title>${esc(shortModel(m))} ${AXES[i][1]}: ${Math.round(vals[i] * 100)}%</title></circle>`).join('');
     });
     g += AXES.map(([, label], i) => { const [x, y] = P(i, 1.2); return `<text class="ax" x="${x.toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="${Math.abs(x - cx) < 8 ? 'middle' : x > cx ? 'start' : 'end'}">${label}</text>`; }).join('');
-    radarBox.innerHTML = `<svg viewBox="0 0 ${W} ${W}" role="img" aria-label="Radar chart of resistance per attack category">${g}</svg>`;
+    radarBox.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Radar chart of resistance per attack category">${g}</svg>`;
     clear(radarLegend);
     models.forEach((m, mi) => radarLegend.append(h('button.chip.mono', { type: 'button', style: { '--mc': PALETTE[mi % PALETTE.length] }, 'aria-pressed': String(radarOn.has(m)), on: { click: () => { radarOn.has(m) ? radarOn.delete(m) : radarOn.add(m); paintRadar(); } } }, h('i.sn-swatch'), shortModel(m))));
     if (!models.length) radarBox.append(h('p.dim.sn-idle', 'Run a blast test and the shapes fill in as attacks land.'));

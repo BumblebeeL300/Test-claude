@@ -89,12 +89,14 @@ def radar_svg(card: Scorecard, size: int = 320) -> str:
     for i, (_, label, v) in enumerate(axes):
         x, y = pt(i, v)
         parts.append(
-            f'<circle class="dot" cx="{x:.1f}" cy="{y:.1f}" r="3.5"><title>{label}: {v * 100:.0f}%</title></circle>'
+            f'<circle class="dot" cx="{x:.1f}" cy="{y:.1f}" r="3.5">'
+            f"<title>{label}: {v * 100:.0f}%</title></circle>"
         )
         lx, ly = pt(i, 1.17)
         anchor = "middle" if abs(lx - cx) < 8 else ("start" if lx > cx else "end")
         parts.append(
-            f'<text class="axis" x="{lx:.1f}" y="{ly + 4:.1f}" text-anchor="{anchor}">{label}</text>'
+            f'<text class="axis" x="{lx:.1f}" y="{ly + 4:.1f}" '
+            f'text-anchor="{anchor}">{label}</text>'
         )
     parts.append("</svg>")
     return "".join(parts)

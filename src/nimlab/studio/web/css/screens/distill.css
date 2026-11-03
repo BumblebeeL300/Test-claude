@@ -1,0 +1,90 @@
+/* Distill: a refinery column. Amber-gold signal; tokens from tokens.css (the accent is defined here). */
+:root { --c-distill: #FFC83D; }
+:root[data-theme="light"] { --c-distill: #8A5F00; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --c-distill: #8A5F00; } }
+.app-distill { --accent: var(--c-distill); }
+
+.dt { --accent: var(--c-distill); padding: 22px clamp(16px, 3vw, 36px) 56px; max-width: 1440px; margin: 0 auto; display: grid; gap: 18px; }
+.dt-h h1 { font: 700 clamp(26px, 3.4vw, 42px)/1.05 var(--font-ui); letter-spacing: -.045em; margin: 8px 0 6px; } .dt-h h1 em { font-style: normal; color: var(--accent); } .dt-h .label { color: var(--accent); } .dt-h p { max-width: 62ch; font-size: 13.5px; }
+.dt-grid { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1.3fr) minmax(260px, 360px); gap: 16px; align-items: start; }
+.dt .panel > .panel-h .label::before { background: var(--accent); }
+.dt-side { display: grid; gap: 16px; }
+.dt a.btn { text-decoration: none; }
+.dt-col .panel-h .label { flex: none; } .dt-col .panel-h .mono { flex: 1 1 0; min-width: 0; text-align: right; font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* controls */
+.dt-recipes { display: grid; gap: 8px; padding: 0 14px 6px; }
+.dt-rec { text-align: left; display: grid; gap: 3px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--hair-2); background: color-mix(in srgb, var(--ink) 45%, transparent); color: var(--text); transition: .25s var(--ease-out); }
+.dt-rec b { font: 700 13px var(--font-mono); letter-spacing: -.02em; text-transform: capitalize; } .dt-rec small { font-size: 11.5px; line-height: 1.35; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dt-rec:hover { border-color: var(--accent); transform: translateY(-1px); }
+.dt-rec[aria-checked=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: 0 0 0 1px var(--accent) inset, 0 10px 24px -14px var(--accent); }
+.dt-ctl-b { display: grid; gap: 12px; padding: 8px 14px 16px; }
+.dt-f { display: grid; gap: 6px; } .dt-f[hidden] { display: none; }
+.dt-n { display: flex; align-items: center; gap: 12px; } .dt-n input { flex: 1; accent-color: var(--accent); } .dt-n output { min-width: 3ch; text-align: right; font-weight: 700; color: var(--accent); }
+.dt-go { display: flex; gap: 8px; } .dt-go .btn { flex: 1; justify-content: center; }
+.dt-status { font-size: 11.5px; color: var(--dim); line-height: 1.5; min-height: 3em; }
+
+/* refinery column */
+.rf { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(150px, 34%); gap: 14px; padding: 6px 14px 18px; min-height: 560px; }
+.rf-pipe { position: absolute; left: 69px; top: 34px; bottom: 56px; width: 6px; border-radius: 3px; background: var(--hair-2); overflow: hidden; z-index: 0; }
+.rf-pipe i { position: absolute; inset: 0; background: repeating-linear-gradient(to top, transparent 0 14px, color-mix(in srgb, var(--accent) 70%, transparent) 14px 22px); background-size: 100% 44px; opacity: 0; }
+.rf-pipe.flow i { opacity: 1; animation: rf-flow 1.1s linear infinite; }
+@keyframes rf-flow { to { background-position: 0 -44px; } }
+.rf-tiers { display: grid; grid-template-rows: repeat(4, 1fr); gap: 14px; position: relative; z-index: 1; }
+.rf-tier { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 14px; align-items: center; transition: filter .3s; }
+.rf-tier:not(.active) .rf-vessel { filter: saturate(.7); }
+.rf-vessel { position: relative; height: 96px; border-radius: 14px 14px 30px 30px; border: 2px solid var(--hair-2); background: color-mix(in srgb, var(--ink) 70%, transparent); overflow: hidden; box-shadow: inset 0 -14px 22px -16px rgba(0,0,0,.7); transition: border-color .3s, box-shadow .3s; }
+.rf-tier[data-tier=condenser] .rf-vessel { border-radius: 40px; height: 84px; } .rf-tier[data-tier=filter] .rf-vessel { border-radius: 8px; background-image: repeating-linear-gradient(135deg, transparent 0 7px, var(--hair) 7px 8px); } .rf-tier[data-tier=collector] .rf-vessel { border-radius: 10px 10px 44px 44px; }
+.rf-tier.active .rf-vessel { border-color: var(--accent); box-shadow: 0 0 22px -6px var(--accent), inset 0 -14px 22px -16px rgba(0,0,0,.7); }
+.rf-liquid { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, white), var(--accent)); opacity: .85; transition: height .6s var(--ease-out); }
+.rf-glass { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(255,255,255,.14), transparent 30%, transparent 70%, rgba(255,255,255,.05)); pointer-events: none; }
+.rf-lab { display: grid; gap: 4px; min-width: 0; } .rf-lab .label { color: var(--text); }
+.rf-lab b { font: 700 34px/1 var(--font-mono); letter-spacing: -.04em; color: var(--accent); }
+.rf-lab small { font-size: 10.5px; letter-spacing: .08em; color: var(--faint); text-transform: uppercase; min-height: 1.2em; transition: color .2s; } .rf-lab small.hot { color: var(--accent); }
+.rf-waste { position: relative; z-index: 1; display: grid; grid-template-rows: auto auto 1fr; gap: 10px; align-content: start; }
+.rf-tank { position: relative; height: 150px; border-radius: 6px 6px 22px 22px; border: 2px solid var(--hair-2); background: color-mix(in srgb, var(--ink) 70%, transparent); overflow: hidden; }
+.rf-tank .rf-liquid { background: linear-gradient(180deg, color-mix(in srgb, var(--bad) 60%, var(--ink)), color-mix(in srgb, var(--bad) 35%, var(--ink))); opacity: .9; }
+.rf-wh { display: flex; align-items: baseline; justify-content: space-between; order: -1; } .rf-wh b { font: 700 22px var(--font-mono); color: var(--bad); }
+.rf-wl { list-style: none; display: grid; gap: 7px; align-content: start; font-size: 11.5px; max-height: 210px; overflow: auto; }
+.rf-wl li { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; color: var(--dim); } .rf-wl i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); } .rf-wl b { color: var(--text); }
+.rf-drops { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.rf-drop { position: absolute; width: 12px; height: 15px; margin: -8px 0 0 -6px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--accent); box-shadow: 0 0 10px var(--accent); display: grid; place-items: center; will-change: transform, opacity; }
+.rf-drop[data-tone=raw] { background: var(--faint); box-shadow: none; } .rf-drop[data-tone=waste] { background: var(--c, var(--bad)); box-shadow: 0 0 10px var(--c, var(--bad)); }
+.rf-drop span { position: absolute; left: 14px; top: -3px; font-size: 10px; white-space: nowrap; color: var(--text); background: var(--glass-strong); border: 1px solid var(--hair); border-radius: 5px; padding: 1px 5px; }
+
+/* funnel + histogram */
+.fn { display: grid; gap: 10px; padding: 4px 16px 16px; }
+.fn-row { display: grid; gap: 4px; } .fn-l { display: flex; justify-content: space-between; align-items: baseline; font: 600 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); } .fn-l b { font-size: 15px; color: var(--accent); letter-spacing: 0; }
+.fn-t { position: relative; height: 12px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 12%, var(--ink)); overflow: hidden; }
+.fn-t i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); width: 0; opacity: .88; transition: width .5s var(--ease-out); border-radius: 6px 0 0 6px; }
+.fn-row small { color: var(--faint); font-size: 10.5px; min-height: 1.3em; }
+.dt-hist { padding: 0 12px; } .dt-hist svg { width: 100%; height: auto; display: block; }
+.hb-all { fill: color-mix(in srgb, var(--accent) 38%, var(--raised-2)); transition: y .4s, height .4s; } .hb-kept { fill: var(--accent); pointer-events: none; }
+.hx { fill: var(--dim); font: 500 9px var(--font-mono); }
+.dt-hn { font-size: 11.5px; padding: 4px 16px 14px; }
+
+/* inspector */
+.dt-insp .panel-h { flex-wrap: wrap; } .dt-insp .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.dt-stack { position: relative; min-height: 330px; margin: 6px 16px 0; outline: none; perspective: 1400px; }
+.dt-stack:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent); border-radius: 16px; }
+.dt-stack .empty { position: absolute; inset: 0; }
+.dt-card { position: absolute; inset: 0 0 auto 0; min-height: 320px; max-height: 420px; border-radius: 16px; border: 1px solid var(--hair-2); background: linear-gradient(180deg, var(--raised), var(--panel)); box-shadow: var(--shadow); transform: translateY(calc(var(--k) * 12px)) scale(calc(1 - var(--k) * .04)); transform-style: preserve-3d; transition: transform .5s var(--ease-spring); z-index: calc(10 - var(--k)); }
+.dt-card:not(.top) { pointer-events: none; opacity: calc(1 - var(--k) * .3); } .dt-card.top { cursor: pointer; } .dt-card.top.flipped { transform: rotateY(180deg); }
+.dt-card[data-alive=false].top { border-color: color-mix(in srgb, var(--bad) 55%, var(--hair-2)); }
+.dt-face { position: absolute; inset: 0; padding: 16px 18px; display: grid; gap: 10px; align-content: start; overflow: auto; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: inherit; }
+.dt-face.bk { transform: rotateY(180deg); }
+.dt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dt-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font: 600 10.5px var(--font-mono); letter-spacing: .04em; color: var(--dim); border: 1px solid var(--hair-2); background: color-mix(in srgb, var(--ink) 40%, transparent); }
+.dt-chip[data-tone=ok] { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); } .dt-chip[data-tone=warn] { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); } .dt-chip[data-tone=bad] { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+.dt-q { font: 650 16px/1.35 var(--font-ui); letter-spacing: -.02em; } .dt-resp, .dt-vs p { font-size: 13.5px; line-height: 1.55; color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere; }
+.dt-vs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } .dt-vs > div { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--hair); display: grid; gap: 6px; align-content: start; } .dt-vs .ch { border-color: color-mix(in srgb, var(--ok) 45%, var(--hair)); } .dt-vs .rj { border-color: color-mix(in srgb, var(--bad) 40%, var(--hair)); }
+.dt-why { font-size: 11px; color: var(--bad); } .dt-face dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 12.5px; } .dt-face dt { color: var(--faint); } .dt-face dd { overflow-wrap: anywhere; } .dt-ctx { font-size: 12px; color: var(--dim); line-height: 1.5; margin-top: 6px; }
+.dt-nav { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px 16px 6px; }
+.dt-exp { display: grid; gap: 10px; padding: 10px 16px 18px; border-top: 1px solid var(--hair); margin-top: 8px; } .dt-exp[hidden] { display: none; } .dt-exp .chips { display: flex; gap: 6px; flex-wrap: wrap; } .dt-exp-b { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* history */
+.dt-past { display: grid; gap: 4px; padding: 0 10px 12px; } .dt-run { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 10px; text-align: left; color: var(--text); transition: background .2s; } .dt-run:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); } .dt-run b { font: 700 12.5px var(--font-mono); } .dt-run .mono { font-size: 11px; margin-left: auto; } .dt-run .mono + .mono { margin-left: 0; }
+
+@media (max-width: 1180px) { .dt-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .dt-ctl { grid-column: 1 / -1; } .dt-ctl-b { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dt-go, .dt-status { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .dt-grid { grid-template-columns: minmax(0, 1fr); } .rf { grid-template-columns: minmax(0, 1fr); } .rf-pipe { display: none; } .rf-tank { height: 90px; } .dt-vs { grid-template-columns: 1fr; } .rf-tier { grid-template-columns: 90px minmax(0, 1fr); } .dt-ctl-b { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .rf-pipe.flow i { animation: none; } .rf-liquid, .fn-t i, .dt-card { transition: none; } }

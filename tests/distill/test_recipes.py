@@ -44,7 +44,7 @@ def test_list_recipes_includes_extra_dirs(tmp_path: Path) -> None:
 
 
 def test_unknown_recipe_lists_alternatives() -> None:
-    with pytest.raises(RecipeError, match="available: .*eval_set"):
+    with pytest.raises(RecipeError, match=r"available: .*eval_set"):
         get_recipe("nope")
 
 

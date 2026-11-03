@@ -57,9 +57,7 @@ async def test_instruction_lists_contain_deliberate_duplicates() -> None:
     sim = SimClient()
     exact = near = 0
     for i in range(40):
-        got = await sim.chat_json(
-            "m", instructions_messages("t", f"sub {i}", 12), InstructionList
-        )
+        got = await sim.chat_json("m", instructions_messages("t", f"sub {i}", 12), InstructionList)
         items = got.instructions
         exact += len(items) - len(set(items))
         norm = {" ".join(x.lower().rstrip(" ?.").split()) for x in items}

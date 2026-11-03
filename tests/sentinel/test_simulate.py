@@ -115,3 +115,16 @@ async def test_sentinel_facade_scan_and_html(tmp_path) -> None:  # type: ignore[
             )
         assert res.blocked
         assert lab.default_models()
+
+
+def test_the_quickstart_example_runs_offline(tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
+    import asyncio
+    import runpy
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "examples" / "sentinel" / "quickstart.py"
+    module = runpy.run_path(str(path), run_name="quickstart")
+    asyncio.run(module["main"]())
+    out = capsys.readouterr().out
+    assert "grade" in out and "blocked: True" in out and "[EMAIL_1]" in out
+    assert (Path.cwd() / "sentinel-scorecard.html").is_file()

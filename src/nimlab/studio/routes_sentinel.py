@@ -128,10 +128,6 @@ def _client_for(state: StudioState) -> tuple[Any, bool]:
     return state.client(), False
 
 
-def _suite_names() -> list[str]:
-    return list(list_suites())
-
-
 def _resolve(spec: list[str] | str | None, limit: int | None) -> list[ProbeSuite]:
     try:
         return resolve_suites("all" if spec in (None, "", []) else spec, limit=limit)
@@ -306,7 +302,7 @@ def _load(request: Request, run_id: str) -> Any:
 
 @router.get("/runs/{run_id}")
 async def sentinel_run(run_id: str, request: Request) -> dict[str, Any]:
-    return _load(request, run_id).model_dump(mode="json")  # type: ignore[no-any-return]
+    return _load(request, run_id).model_dump(mode="json")
 
 
 @router.get("/runs/{run_id}/report", response_class=HTMLResponse)

@@ -1,11 +1,11 @@
-"""Helpers shared by the Distill tests (importable because conftest puts this folder on sys.path)."""
+"""Helpers shared by the Distill tests (conftest puts this folder on sys.path)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from nimlab.distill import DistillResult, Distiller
+from nimlab.distill import Distiller, DistillResult
 
 EXAMPLES = Path(__file__).resolve().parents[2] / "examples" / "distill"
 DOCS = EXAMPLES / "docs"

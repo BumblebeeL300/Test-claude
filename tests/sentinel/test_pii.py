@@ -1,5 +1,7 @@
 """Luhn / IBAN checks, the PII regexes and reversible redaction."""
 
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 import pytest
