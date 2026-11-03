@@ -1,6 +1,7 @@
 // Settings sheet (⌘,): key management, engine, appearance, model catalog, about.
 import { h, clear, shortModel, fmtNum, debounce } from '../util.js';
 import { icon } from '../icons.js';
+import { DESCRIPTIONS } from '../descriptions.js';
 import { store, api, toast, refresh, setTheme, effectiveTheme, on, lsGet, maybeIgnite } from '../app.js';
 
 let open = null;
@@ -16,8 +17,9 @@ export function openSettings() {
   const esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); closeSettings(); } }; document.addEventListener('keydown', esc, true);
   open = { scrim, sheet, esc, prev, offs };
 
-  const keyBox = h('div.set-sec'), engine = h('div.set-sec'), look = h('div.set-sec'), models = h('div.set-sec'), about = h('div.set-sec');
-  body.append(keyBox, engine, look, models, about);
+  const appsBox = h('div.set-sec'), keyBox = h('div.set-sec'), engine = h('div.set-sec'), look = h('div.set-sec'), models = h('div.set-sec'), about = h('div.set-sec');
+  body.append(keyBox, engine, look, appsBox, models, about);
+  appsBox.append(h('div.label', 'Apps'), h('div.set-apps', Object.entries(DESCRIPTIONS).map(([id, d]) => h('div.set-app', { class: 'app-' + (id === 'foundry' ? 'forge' : id) }, icon(id === 'foundry' ? 'forge' : id), h('b', d.name), h('span', d.line)))));
 
   // ---- key ----
   const probe = h('div.probe.mono', { 'aria-live': 'polite' });

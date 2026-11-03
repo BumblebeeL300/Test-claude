@@ -2,6 +2,7 @@
 import * as api from './api.js';
 import { h, $, clear, ago } from './util.js';
 import { icon } from './icons.js';
+import { describe } from './descriptions.js';
 
 // ---------- store ----------
 export const store = { status: null, runs: [], projects: [], models: [], usage: null, offline: false, route: 'switchboard', params: {} };
@@ -72,9 +73,12 @@ async function render() {
   $('#app').className = meta.cls; document.title = `${meta.name} — NIM Lab`;
   $('#crumb').replaceChildren(h('i'), meta.name);
   if (unmount) { try { unmount(); } catch (e) { console.error(e); } unmount = null; }
-  const main = $('#main'); clear(main);
+  const main = $('#main'); clear(main); main.classList.remove('has-plate');
   if (store.offline) return showOffline(main);
   const el = h('div.screen.enter', { id: 'screen-' + route, 'data-screen': route, tabindex: '-1' });
+  try {
+    if (describe(route)) { const plate = (await import('./components/about.js')).specPlate(meta); if (my !== seq) return; if (plate) { main.classList.add('has-plate'); main.append(plate); } }
+  } catch (e) { console.error(e); }
   main.append(el);
   try {
     screens[route] ||= await import(`./screens/${route}.js`);
@@ -105,7 +109,7 @@ function shell() {
     h('button.btn.sm.icon.ghost#theme-btn', { 'aria-label': 'Toggle theme', on: { click: toggleTheme } }),
     h('button.btn.sm.icon.ghost', { 'aria-label': 'Settings', title: 'Settings ⌘,', on: { click: () => import('./screens/settings.js').then((m) => m.openSettings()) } }, icon('settings')));
   const rail = h('nav.rail', { 'aria-label': 'Modules' },
-    APPS.map((a) => h('button.rail-btn', { class: a.cls, 'data-id': a.id, 'aria-label': `${a.name} (⌘${a.key})`, on: { click: () => go(a.id) } }, icon(a.icon), h('span.busy-dot', { hidden: true }), h('span.tip', a.name, h('kbd', '⌘' + a.key)))),
+    APPS.map((a) => h('button.rail-btn', { class: a.cls, 'data-id': a.id, 'aria-label': `${a.name} (⌘${a.key})${describe(a.id) ? ': ' + describe(a.id).short : ''}`, on: { click: () => go(a.id) } }, icon(a.icon), h('span.busy-dot', { hidden: true }), h('span.tip', h('span.tip-h', a.name, h('kbd', '⌘' + a.key)), describe(a.id) && h('span.tip-d', describe(a.id).short)))),
     h('div.sp'),
     h('button.rail-btn.app-core', { 'aria-label': 'Settings (⌘,)', on: { click: () => import('./screens/settings.js').then((m) => m.openSettings()) } }, icon('key'), h('span.tip', 'Key & settings', h('kbd', '⌘,'))));
   $('#app').append(bar, rail, h('main.main#main'), h('div#toasts', { 'aria-live': 'polite' }));

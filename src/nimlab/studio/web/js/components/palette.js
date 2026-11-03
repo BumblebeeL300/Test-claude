@@ -1,6 +1,7 @@
 // ⌘K — a patch-bay prompt: every row is a jack you plug into.
 import { h, $, clear, esc, ago } from '../util.js';
 import { icon } from '../icons.js';
+import { describe } from '../descriptions.js';
 import { store, go, toggleTheme, emit, APPS } from '../app.js';
 
 let open = null;
@@ -9,17 +10,17 @@ export function setPrefill(screen, text) { (store.prefill ||= {})[screen] = text
 function items() {
   const A = (id) => `var(--c-${id})`;
   const list = [
-    { t: 'Build…', s: 'Foundry', kw: 'build', ic: 'forge', j: A('forge'), run: (q) => { setPrefill('foundry', q); go('foundry'); } },
-    { t: 'Ask Atlas…', s: 'Atlas', kw: 'ask', ic: 'atlas', j: A('atlas'), run: (q) => { setPrefill('atlas', q); go('atlas'); } },
-    { t: 'Convene council…', s: 'Council', kw: 'convene', ic: 'council', j: A('council'), run: (q) => { setPrefill('council', q); go('council'); } },
-    { t: 'Route prompt…', s: 'Arena', kw: 'route', ic: 'route', j: A('arena'), run: (q) => { setPrefill('arena', q); go('arena'); } },
-    { t: 'Analyze image…', s: 'Prism', kw: 'analyze', ic: 'prism', j: A('prism'), run: () => go('prism') },
-    { t: 'Run safety scan…', s: 'Sentinel', kw: 'scan', ic: 'sentinel', j: A('sentinel'), run: () => go('sentinel') },
-    { t: 'New pipeline…', s: 'Loom', kw: 'pipeline', ic: 'loom', j: A('loom'), run: () => go('loom') },
-    { t: 'Generate dataset…', s: 'Distill', kw: 'generate', ic: 'distill', j: A('distill'), run: () => go('distill') },
+    { t: 'Build…', d: describe('foundry').short, s: 'Foundry', kw: 'build', ic: 'forge', j: A('forge'), run: (q) => { setPrefill('foundry', q); go('foundry'); } },
+    { t: 'Ask Atlas…', d: describe('atlas').short, s: 'Atlas', kw: 'ask', ic: 'atlas', j: A('atlas'), run: (q) => { setPrefill('atlas', q); go('atlas'); } },
+    { t: 'Convene council…', d: describe('council').short, s: 'Council', kw: 'convene', ic: 'council', j: A('council'), run: (q) => { setPrefill('council', q); go('council'); } },
+    { t: 'Route prompt…', d: describe('arena').short, s: 'Arena', kw: 'route', ic: 'route', j: A('arena'), run: (q) => { setPrefill('arena', q); go('arena'); } },
+    { t: 'Analyze image…', d: describe('prism').short, s: 'Prism', kw: 'analyze', ic: 'prism', j: A('prism'), run: () => go('prism') },
+    { t: 'Run safety scan…', d: describe('sentinel').short, s: 'Sentinel', kw: 'scan', ic: 'sentinel', j: A('sentinel'), run: () => go('sentinel') },
+    { t: 'New pipeline…', d: describe('loom').short, s: 'Loom', kw: 'pipeline', ic: 'loom', j: A('loom'), run: () => go('loom') },
+    { t: 'Generate dataset…', d: describe('distill').short, s: 'Distill', kw: 'generate', ic: 'distill', j: A('distill'), run: () => go('distill') },
     { t: 'Settings', s: '⌘,', ic: 'settings', j: 'var(--c-core)', run: () => import('../screens/settings.js').then((m) => m.openSettings()) },
     { t: 'Toggle theme', s: 'ink / paper', ic: 'sun', j: 'var(--c-core)', run: toggleTheme },
-    ...APPS.map((a) => ({ t: `Go to ${a.name}`, s: '⌘' + a.key, ic: a.icon, j: `var(--c-${a.app || 'core'})`, run: () => go(a.id) })),
+    ...APPS.map((a) => ({ t: `Go to ${a.name}`, d: describe(a.id)?.short, s: '⌘' + a.key, ic: a.icon, j: `var(--c-${a.app || 'core'})`, run: () => go(a.id) })),
     { t: 'Replace API key…', s: 'Ignition', ic: 'key', j: 'var(--c-core)', run: () => import('../app.js').then((m) => m.maybeIgnite(true)) },
   ];
   for (const p of store.projects.slice(0, 8)) list.push({ t: `Project: ${p.name}`, s: `${p.files ?? '?'} files`, ic: 'folder', j: 'var(--c-forge)', run: () => go('foundry', { project: p.id }), group: 'Projects' });
@@ -59,7 +60,7 @@ export function openPalette() {
     shown.forEach((it, i) => {
       if (!q && it.group !== g) { g = it.group; if (g) listEl.append(h('div.pal-group.label', g)); }
       const row = h('button.pal-item', { role: 'option', id: 'pal-' + i, style: { '--j': it.j }, 'aria-selected': i === sel ? 'true' : 'false', on: { click: () => choose(i), mousemove: () => { if (sel !== i) { sel = i; mark(); } } } },
-        h('span.jack', icon(it.ic)), h('span.t', { html: it.html }), h('span.s', it.s));
+        h('span.jack', icon(it.ic)), h('span.t', { html: it.html }, ), it.d && h('span.d', it.d), h('span.s', it.s));
       listEl.append(row);
     });
     input.setAttribute('aria-activedescendant', 'pal-' + sel);

@@ -86,3 +86,6 @@
   .module p { display: block; } .module.core .core-dial { width: 48px; height: 48px; } .module.core > .mono { display: none; }
   .usage { grid-template-columns: 1fr; } .vu-row { grid-template-columns: 100px 1fr 34px; } .vu-row .num.dim { display: none; }
 }
+.module > * { min-width: 0; } .m-main { min-width: 0; } .m-main > div:last-child { min-width: 0; flex: 1; }
+.module p { -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (min-width: 1061px) { .module p { display: -webkit-box; } }

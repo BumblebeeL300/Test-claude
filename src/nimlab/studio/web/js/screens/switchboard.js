@@ -1,6 +1,7 @@
 // Switchboard: eight modules in two tiers around the NIM Core, patched together with live cables.
 import { h, clear, ago, fmtNum, shortModel, pop, reduced, clamp } from '../util.js';
 import { icon } from '../icons.js';
+import { describe } from '../descriptions.js';
 import { store, on, go, api, appStatus, isSim, refresh } from '../app.js';
 
 const MODS = [
@@ -28,7 +29,7 @@ export function mount(el) {
   const svg = h('svg.cables', { 'aria-hidden': 'true' });
   const core = h('button.module.core', { 'aria-label': 'NIM Core engine: open settings', on: { click: () => import('./settings.js').then((m) => m.openSettings()) } });
   const grid = h('div.rack-grid', core, MODS.map((m) => {
-    const card = h('button.module', { class: 'app-' + m.id, style: { gridArea: m.area }, 'aria-label': `${m.name}: ${m.tag}`, on: { click: () => go(m.route) } });
+    const desc = describe(m.route); const card = h('button.module', { class: 'app-' + m.id, style: { gridArea: m.area }, title: desc?.line, 'aria-label': `${m.name}: ${desc?.short || m.tag}`, on: { click: () => go(m.route) } });
     mods[m.id] = { card, m };
     return card;
   }));
@@ -51,7 +52,7 @@ export function mount(el) {
     card.append(
       h('i.screw.tl'), h('i.screw.tr'), h('i.screw.bl'), h('i.screw.br'),
       h('div.m-top', h('span.label', `MOD ${m.n}`), h('span.leds', h('span.lg', r.leds.ready, h('span.label', 'RDY')), h('span.lg', r.leds.busy, h('span.label', 'BSY')), h('span.lg', r.leds.key, h('span.label', 'KEY')))),
-      h('div.m-main', h('div.bezel', icon(m.id === 'forge' ? 'forge' : m.id)), h('div', h('h2', m.name), h('p', m.tag))),
+      h('div.m-main', h('div.bezel', icon(m.id === 'forge' ? 'forge' : m.id)), h('div', h('h2', m.name), h('p', describe(m.route)?.short || m.tag))),
       h('div.m-stats', h('div', h('span.label', 'Runs'), r.runs), h('div', h('span.label', 'Last run'), r.last), r.vu),
       h('div.m-foot', r.state, h('span.go', m.verb, icon('chevron'), h('kbd', '⌘' + m.key))));
     r.jack = h('i.jack'); card.append(r.jack);
