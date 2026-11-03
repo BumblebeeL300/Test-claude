@@ -1,0 +1,7 @@
+# Build output and generated icon files
+build/
+dist/
+.build-venv/
+AppIcon.icns
+AppIcon.png
+AppIcon.iconset/

@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import pytest
 from rich.console import Console
@@ -28,6 +29,12 @@ from nimlab.core.logging import reset_logging, set_console
 from nimlab.core.registry import reset_default_registry
 
 _ENV_PREFIXES = ("NVIDIA_", "NIM_", "NIMLAB_")
+_KEEP_ENV = (
+    "NIMLAB_NO_DOTENV",
+    "NIMLAB_CONFIG_DIR",
+    "NIMLAB_DISABLE_KEYRING",
+    "NIMLAB_STUDIO_HOME",
+)
 
 
 def _is_nimlab_env(key: str) -> bool:
@@ -42,20 +49,23 @@ def _reset_global_state() -> None:
 
 
 @pytest.fixture(autouse=True)
-def _isolated_env(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: pytest.TempPathFactory
-) -> Iterator[None]:
+def _isolated_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
     for key in list(os.environ):
         if _is_nimlab_env(key):
             monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("NIMLAB_NO_DOTENV", "1")
-    monkeypatch.chdir(tmp_path)  # type: ignore[arg-type]
+    # A key stored by NIM Lab Studio must never leak into tests: point the credential file at a
+    # temp dir, skip the OS keyring and keep Studio's data folder out of the real home.
+    monkeypatch.setenv("NIMLAB_CONFIG_DIR", str(tmp_path / "nimlab-config"))
+    monkeypatch.setenv("NIMLAB_DISABLE_KEYRING", "1")
+    monkeypatch.setenv("NIMLAB_STUDIO_HOME", str(tmp_path / "nimlab-home"))
+    monkeypatch.chdir(tmp_path)
     _reset_global_state()
     yield
     # Code under test (e.g. the CLI's --mock flag) may have written os.environ directly, which
     # monkeypatch cannot see. Drop anything it added; monkeypatch then restores the originals.
     for key in list(os.environ):
-        if _is_nimlab_env(key) and key != "NIMLAB_NO_DOTENV":
+        if _is_nimlab_env(key) and key not in _KEEP_ENV:
             del os.environ[key]
     _reset_global_state()
 

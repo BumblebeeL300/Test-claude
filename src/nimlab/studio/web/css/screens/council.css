@@ -1,0 +1,37 @@
+.cn { --accent: var(--c-council); display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 0; min-height: 100%; }
+.cn-ctl { padding: 22px 20px; display: grid; align-content: start; gap: 12px; border-right: 1px solid var(--hair); background: color-mix(in srgb, var(--panel) 45%, transparent); }
+.cn-ctl .q { font-size: 15px; line-height: 1.45; min-height: 110px; }
+.chips.col { display: grid; gap: 6px; } .chips.col .chip { height: auto; min-height: 28px; padding: 5px 12px; border-radius: 12px; text-align: left; line-height: 1.3; }
+.rotary { position: relative; height: 222px; outline-offset: -4px; }
+.knob { position: absolute; left: 50%; top: 56%; width: 168px; height: 168px; transform: translate(-50%, -50%); filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); }
+.knob .pointer { transition: transform .7s var(--ease-spring); transform-origin: 0 0; }
+.rot-l { position: absolute; transform: translate(-50%, -50%); font: 700 10.5px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); padding: 6px 8px; border-radius: 8px; transition: .25s; white-space: nowrap; }
+.rot-l:hover { color: var(--text); } .rot-l[aria-checked=true] { color: var(--on-signal); background: var(--accent); box-shadow: 0 0 18px -2px var(--accent); }
+.strat-d { font-size: 12.5px; color: var(--dim); min-height: 3em; text-align: center; }
+.cn-ctl .btn.big { --accent: var(--c-council); justify-content: center; }
+.cn-stage { container-type: inline-size; padding: 18px 24px 40px; }
+.cn-in { display: grid; gap: 22px; align-content: start; }
+.table-wrap { display: grid; place-items: center; }
+.table { position: relative; width: min(100%, calc(100vh - 130px), 680px); aspect-ratio: 1; --ag: 0; }
+.disc { position: absolute; inset: 20%; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent) calc(8% + var(--ag) * 22%), var(--panel)) 0%, var(--panel) 70%); border: 1px solid var(--hair-2); box-shadow: 0 0 0 10px color-mix(in srgb, var(--panel) 70%, transparent), 0 0 0 11px var(--hair), 0 0 calc(var(--ag) * 90px) color-mix(in srgb, var(--accent) 50%, transparent); transition: box-shadow .8s, background .8s; }
+.disc::before { content: ""; position: absolute; inset: 14%; border-radius: 50%; border: 1px dashed var(--hair-2); }
+.table.live .disc::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--accent); border-top-color: transparent; border-bottom-color: transparent; animation: spin 3s linear infinite; }
+.lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ln { stroke: var(--accent); stroke-linecap: round; transition: stroke-width .8s var(--ease-out), opacity .6s; } .ln.hot { stroke-dasharray: 2 3; animation: flow 1s linear infinite; }
+.hub { z-index: 3; padding: 10px 6px; border-radius: 50%; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; text-align: center; width: 30%; }
+.hub .num { font-size: clamp(30px, 5.4cqi, 52px); line-height: 1; letter-spacing: -.05em; color: var(--accent); } .hub .label { font-size: 9px; } .hub .label:last-child { font-size: 8.5px; letter-spacing: .08em; line-height: 1.3; max-width: 120px; }
+.seat { position: absolute; transform: translate(-50%, -50%); width: 22%; display: grid; justify-items: center; gap: 5px; text-align: center; transition: left .9s var(--ease-out), top .9s var(--ease-out); z-index: 2; }
+.chair { position: relative; width: clamp(40px, 8cqi, 62px); aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; background: var(--raised); border: 2px solid var(--hair-2); font: 800 14px var(--font-mono); color: var(--dim); transition: .4s; }
+.ring { position: absolute; inset: -7px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; }
+.seat[data-state=think] .chair { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 24px -2px var(--accent); } .seat[data-state=think] .ring { animation: ripple 1.3s ease-out infinite; }
+.seat[data-state=spoke] .chair { background: var(--accent); border-color: var(--accent); color: var(--on-signal); box-shadow: 0 0 20px -4px var(--accent); }
+@keyframes ripple { 0% { opacity: .9; transform: scale(.85); } 100% { opacity: 0; transform: scale(1.5); } }
+.sname { display: grid; } .sname b { font: 700 11.5px var(--font-mono); letter-spacing: -.02em; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .sname small { font: 500 9.5px var(--font-mono); color: var(--faint); letter-spacing: .1em; text-transform: uppercase; }
+.say { font-size: 11.5px; line-height: 1.35; color: var(--dim); max-width: 172px; padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--panel) 85%, transparent); border: 1px solid var(--hair); }
+.say:empty { display: none; } .seat[data-state=spoke] .say { color: var(--text); border-color: color-mix(in srgb, var(--accent) 40%, var(--hair)); }
+.verdict { padding: 22px 24px; border-radius: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, var(--raised)), var(--panel)); border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--hair)); box-shadow: var(--shadow), 0 0 50px -20px var(--accent); display: grid; gap: 14px; max-width: 880px; width: 100%; justify-self: center; }
+.v-h { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; } .v-h .label { color: var(--accent); font-size: 12px; letter-spacing: .3em; } .v-ag { display: inline-flex; gap: 7px; align-items: center; font: 600 11px var(--font-mono); color: var(--dim); }
+.v-ans { font: 600 clamp(16px, 1.7vw, 21px)/1.4 var(--font-ui); letter-spacing: -.02em; } .v-why p { font-size: 13.5px; color: var(--dim); margin-top: 4px; }
+.v-c summary { cursor: pointer; font: 600 11px var(--font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); } .cand { padding: 8px 0; border-top: 1px dashed var(--hair-2); margin-top: 8px; } .cand p { font-size: 13px; color: var(--dim); }
+@container (min-width: 940px) { .cn-in { grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr); align-items: center; } .verdict { max-width: none; } }
+@media (max-width: 900px) { .cn { grid-template-columns: 1fr; } .cn-ctl { border-right: 0; border-bottom: 1px solid var(--hair); } .rotary { height: 200px; } .table { width: min(100%, 560px); } }

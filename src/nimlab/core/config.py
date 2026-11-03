@@ -56,6 +56,19 @@ def _env(name: str) -> str | None:
     return value.strip()
 
 
+def _stored_api_key() -> str | None:
+    """The key saved by NIM Lab Studio / ``nimlab`` (Keychain or credentials file), if any.
+
+    Lowest-precedence source; a broken keyring or unreadable file must never break the core.
+    """
+    try:
+        from nimlab.studio.credentials import load_api_key
+
+        return load_api_key()
+    except Exception:
+        return None
+
+
 def _env_bool(name: str) -> bool | None:
     value = _env(name)
     if value is None:
@@ -85,7 +98,7 @@ class NIMConfig(BaseModel):
     =================  ====================  ==========================================
     field              env var               default
     =================  ====================  ==========================================
-    api_key            NVIDIA_API_KEY        None
+    api_key            NVIDIA_API_KEY        stored credential (Keychain/file), else None
     base_url           NIM_BASE_URL          https://integrate.api.nvidia.com/v1
     rerank_base_url    NIM_RERANK_URL        https://ai.api.nvidia.com/v1/retrieval
     timeout            NIM_TIMEOUT           120 (seconds)
@@ -127,6 +140,10 @@ class NIMConfig(BaseModel):
                     d.pop(field, None)
 
         fill("api_key", "NVIDIA_API_KEY")
+        if d.get("api_key") is None:  # explicit arg > env > .env > stored credential
+            stored = _stored_api_key()
+            if stored:
+                d["api_key"] = stored
         fill("base_url", "NIM_BASE_URL")
         fill("rerank_base_url", "NIM_RERANK_URL")
         fill("timeout", "NIM_TIMEOUT")

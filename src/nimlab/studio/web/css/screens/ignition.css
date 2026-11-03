@@ -1,0 +1,33 @@
+.ignition { position: fixed; inset: 0; z-index: 150; background: radial-gradient(900px 520px at 50% 40%, color-mix(in srgb, var(--c-core) 14%, transparent), transparent 70%), var(--ink); display: grid; place-items: center; overflow: auto; animation: ig-in .7s var(--ease-out) both; }
+@keyframes ig-in { from { opacity: 0; } }
+.ig-scope { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .6; mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
+.ig-drag { position: absolute; top: 0; left: 0; right: 0; height: 52px; }
+.ig-stack { position: relative; display: grid; justify-items: center; gap: 14px; padding: 56px 24px 28px; width: min(560px, 100%); text-align: center; }
+.ig-dial { width: clamp(104px, 20vh, 168px); aspect-ratio: 1; color: var(--dim); filter: drop-shadow(0 20px 30px rgba(0,0,0,.35)); animation: dial-in 1s var(--ease-spring) .1s both; }
+@keyframes dial-in { from { transform: scale(.6) rotate(-90deg); opacity: 0; } }
+.ig-dial svg { width: 100%; height: 100%; overflow: visible; }
+.wordmark { display: flex; gap: .22em; margin: 0; font: 800 clamp(56px, 13vh, 118px)/.85 var(--font-ui); letter-spacing: -.07em; text-transform: uppercase; }
+.wordmark span:not(.sp) { position: relative; color: var(--text); }
+.wordmark span:not(.sp) { isolation: isolate; }
+.wordmark span::before, .wordmark span::after { content: attr(data-t); position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.wordmark span::before { color: var(--c-council); transform: translate(-.04em, .03em); }
+.wordmark span::after { color: var(--c-atlas); transform: translate(.04em, -.025em); }
+.wordmark span:not(.sp) { text-shadow: none; }
+.ig-sub { color: var(--dim); font-size: 14px; max-width: 40ch; }
+.ig-form { display: grid; gap: 8px; width: 100%; text-align: left; margin-top: 8px; padding: 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--hair-2); backdrop-filter: blur(24px); box-shadow: var(--shadow); }
+.ig-field { display: flex; align-items: center; gap: 6px; padding: 5px 6px 5px 14px; border-radius: 12px; background: var(--ink); border: 1px solid var(--hair-2); transition: .2s; }
+.ig-field:focus-within { border-color: var(--c-core); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-core) 28%, transparent); }
+.ig-input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; font: 500 15px var(--font-mono); letter-spacing: .04em; color: var(--text); height: 36px; }
+.ig-hint { display: flex; align-items: center; gap: 8px; font: 500 11.5px var(--font-mono); color: var(--dim); min-height: 18px; letter-spacing: .04em; }
+.ig-hint.ok { color: var(--ok); } .ig-hint.warn { color: var(--warn); } .ig-hint.bad { color: var(--bad); }
+.ig-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.ig-go { height: 40px; padding: 0 22px; font-size: 14px; --accent: var(--c-forge); }
+.ig-fine { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--dim); }
+.ig-fine svg { width: 14px; height: 14px; flex: none; margin-top: 2px; color: var(--c-core); }
+.ig-result { min-height: 0; display: grid; gap: 6px; justify-items: center; }
+.ig-result:empty { display: none; }
+.ig-online { font: 700 clamp(26px, 4.5vh, 40px) var(--font-ui); letter-spacing: -.04em; color: var(--ok); }
+.ig-online b { font-family: var(--font-mono); font-weight: 700; } .ig-online span { color: var(--text); }
+.ig-online.soft { font-size: 16px; letter-spacing: 0; color: var(--warn); }
+@media (max-height: 700px) { .ig-stack { gap: 8px; padding-top: 44px; } .ig-form { padding: 14px; } }
+.ig-sub { text-shadow: 0 0 14px var(--ink), 0 0 5px var(--ink), 0 0 2px var(--ink); }
