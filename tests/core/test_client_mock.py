@@ -23,7 +23,7 @@ from nimlab.core import (
 )
 from nimlab.core.mock import JSON_SCHEMA_CLOSE, JSON_SCHEMA_OPEN
 
-CHAT = "meta/llama-3.3-70b-instruct"
+CHAT = "nvidia/nemotron-3-super-120b-a12b"
 USER = [{"role": "user", "content": "Compare Redis and Memcached for session storage"}]
 
 
@@ -62,7 +62,7 @@ async def test_chat(mock_client: NIMClient) -> None:
 
 
 async def test_chat_reasoning_model_strips_think(mock_client: NIMClient) -> None:
-    r = await mock_client.chat("deepseek-ai/deepseek-r1", USER)
+    r = await mock_client.chat("nvidia/nemotron-3-ultra-550b-a55b", USER)
     assert "<think>" not in r.content and "</think>" not in r.content
     assert r.reasoning and "redis" in r.reasoning.lower()
     assert r.content
@@ -84,7 +84,7 @@ async def test_chat_json_nested_schema(mock_client: NIMClient) -> None:
 
 
 async def test_chat_json_with_reasoning_model(mock_client: NIMClient) -> None:
-    review = await mock_client.chat_json("deepseek-ai/deepseek-r1", USER, Review)
+    review = await mock_client.chat_json("nvidia/nemotron-3-ultra-550b-a55b", USER, Review)
     assert isinstance(review, Review)
 
 
@@ -132,9 +132,9 @@ async def test_stream_chat_yields_word_chunks(mock_client: NIMClient) -> None:
 
 
 async def test_stream_chat_filters_think(mock_client: NIMClient) -> None:
-    text = "".join([c async for c in mock_client.stream_chat("deepseek-ai/deepseek-r1", USER)])
+    text = "".join([c async for c in mock_client.stream_chat("nvidia/nemotron-3-ultra-550b-a55b", USER)])
     assert "<think>" not in text and "think>" not in text
-    assert text == (await mock_client.chat("deepseek-ai/deepseek-r1", USER)).content
+    assert text == (await mock_client.chat("nvidia/nemotron-3-ultra-550b-a55b", USER)).content
 
 
 async def test_embed(mock_client: NIMClient) -> None:
@@ -171,7 +171,7 @@ async def test_rerank(mock_client: NIMClient) -> None:
 
 async def test_list_models_mock(mock_client: NIMClient) -> None:
     ids = await mock_client.list_models()
-    assert "meta/llama-3.3-70b-instruct" in ids and ids == sorted(ids)
+    assert "nvidia/nemotron-3-super-120b-a12b" in ids and ids == sorted(ids)
 
 
 async def test_usage_tracking(mock_client: NIMClient) -> None:

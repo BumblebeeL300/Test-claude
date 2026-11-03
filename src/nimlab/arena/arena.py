@@ -26,7 +26,7 @@ class Arena:
     Example::
 
         async with Arena() as arena:                     # mock mode without NVIDIA_API_KEY
-            run = await arena.run(["meta/llama-3.3-70b-instruct"], suites="all")
+            run = await arena.run(["nvidia/nemotron-3-super-120b-a12b"], suites="all")
             print(arena.leaderboard(run).standings[0])
             decision = await arena.router().route("Prove that sqrt(2) is irrational")
 

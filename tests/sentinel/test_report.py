@@ -79,7 +79,7 @@ async def test_simulated_runs_carry_a_banner(tmp_path: Path) -> None:
     from nimlab.sentinel.simulate import SimulatedClient
 
     async with SimulatedClient() as client:
-        sim_run = await Runner(client).run(["meta/llama-3.3-70b-instruct"], small_suites())
+        sim_run = await Runner(client).run(["nvidia/nemotron-3-super-120b-a12b"], small_suites())
     assert "Simulated results" in render_html(sim_run)
     caption = Console(width=200, record=True)
     caption.print(render_terminal(sim_run))

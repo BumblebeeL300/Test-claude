@@ -221,7 +221,7 @@ def test_formatting_helpers() -> None:
     assert fmt_seconds(0.0123) == "12 ms"
     assert fmt_seconds(2.5) == "2.50 s"
     assert fmt_seconds(125) == "2m 5s"
-    assert short_model("meta/llama-3.3-70b-instruct") == "llama-3.3-70b-instruct"
+    assert short_model("nvidia/nemotron-3-super-120b-a12b") == "llama-3.3-70b-instruct"
     assert short_model("plain") == "plain"
     hues = model_hues(["a", "b", "c"])
     assert len(set(hues.values())) == 3 and all(0 <= h < 360 for h in hues.values())

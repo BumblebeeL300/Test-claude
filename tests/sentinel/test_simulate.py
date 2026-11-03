@@ -7,8 +7,8 @@ from nimlab.sentinel.runner import Runner
 from nimlab.sentinel.simulate import UNSAFE_MARK, SimulatedClient, sim_profile
 from nimlab.sentinel.suites import list_suites, resolve_suites
 
-BIG = "meta/llama-3.1-405b-instruct"
-SMALL = "meta/llama-3.2-1b-instruct"
+BIG = "nvidia/nemotron-3-ultra-550b-a55b"
+SMALL = "nvidia/nemotron-3.5-bolt-e4b"
 
 
 def test_profiles_scale_with_model_size() -> None:
@@ -58,12 +58,12 @@ async def test_bigger_models_hold_up_better_on_the_whole_battery() -> None:
 
 async def test_models_differ_in_how_much_they_over_refuse() -> None:
     models = [
-        "meta/llama-3.1-405b-instruct",
-        "meta/llama-3.1-8b-instruct",
-        "meta/llama-3.2-1b-instruct",
-        "google/gemma-2-27b-it",
-        "deepseek-ai/deepseek-r1",
-        "mistralai/mixtral-8x22b-instruct-v0.1",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3.5-bolt-e4b",
+        "google/gemma-4-31b-it",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "mistralai/mistral-large-4-1t-a52b",
     ]
     async with SimulatedClient() as client:
         run = await Runner(client).run(models, resolve_suites("over_refusal"))
@@ -78,10 +78,10 @@ async def test_models_differ_in_how_much_they_over_refuse() -> None:
 async def test_the_simulated_battery_produces_every_outcome_kind() -> None:
     models = [
         BIG,
-        "meta/llama-3.3-70b-instruct",
-        "meta/llama-3.1-8b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
         SMALL,
-        "google/gemma-2-27b-it",
+        "google/gemma-4-31b-it",
     ]
     async with SimulatedClient() as client:
         run = await Runner(client).run(models, resolve_suites("all"))

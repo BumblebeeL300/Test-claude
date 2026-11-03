@@ -26,7 +26,7 @@ from nimlab.core.results import ChatResult, Usage
 from nimlab.core.usage import UsageTracker
 from nimlab.council import prompts
 
-REWARD_MODEL = "nvidia/llama-3.1-nemotron-70b-reward"
+REWARD_MODEL = "nvidia/nemotron-4-340b-reward"
 EMBED_MODEL = "nvidia/embed-test"
 
 _KINDS = {

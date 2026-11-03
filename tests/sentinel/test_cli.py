@@ -12,7 +12,7 @@ from nimlab.sentinel.cli import app
 from nimlab.sentinel.store import RunStore
 
 runner = CliRunner()
-MODELS = "meta/llama-3.3-70b-instruct,meta/llama-3.2-1b-instruct"
+MODELS = "nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3.5-bolt-e4b"
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "sentinel"
 
 
@@ -89,7 +89,7 @@ def test_scan_single_suite_and_unknown_suite(runs: str) -> None:
         "--mock",
         "scan",
         "--models",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
         "--suite",
         "jailbreak",
         "--runs-dir",
@@ -107,7 +107,7 @@ def test_scan_with_custom_suite_file_and_shield(runs: str) -> None:
         "--mock",
         "scan",
         "--models",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
         "--suite",
         str(EXAMPLE / "custom_suite.json"),
         "--shield",
@@ -146,7 +146,7 @@ def test_shield_passes_a_normal_prompt_and_redacts_output_pii() -> None:
         "shield",
         "What is a good way to learn Python?",
         "--model",
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
     ).output
     assert "reply" in out and "BLOCKED" not in out and "output_pii" in out
 

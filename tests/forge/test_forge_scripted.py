@@ -365,7 +365,7 @@ class TestReviewRound:
 
         models = resolve_models()
         assert model_family(models.reviewer) != model_family(models.coder)
-        assert resolve_models(coder="meta/llama-3.3-70b-instruct").reviewer.split("/")[0] != "meta"
+        assert resolve_models(coder="nvidia/nemotron-3-super-120b-a12b").reviewer.split("/")[0] != "meta"
         assert resolve_models(reviewer="my/reviewer").reviewer == "my/reviewer"
 
 

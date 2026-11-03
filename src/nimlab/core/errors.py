@@ -47,6 +47,14 @@ class NIMResponseError(NIMError):
     """Non-retryable 4xx, 5xx after retries, or a malformed/unexpected response body."""
 
 
+class NIMModelUnavailableError(NIMResponseError):
+    """404 / "model not found" / "not available for this account": the model id is not served.
+
+    The client marks the model unavailable for the session and, when the caller used a role pick,
+    retries once with the next candidate for that role.
+    """
+
+
 class NIMTimeoutError(NIMError):
     """Request timed out or the connection failed on every attempt."""
 

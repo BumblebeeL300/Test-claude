@@ -170,7 +170,7 @@ class TestSimulatedModes:
 
     async def test_mock_usage_is_recorded(self, prism: Prism, sample_ui: Path) -> None:
         await prism.ocr(sample_ui)
-        stats = prism.client.usage.summary()["models"]["meta/llama-3.2-90b-vision-instruct"]
+        stats = prism.client.usage.summary()["models"]["nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"]
         assert stats["calls"] == 1 and stats["tokens_out"] > 0
 
     async def test_model_override(self, prism: Prism, sample_ui: Path) -> None:

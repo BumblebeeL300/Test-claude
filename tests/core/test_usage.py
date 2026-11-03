@@ -70,14 +70,14 @@ def test_thread_safety() -> None:
 
 def test_rich_table_renders() -> None:
     t = UsageTracker()
-    t.record("meta/llama-3.3-70b-instruct", Usage(prompt_tokens=1200, completion_tokens=300), 1.5)
-    t.record("nvidia/nv-embedqa-e5-v5", Usage(prompt_tokens=50), 0.2)
+    t.record("nvidia/nemotron-3-super-120b-a12b", Usage(prompt_tokens=1200, completion_tokens=300), 1.5)
+    t.record("nvidia/nemotron-3.5-embed-1b", Usage(prompt_tokens=50), 0.2)
     table = t.rich_table()
     assert isinstance(table, Table)
     console = Console(width=160, record=True, color_system=None)
     console.print(table)
     out = console.export_text()
-    assert "meta/llama-3.3-70b-instruct" in out
+    assert "nvidia/nemotron-3-super-120b-a12b" in out
     assert "1,200" in out
     assert "TOTAL" in out
 

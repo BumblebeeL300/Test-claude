@@ -140,9 +140,9 @@ def test_models_lists_catalog() -> None:
     result = invoke("models")
     assert result.exit_code == 0, result.output
     for model_id in (
-        "meta/llama-3.3-70b-instruct",
-        "deepseek-ai/deepseek-r1",
-        "nvidia/llama-3.2-nv-rerankqa-1b-v2",
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3.5-rerank-8b",
     ):
         assert model_id in result.output
     assert "Default for" in result.output
@@ -152,12 +152,12 @@ def test_models_lists_catalog() -> None:
 def test_models_role_filter(flag: str) -> None:
     result = invoke("models", flag, "coder")
     assert result.exit_code == 0
-    assert "qwen/qwen2.5-coder-32b-instruct" in result.output
-    assert "meta/llama-3.3-70b-instruct" not in result.output
+    assert "poolside/laguna-xs-2.1" in result.output
+    assert "nvidia/nemotron-3-super-120b-a12b" not in result.output
 
 
 def test_models_role_is_case_insensitive() -> None:
-    assert "nvidia/nv-embedqa-e5-v5" in invoke("models", "--role", "EMBED").output
+    assert "nvidia/nemotron-3.5-embed-1b" in invoke("models", "--role", "EMBED").output
 
 
 def test_models_invalid_role() -> None:
@@ -185,12 +185,12 @@ def test_models_live_marks_availability(
     monkeypatch.setenv("NVIDIA_API_KEY", "nvapi-x")
     respx_mock.get(f"{BASE}/models").respond(
         200,
-        json={"data": [{"id": "meta/llama-3.3-70b-instruct"}, {"id": "brand/new-model-1"}]},
+        json={"data": [{"id": "nvidia/nemotron-3-super-120b-a12b"}, {"id": "brand/new-model-1"}]},
     )
     result = invoke("models", "--live", "--role", "chat")
     assert result.exit_code == 0, result.output
-    row_ok = next(ln for ln in result.output.splitlines() if "meta/llama-3.3-70b-instruct" in ln)
-    row_no = next(ln for ln in result.output.splitlines() if "meta/llama-3.1-405b-instruct" in ln)
+    row_ok = next(ln for ln in result.output.splitlines() if "nvidia/nemotron-3-super-120b-a12b" in ln)
+    row_no = next(ln for ln in result.output.splitlines() if "nvidia/nemotron-3-ultra-550b-a55b" in ln)
     assert "yes" in row_ok and "no" in row_no
     assert "1 live model(s) not in the catalog: brand/new-model-1" in result.output
 
@@ -203,7 +203,7 @@ def test_models_live_failure_still_shows_table_and_exits_1(
     result = invoke("models", "--live")
     assert result.exit_code == 1
     assert "Could not fetch live models" in result.output
-    assert "meta/llama-3.3-70b-instruct" in result.output
+    assert "nvidia/nemotron-3-super-120b-a12b" in result.output
 
 
 # ------------------------------------------------------------------------------- plugins

@@ -1,7 +1,5 @@
-# Build output and generated icon files
+# Build output (the generated AppIcon.icns / AppIcon-1024.png are committed)
 build/
 dist/
 .build-venv/
-AppIcon.icns
-AppIcon.png
 AppIcon.iconset/

@@ -1,6 +1,6 @@
 # Prism: a vision workbench on NVIDIA NIM
 
-Prism points NIM vision-language models (`Role.VISION`, by default `meta/llama-3.2-90b-vision-instruct`;
+Prism points NIM vision-language models (`Role.VISION`, by default `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`;
 `microsoft/phi-3.5-vision-instruct` and any other vision model work through `--model`) at images and
 returns something useful: a description with alt text, the text with its layout, structured data in a
 schema you choose, a working HTML page, a diff of two images, a chart as a table, or an answer. It runs

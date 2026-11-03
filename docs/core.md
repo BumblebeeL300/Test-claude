@@ -202,18 +202,18 @@ ModelInfo(id: str, roles: frozenset[Role], context_window: int, notes: str, cost
 
 ```python
 reg = default_registry()            # process-wide ModelRegistry
-reg.pick(Role.CODER)                # -> "qwen/qwen2.5-coder-32b-instruct"  (str roles OK: "coder")
+reg.pick(Role.CODER)                # -> "poolside/laguna-xs-2.1"  (str roles OK: "coder")
 reg.by_role(Role.REASONING)         # -> list[ModelInfo]; current pick first, then by cost_tier, id
-reg.get("meta/llama-3.3-70b-instruct")   # ModelInfo; KeyError if not curated
+reg.get("nvidia/nemotron-3-super-120b-a12b")   # ModelInfo; KeyError if not curated
 reg.find(id) -> ModelInfo | None;  id in reg;  reg.ids();  reg.all();  len(reg)
 reg.register(ModelInfo(...), default_for="coder")    # add custom models at runtime
 ```
 
-Defaults: CHAT `meta/llama-3.3-70b-instruct`, REASONING `deepseek-ai/deepseek-r1`, CODER
-`qwen/qwen2.5-coder-32b-instruct`, VISION `meta/llama-3.2-90b-vision-instruct`, EMBED
-`nvidia/llama-3.2-nv-embedqa-1b-v2`, RERANK `nvidia/llama-3.2-nv-rerankqa-1b-v2`, REWARD
-`nvidia/llama-3.1-nemotron-70b-reward`, SAFETY `nvidia/llama-3.1-nemoguard-8b-content-safety`, FAST
-`meta/llama-3.1-8b-instruct`. `nimlab models [--role R] [--live]` prints the catalog.
+Defaults: CHAT `nvidia/nemotron-3-super-120b-a12b`, REASONING `nvidia/nemotron-3-ultra-550b-a55b`, CODER
+`poolside/laguna-xs-2.1`, VISION `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`, EMBED
+`nvidia/nemotron-3.5-embed-1b`, RERANK `nvidia/nemotron-3.5-rerank-8b`, REWARD
+`nvidia/nemotron-4-340b-reward`, SAFETY `nvidia/nemotron-3.5-content-safety`, FAST
+`nvidia/nemotron-3.5-lightning-30b-a3b`. `nimlab models [--role R] [--live]` prints the catalog.
 
 `pick(role)` precedence (re-read on every call): env `NIMLAB_MODEL_<ROLE>` (e.g.
 `NIMLAB_MODEL_CODER=...`) > `[models]` table in `./nimlab.toml` (or the file named by
@@ -223,7 +223,7 @@ Defaults: CHAT `meta/llama-3.3-70b-instruct`, REASONING `deepseek-ai/deepseek-r1
 # nimlab.toml
 [models]
 coder = "qwen/qwen3-coder-480b-a35b-instruct"
-chat  = "meta/llama-3.1-405b-instruct"
+chat  = "nvidia/nemotron-3-ultra-550b-a55b"
 ```
 
 The catalog is curated from the public NIM catalog and is **not verified against a live account**

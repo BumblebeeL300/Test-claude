@@ -145,10 +145,10 @@ class ScriptedClient:
 
 # ------------------------------------------------------------------ a small synthetic leaderboard
 
-CODER = "qwen/qwen2.5-coder-32b-instruct"  # tier 2
-REASONER = "deepseek-ai/deepseek-r1"  # tier 4
-FASTM = "meta/llama-3.1-8b-instruct"  # tier 1
-BIG = "meta/llama-3.1-405b-instruct"  # tier 5
+CODER = "poolside/laguna-xs-2.1"  # tier 2
+REASONER = "nvidia/nemotron-3-ultra-550b-a55b"  # tier 4
+FASTM = "nvidia/nemotron-3.5-lightning-30b-a3b"  # tier 1
+BIG = "nvidia/nemotron-3-ultra-550b-a55b"  # tier 5
 
 # model -> {suite: (score, latency_s)}; suites map to categories below
 TABLE = {

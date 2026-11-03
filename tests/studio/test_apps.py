@@ -13,9 +13,9 @@ from nimlab.studio.server import create_app
 
 CORPUS = Path(__file__).parents[2] / "examples" / "atlas_corpus"
 PANEL = [
-    "meta/llama-3.3-70b-instruct",
-    "deepseek-ai/deepseek-r1",
-    "qwen/qwen2.5-coder-32b-instruct",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "poolside/laguna-xs-2.1",
 ]
 
 
@@ -258,7 +258,7 @@ class TestArena:
             "/api/arena/run",
             json={
                 "suites": ["math_reasoning"],
-                "models": ["meta/llama-3.3-70b-instruct", "deepseek-ai/deepseek-r1"],
+                "models": ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b"],
             },
         ).json()["run_id"]
         detail = finish(client, rid)

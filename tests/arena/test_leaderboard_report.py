@@ -21,9 +21,9 @@ from nimlab.arena.report import (
 )
 from nimlab.arena.results import BattleRecord, ItemResult, RunResult, SuiteInfo
 
-BIG = "meta/llama-3.1-405b-instruct"  # cost tier 5
-MID = "meta/llama-3.3-70b-instruct"  # cost tier 2
-SMALL = "meta/llama-3.1-8b-instruct"  # cost tier 1
+BIG = "nvidia/nemotron-3-ultra-550b-a55b"  # cost tier 5
+MID = "nvidia/nemotron-3-super-120b-a12b"  # cost tier 2
+SMALL = "nvidia/nemotron-3.5-lightning-30b-a3b"  # cost tier 1
 
 # model -> {suite: (score, latency)}
 DATA = {

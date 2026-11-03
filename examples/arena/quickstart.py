@@ -13,7 +13,7 @@ from pathlib import Path
 from nimlab.arena import Arena, load_suite
 
 CUSTOM = Path(__file__).with_name("custom_suite.json")
-MODELS = ["meta/llama-3.3-70b-instruct", "meta/llama-3.1-8b-instruct"]
+MODELS = ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3.5-lightning-30b-a3b"]
 
 
 async def main() -> None:

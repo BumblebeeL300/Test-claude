@@ -84,11 +84,11 @@ def test_models_endpoint_lists_auto_and_registry_models(api: TestClient) -> None
     assert body["object"] == "list"
     ids = [m["id"] for m in body["data"]]
     assert ids[0] == AUTO_MODEL == "nimlab/auto"
-    assert "meta/llama-3.3-70b-instruct" in ids and CODER in ids
+    assert "nvidia/nemotron-3-super-120b-a12b" in ids and CODER in ids
     assert len(ids) == len(set(ids))
     first = body["data"][0]
     assert first["object"] == "model" and first["owned_by"] == "nimlab" and "created" in first
-    assert "nvidia/llama-3.2-nv-embedqa-1b-v2" not in ids  # embedding models are not chat models
+    assert "nvidia/nemotron-3.5-embed-1b" not in ids  # embedding models are not chat models
 
 
 # ------------------------------------------------------------------ non-streaming
@@ -125,13 +125,13 @@ def test_other_categories_route_to_other_models(api: TestClient) -> None:
 def test_explicit_models_pass_through_untouched(
     api: TestClient, client_double: ProxyClient
 ) -> None:
-    r = chat(api, "meta/llama-3.1-8b-instruct", "Write a python function")
+    r = chat(api, "nvidia/nemotron-3.5-lightning-30b-a3b", "Write a python function")
     assert r.status_code == 200
-    assert r.headers["x-nimlab-routed-model"] == "meta/llama-3.1-8b-instruct"
+    assert r.headers["x-nimlab-routed-model"] == "nvidia/nemotron-3.5-lightning-30b-a3b"
     assert "x-nimlab-category" not in r.headers
     body = r.json()
-    assert body["model"] == "meta/llama-3.1-8b-instruct" and "nimlab" not in body
-    assert body["choices"][0]["message"]["content"] == "answer from meta/llama-3.1-8b-instruct"
+    assert body["model"] == "nvidia/nemotron-3.5-lightning-30b-a3b" and "nimlab" not in body
+    assert body["choices"][0]["message"]["content"] == "answer from nvidia/nemotron-3.5-lightning-30b-a3b"
 
 
 def test_unknown_model_ids_are_passed_through_not_rejected(api: TestClient) -> None:
@@ -180,7 +180,7 @@ def test_sampling_tools_and_extra_params_are_forwarded(
     ]
     chat(
         api,
-        "meta/llama-3.3-70b-instruct",
+        "nvidia/nemotron-3-super-120b-a12b",
         temperature=0.7,
         max_tokens=33,
         top_p=0.9,
@@ -204,7 +204,7 @@ def test_tool_calls_are_returned_in_openai_format(
     api: TestClient, client_double: ProxyClient
 ) -> None:
     client_double.tool_call = True
-    body = chat(api, "meta/llama-3.3-70b-instruct", "weather in Oslo?").json()
+    body = chat(api, "nvidia/nemotron-3-super-120b-a12b", "weather in Oslo?").json()
     choice = body["choices"][0]
     assert choice["finish_reason"] == "tool_calls"
     call = choice["message"]["tool_calls"][0]

@@ -8,12 +8,13 @@ from .errors import (
     NIMAuthError,
     NIMError,
     NIMJSONError,
+    NIMModelUnavailableError,
     NIMRateLimitError,
     NIMResponseError,
     NIMTimeoutError,
 )
 from .logging import get_console
-from .registry import ModelInfo, ModelRegistry, Role, default_registry
+from .registry import ModelInfo, ModelRegistry, Role, default_registry, model_scope
 from .results import ChatResult, RerankResult, ToolCall, Usage
 from .text import chunk_text, cosine, extract_json, strip_think
 from .tools import AgentEvent, AgentRun, AgentStep, Tool, ToolResult, run_agent, tool
@@ -31,6 +32,7 @@ __all__ = [
     "NIMConfig",
     "NIMError",
     "NIMJSONError",
+    "NIMModelUnavailableError",
     "NIMRateLimitError",
     "NIMResponseError",
     "NIMTimeoutError",
@@ -46,6 +48,7 @@ __all__ = [
     "default_registry",
     "extract_json",
     "get_console",
+    "model_scope",
     "run_agent",
     "strip_think",
     "tool",

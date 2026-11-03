@@ -18,7 +18,7 @@ from nimlab.prism import Prism, PrismResult
 from nimlab.prism.images import image_size
 
 CHAT_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-VISION = "meta/llama-3.2-90b-vision-instruct"
+VISION = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 
 
 def completion(content: str) -> httpx.Response:

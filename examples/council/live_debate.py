@@ -15,10 +15,10 @@ from nimlab.core import NIMClient
 from nimlab.council import Council, CouncilLive, StepType
 
 PANEL = [
-    "deepseek-ai/deepseek-r1",
-    "meta/llama-3.3-70b-instruct",
-    "nvidia/llama-3.3-nemotron-super-49b-v1",
-    "mistralai/mixtral-8x22b-instruct-v0.1",
+    "nvidia/nemotron-3-ultra-550b-a55b",
+    "nvidia/nemotron-3-super-120b-a12b",
+    "google/gemma-4-31b-it",
+    "mistralai/mistral-large-4-1t-a52b",
 ]
 
 

@@ -156,8 +156,8 @@ def content_of(resp: dict[str, Any]) -> str:
 
 
 def test_chat_response_shape_and_determinism() -> None:
-    a = mock_chat_response("meta/llama-3.3-70b-instruct", USER)
-    b = mock_chat_response("meta/llama-3.3-70b-instruct", USER)
+    a = mock_chat_response("nvidia/nemotron-3-super-120b-a12b", USER)
+    b = mock_chat_response("nvidia/nemotron-3-super-120b-a12b", USER)
     assert a == b
     assert a["choices"][0]["finish_reason"] == "stop"
     assert (
@@ -193,9 +193,9 @@ def test_only_last_user_message_matters_and_content_parts_work() -> None:
 
 
 def test_reasoning_models_emit_think_block() -> None:
-    text = content_of(mock_chat_response("deepseek-ai/deepseek-r1", USER))
+    text = content_of(mock_chat_response("nvidia/nemotron-3-ultra-550b-a55b", USER))
     assert text.startswith("<think>") and "</think>" in text
-    assert "<think>" not in content_of(mock_chat_response("meta/llama-3.3-70b-instruct", USER))
+    assert "<think>" not in content_of(mock_chat_response("nvidia/nemotron-3-super-120b-a12b", USER))
 
 
 def test_max_tokens_truncates_plain_text() -> None:
@@ -314,7 +314,7 @@ def test_response_format_json_object_without_schema() -> None:
 def test_reasoning_model_json_still_extractable() -> None:
     marker = f"{JSON_SCHEMA_OPEN}\n{json.dumps(Report.model_json_schema())}\n{JSON_SCHEMA_CLOSE}"
     msgs = [{"role": "system", "content": marker}, *USER]
-    text = content_of(mock_chat_response("deepseek-ai/deepseek-r1", msgs))
+    text = content_of(mock_chat_response("nvidia/nemotron-3-ultra-550b-a55b", msgs))
     assert text.startswith("<think>")
     Report.model_validate(extract_json(text))
 

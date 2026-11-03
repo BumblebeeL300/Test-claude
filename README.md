@@ -111,7 +111,7 @@ nimlab forge inspect /tmp/forge-demo
 
 # Arena: benchmark, rank and route
 nimlab arena suites
-nimlab arena run --suite math_reasoning --models meta/llama-3.3-70b-instruct,deepseek-ai/deepseek-r1
+nimlab arena run --suite math_reasoning --models nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3-ultra-550b-a55b
 nimlab arena report --html-out leaderboard.html
 nimlab arena route "write a python function"
 nimlab arena serve                          # OpenAI-compatible proxy on http://127.0.0.1:8000, model "nimlab/auto"
@@ -125,7 +125,7 @@ nimlab prism describe examples/prism/sample_chart.png
 
 # Sentinel: blast-test models, then screen a prompt and redact PII
 nimlab sentinel suites
-nimlab sentinel scan --models meta/llama-3.3-70b-instruct --suite injection,pii_leakage --html-out scorecard.html
+nimlab sentinel scan --models nvidia/nemotron-3-super-120b-a12b --suite injection,pii_leakage --html-out scorecard.html
 nimlab sentinel redact examples/sentinel/pii_sample.txt
 
 # Loom: list, lint and run a bundled pipeline, or export it as a script
@@ -181,15 +181,15 @@ Every app asks the registry for a model by *role*, never by hard-coded id.
 
 | Role | Default | Used for |
 | --- | --- | --- |
-| `chat` | `meta/llama-3.3-70b-instruct` | general answers, aggregation, review |
-| `reasoning` | `deepseek-ai/deepseek-r1` | planning, debate judging, math |
-| `coder` | `qwen/qwen2.5-coder-32b-instruct` | writing code and tests |
-| `vision` | `meta/llama-3.2-90b-vision-instruct` | image prompts |
-| `fast` | `meta/llama-3.1-8b-instruct` | cheap sub-tasks |
-| `embed` | `nvidia/llama-3.2-nv-embedqa-1b-v2` | retrieval, consensus, routing |
-| `rerank` | `nvidia/llama-3.2-nv-rerankqa-1b-v2` | passage reranking |
-| `reward` | `nvidia/llama-3.1-nemotron-70b-reward` | best-of-N scoring |
-| `safety` | `nvidia/llama-3.1-nemoguard-8b-content-safety` | guardrails |
+| `chat` | `nvidia/nemotron-3-super-120b-a12b` | general answers, aggregation, review |
+| `reasoning` | `nvidia/nemotron-3-ultra-550b-a55b` | planning, debate judging, math |
+| `coder` | `poolside/laguna-xs-2.1` | writing code and tests |
+| `vision` | `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning` | image prompts |
+| `fast` | `nvidia/nemotron-3.5-lightning-30b-a3b` | cheap sub-tasks |
+| `embed` | `nvidia/nemotron-3.5-embed-1b` | retrieval, consensus, routing |
+| `rerank` | `nvidia/nemotron-3.5-rerank-8b` | passage reranking |
+| `reward` | `nvidia/nemotron-4-340b-reward` | best-of-N scoring |
+| `safety` | `nvidia/nemotron-3.5-content-safety` | guardrails |
 
 Override precedence, highest first: a command-line flag (for example `--coder`), the environment variable
 `NIMLAB_MODEL_<ROLE>`, the `[models]` table of `nimlab.toml` (or the file named by `NIMLAB_CONFIG`), then the
@@ -203,7 +203,7 @@ export NIMLAB_MODEL_CODER=qwen/qwen3-coder-480b-a35b-instruct
 # nimlab.toml
 [models]
 coder = "qwen/qwen3-coder-480b-a35b-instruct"
-chat  = "meta/llama-3.1-405b-instruct"
+chat  = "nvidia/nemotron-3-ultra-550b-a55b"
 ```
 
 Other settings (`NIM_BASE_URL`, `NIM_TIMEOUT`, `NIM_MAX_RETRIES`, `NIM_MAX_CONCURRENCY`, `NIMLAB_MOCK`, ...) are

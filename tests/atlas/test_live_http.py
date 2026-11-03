@@ -20,11 +20,11 @@ from nimlab.core import mock as core_mock
 
 BASE = "https://integrate.api.nvidia.com/v1"
 RERANK = "https://ai.api.nvidia.com/v1/retrieval"
-CHAT = "meta/llama-3.3-70b-instruct"
-FAST = "meta/llama-3.1-8b-instruct"
-EMBED = "nvidia/llama-3.2-nv-embedqa-1b-v2"
-RERANK_MODEL = "nvidia/llama-3.2-nv-rerankqa-1b-v2"
-SAFETY = "nvidia/llama-3.1-nemoguard-8b-content-safety"
+CHAT = "nvidia/nemotron-3-super-120b-a12b"
+FAST = "nvidia/nemotron-3.5-lightning-30b-a3b"
+EMBED = "nvidia/nemotron-3.5-embed-1b"
+RERANK_MODEL = "nvidia/nemotron-3.5-rerank-8b"
+SAFETY = "nvidia/nemotron-3.5-content-safety"
 QUESTION = (
     "How often do robots send heartbeats, and how many missed heartbeats mark a robot as lost?"
 )

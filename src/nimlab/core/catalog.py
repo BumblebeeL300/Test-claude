@@ -10,6 +10,7 @@ This module has no dependency on ``registry`` (roles are plain strings such as `
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
@@ -240,14 +241,12 @@ class LiveCatalog:
             _log.debug("could not write model cache %s: %s", self.path, exc)
 
     def clear_cache(self) -> None:
-        try:
+        with contextlib.suppress(OSError):
             self.path.unlink()
-        except OSError:
-            pass
 
     # -- network
     def fetch(self, config: NIMConfig) -> frozenset[str]:
-        """One uncached ``GET /models`` (no retries). Raises ``httpx.HTTPError`` / ``ValueError``."""
+        """One uncached ``GET /models`` (no retries); raises ``httpx.HTTPError``/``ValueError``."""
         headers = {"Accept": "application/json", "User-Agent": "nimlab"}
         if config.api_key:
             headers["Authorization"] = f"Bearer {config.api_key}"

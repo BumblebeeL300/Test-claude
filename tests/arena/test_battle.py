@@ -212,9 +212,9 @@ async def test_retries_transient_judge_errors() -> None:
 
 async def test_arena_battle_end_to_end_on_the_simulator(runs_dir: Any) -> None:
     models = [
-        "meta/llama-3.1-405b-instruct",
-        "meta/llama-3.1-8b-instruct",
-        "meta/llama-3.2-1b-instruct",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3.5-bolt-e4b",
     ]
     async with Arena(mock=True, runs_dir=runs_dir, concurrency=8) as arena:
         result = await arena.battle(models, "summarization", max_items=6)
