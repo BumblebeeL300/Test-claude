@@ -29,6 +29,7 @@ from nimlab.loom.schema import Pipeline, topo_levels
 from nimlab.loom.textops import http_allowlist
 
 from .runs import Run, RunManager
+from .scope import clean_overrides, scoped_work
 
 __all__ = ["APP_INFO", "router"]
 
@@ -240,7 +241,9 @@ async def export_route(body: dict[str, Any]) -> dict[str, Any]:
 
 
 # --------------------------------------------------------------------------- run
-def start_loom_run(rt: _Runtime, pipe: Pipeline, inputs: dict[str, Any]) -> Run:
+def start_loom_run(
+    rt: _Runtime, pipe: Pipeline, inputs: dict[str, Any], overrides: dict[str, str] | None = None
+) -> Run:
     simulated = rt.mock
     cache_dir = rt.cache_dir
     atlas_db = rt.atlas_db
@@ -271,7 +274,13 @@ def start_loom_run(rt: _Runtime, pipe: Pipeline, inputs: dict[str, Any]) -> Run:
         return summary
 
     title = (pipe.title or pipe.name)[:80]
-    return rt.runs.start("loom", title, work, simulated=simulated, meta={"pipeline": pipe.name})
+    return rt.runs.start(
+        "loom",
+        title,
+        scoped_work("loom", overrides, work),
+        simulated=simulated,
+        meta={"pipeline": pipe.name},
+    )
 
 
 @router.post("/run")
@@ -306,5 +315,9 @@ async def run_route(body: dict[str, Any], request: Request) -> Any:
         prepare_inputs(pipe, inputs)
     except LoomError as exc:
         raise _bad(422, str(exc)) from exc
-    run = start_loom_run(rt, pipe, inputs)
+    try:
+        overrides = clean_overrides(body.get("model_overrides"))
+    except ValueError as exc:
+        raise _bad(422, str(exc)) from exc
+    run = start_loom_run(rt, pipe, inputs, overrides)
     return {"run_id": run.id}

@@ -258,7 +258,10 @@ class TestArena:
             "/api/arena/run",
             json={
                 "suites": ["math_reasoning"],
-                "models": ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b"],
+                "models": [
+                    "nvidia/nemotron-3-super-120b-a12b",
+                    "nvidia/nemotron-3-ultra-550b-a55b",
+                ],
             },
         ).json()["run_id"]
         detail = finish(client, rid)

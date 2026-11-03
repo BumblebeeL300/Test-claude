@@ -50,6 +50,8 @@ class StudioSettings:
     sim_delay: float = 1.0
     #: Report ``needs-key`` for apps while no API key is set (default: apps simulate instead).
     require_key: bool = False
+    #: Let the uninstall endpoint quit the app afterwards (the desktop/CLI launchers enable it).
+    allow_exit: bool = False
     sse_heartbeat_s: float = 15.0
     max_history: int = 100
     max_memory_runs: int = 200

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -17,12 +18,14 @@ from nimlab.atlas.models import AtlasError
 from nimlab.atlas.server import parse_multipart
 from nimlab.core import NIMError, default_registry
 
-from . import arena_app, atlas_app, council_app, credentials, forge_app
+from . import arena_app, atlas_app, council_app, credentials, forge_app, uninstall, updater
 from .projects import ProjectError
 from .routes_distill import router as distill_router
 from .routes_loom import router as loom_router
+from .routes_models import router as models_router
 from .routes_prism import router as prism_router
 from .routes_sentinel import router as sentinel_router
+from .scope import clean_overrides
 from .security import SecurityMiddleware
 from .settings import StudioSettings
 from .state import StudioState
@@ -55,12 +58,18 @@ class BuildBody(BaseModel):
     prompt: str = Field(min_length=1, max_length=8000)
     project: str | None = Field(default=None, max_length=64)
     max_iters: int | None = Field(default=None, ge=1, le=20)
+    #: Optional model per Forge role (planner = reasoning, coder, reviewer = chat).
+    planner: str | None = Field(default=None, max_length=200)
+    coder: str | None = Field(default=None, max_length=200)
+    reviewer: str | None = Field(default=None, max_length=200)
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
 
 
 class CouncilBody(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
     strategy: str = "moa"
     models: list[str] | None = Field(default=None, max_length=12)
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
 
 
 class AskBody(BaseModel):
@@ -68,6 +77,8 @@ class AskBody(BaseModel):
     collection: str | None = None
     mode: Literal["simple", "agentic"] = "simple"
     verify: bool = False
+    #: Optional ``{role: model}``, e.g. ``{"embed": ..., "rerank": ..., "chat": ...}``.
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
 
 
 class RouteBody(BaseModel):
@@ -77,6 +88,18 @@ class RouteBody(BaseModel):
 class ArenaBody(BaseModel):
     suites: list[str] | str | None = None
     models: list[str] | None = Field(default=None, max_length=12)
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
+
+
+class UninstallBody(BaseModel):
+    remove_key: bool = True
+    remove_data: bool = True
+    remove_projects: bool = False
+    remove_atlas: bool = False
+    remove_app: bool = False
+    dry_run: bool = True
+    #: Must be exactly ``UNINSTALL`` for a real (non dry-run) uninstall.
+    confirm: str = ""
 
 
 # --------------------------------------------------------------------------- app
@@ -102,9 +125,14 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        warm: asyncio.Task[Any] | None = None
+        if not state.mock:  # fetch (or load the 24 h cache of) the live model list off the loop
+            warm = asyncio.create_task(asyncio.to_thread(default_registry().snapshot))
         try:
             yield
         finally:
+            if warm is not None:
+                warm.cancel()
             await state.shutdown()
 
     app = FastAPI(
@@ -121,6 +149,14 @@ def create_app(
 
     def bad(status: int, message: str) -> HTTPException:
         return HTTPException(status, message)
+
+    def parse_overrides(raw: dict[str, str] | None) -> dict[str, str]:
+        try:
+            return clean_overrides(raw)
+        except ValueError as exc:
+            raise bad(422, str(exc)) from exc
+
+    default_registry().use_settings_path(cfg.home / "studio_settings.json")
 
     @app.exception_handler(ProjectError)
     async def _project_error(_: Request, exc: ProjectError) -> JSONResponse:
@@ -164,6 +200,10 @@ def create_app(
             raise bad(500, f"could not store the key: {exc}") from exc
         result = await state.verify_key(key)
         state.reset_client()
+        # A new key may unlock (or hide) different models: refetch the live catalog.
+        await asyncio.to_thread(
+            default_registry().refresh_catalog, config=state.base_config(), force=True
+        )
         warning = saved.warning
         source = credentials.key_source()
         if source in ("env", "dotenv"):
@@ -176,6 +216,7 @@ def create_app(
     async def delete_key() -> dict[str, Any]:
         credentials.delete_api_key()
         state.reset_client()
+        default_registry().forget_catalog()
         return {"ok": True, "key": state.key_info()}
 
     @api.post("/key/test")
@@ -197,6 +238,49 @@ def create_app(
             }
             for m in default_registry().all()
         ]
+
+    # ------------------------------------------------------------------ uninstall & updates
+    @api.post("/uninstall")
+    async def uninstall_route(body: UninstallBody) -> dict[str, Any]:
+        opts = uninstall.UninstallOptions(
+            remove_key=body.remove_key,
+            remove_data=body.remove_data,
+            remove_projects=body.remove_projects,
+            remove_atlas=body.remove_atlas,
+            remove_app=body.remove_app,
+            dry_run=body.dry_run,
+        )
+        try:
+            if body.dry_run:
+                return {"dry_run": True, **uninstall.plan(opts, home=cfg.home)}
+            if body.confirm != "UNINSTALL":
+                raise bad(422, "type UNINSTALL to confirm")
+            report = uninstall.execute(opts, home=cfg.home)
+        except ValueError as exc:
+            raise bad(422, str(exc)) from exc
+        info = uninstall.detect_install()
+        scheduled = False
+        if body.remove_app:
+            scheduled = bool(state.schedule_app_removal(info))
+        state.reset_client()
+        default_registry().forget_catalog()
+        state.schedule_exit()
+        return {
+            "dry_run": False,
+            **report,
+            "app_removal_scheduled": scheduled,
+            "app_instructions": "" if scheduled else (info.instructions if body.remove_app else ""),
+            "exiting": state.settings.allow_exit,
+        }
+
+    @api.get("/update/check")
+    async def update_check(fetch: bool = True) -> dict[str, Any]:
+        status = await asyncio.to_thread(updater.check_for_updates, fetch=fetch)
+        return status.as_dict()
+
+    @api.post("/update/apply")
+    async def update_apply() -> dict[str, Any]:
+        return await asyncio.to_thread(updater.apply_update)
 
     @api.get("/usage")
     async def usage() -> dict[str, Any]:
@@ -246,7 +330,18 @@ def create_app(
     # ------------------------------------------------------------------ forge & projects
     @api.post("/forge/build")
     async def forge_build(body: BuildBody) -> dict[str, Any]:
-        run, project_id = forge_app.start_build(state, body.prompt, body.project, body.max_iters)
+        overrides = parse_overrides(body.model_overrides)
+        for field_name, role in (
+            ("planner", "reasoning"),
+            ("coder", "coder"),
+            ("reviewer", "chat"),
+        ):
+            value = getattr(body, field_name)
+            if value and value.strip():
+                overrides[role] = value.strip()
+        run, project_id = forge_app.start_build(
+            state, body.prompt, body.project, body.max_iters, overrides
+        )
         return {"run_id": run.id, "project": project_id}
 
     @api.get("/projects")
@@ -281,7 +376,13 @@ def create_app(
     @api.post("/council/run")
     async def council_run(body: CouncilBody) -> dict[str, Any]:
         try:
-            run = council_app.start_council(state, body.question, body.strategy, body.models)
+            run = council_app.start_council(
+                state,
+                body.question,
+                body.strategy,
+                body.models,
+                parse_overrides(body.model_overrides),
+            )
         except ValueError as exc:
             raise bad(422, str(exc)) from exc
         return {"run_id": run.id}
@@ -342,7 +443,14 @@ def create_app(
     @api.post("/atlas/ask")
     async def atlas_ask(body: AskBody) -> dict[str, Any]:
         name = collection_name(body.collection)
-        run = atlas_app.start_ask(state, body.question, name, body.mode, body.verify)
+        run = atlas_app.start_ask(
+            state,
+            body.question,
+            name,
+            body.mode,
+            body.verify,
+            parse_overrides(body.model_overrides),
+        )
         return {"run_id": run.id}
 
     # ------------------------------------------------------------------ arena
@@ -361,7 +469,9 @@ def create_app(
     @api.post("/arena/run")
     async def arena_run(body: ArenaBody) -> dict[str, Any]:
         try:
-            run = arena_app.start_run(state, body.suites, body.models)
+            run = arena_app.start_run(
+                state, body.suites, body.models, parse_overrides(body.model_overrides)
+            )
         except ValueError as exc:
             raise bad(422, str(exc)) from exc
         return {"run_id": run.id}
@@ -371,7 +481,13 @@ def create_app(
         return JSONResponse({"detail": f"no such API route: /api/{rest}"}, status_code=404)
 
     # Tool routers must come before `api`: its /api/{rest:path} catch-all would 404 them.
-    for tool_router in (prism_router, sentinel_router, loom_router, distill_router):
+    for tool_router in (
+        models_router,
+        prism_router,
+        sentinel_router,
+        loom_router,
+        distill_router,
+    ):
         app.include_router(tool_router)
     app.include_router(api)
 

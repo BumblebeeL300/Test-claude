@@ -146,9 +146,9 @@ class ScriptedClient:
 # ------------------------------------------------------------------ a small synthetic leaderboard
 
 CODER = "poolside/laguna-xs-2.1"  # tier 2
-REASONER = "nvidia/nemotron-3-ultra-550b-a55b"  # tier 4
+REASONER = "nvidia/nemotron-3-ultra-550b-a55b"  # tier 5
 FASTM = "nvidia/nemotron-3.5-lightning-30b-a3b"  # tier 1
-BIG = "nvidia/nemotron-3-ultra-550b-a55b"  # tier 5
+BIG = "mistralai/mistral-large-4-1t-a52b"  # tier 5
 
 # model -> {suite: (score, latency_s)}; suites map to categories below
 TABLE = {

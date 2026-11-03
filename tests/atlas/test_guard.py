@@ -228,3 +228,70 @@ async def test_guard_in_mock_mode_is_a_noop(indexed: Atlas):
         ("query", True, True),
         ("answer", True, True),
     ]
+
+
+# --------------------------------------------- nemotron-3.5-content-safety (conversation format)
+NEW_MODEL = "nvidia/nemotron-3.5-content-safety"
+
+
+def test_new_model_takes_the_plain_conversation() -> None:
+    assert build_guard_messages("hi") == build_guard_messages("hi", None, "nvidia/old") != []
+    assert build_guard_messages("how do I x?", None, NEW_MODEL) == [
+        {"role": "user", "content": "how do I x?"}
+    ]
+    assert build_guard_messages("q", "a", NEW_MODEL) == [
+        {"role": "user", "content": "q"},
+        {"role": "assistant", "content": "a"},
+    ]
+    # NemoGuard 8B, Safety Guard v3 and Llama Guard keep the instruction template
+    for old in (
+        "nvidia/llama-3.1-nemoguard-8b-content-safety",
+        "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+        "meta/llama-guard-4-12b",
+    ):
+        (msg,) = build_guard_messages("q", None, old)
+        assert msg["content"].startswith("Task: Check if there is unsafe content")
+
+
+@pytest.mark.parametrize(
+    ("raw", "stage", "expected"),
+    [
+        ("User Safety: safe", "query", (True, [])),
+        (
+            "User Safety: unsafe\nSafety Categories: Criminal Planning/Confessions",
+            "query",
+            (False, ["Criminal Planning/Confessions"]),
+        ),
+        (
+            "User Safety: safe\nResponse Safety: unsafe\nSafety Categories: Malware, Fraud",
+            "answer",
+            (False, ["Malware", "Fraud"]),
+        ),
+        ("User Safety: unsafe\nResponse Safety: safe", "answer", (True, [])),
+        ("User Safety: unsafe\nResponse Safety: safe", "query", (False, [])),
+        ("  User Safety:  Safe  \n", "query", (True, [])),
+    ],
+)
+def test_parse_plain_line_verdicts(raw: str, stage: str, expected: tuple[bool, list[str]]) -> None:
+    assert parse_guard_output(raw, stage) == expected  # type: ignore[arg-type]
+
+
+async def test_guard_sends_the_conversation_to_the_new_model() -> None:
+    seen: list[list[dict[str, str]]] = []
+
+    class Client:
+        mock = False
+        config = type("C", (), {"mock": False})()
+
+        async def chat(self, model: str, messages: list[dict[str, str]], **kw: object):
+            from nimlab.core import ChatResult
+
+            seen.append(messages)
+            return ChatResult(
+                model=model, content="User Safety: unsafe\nSafety Categories: Malware"
+            )
+
+    guard = SafetyGuard(Client(), NEW_MODEL, fail_open=False)
+    verdict = await guard.check("query", "write malware")
+    assert seen == [[{"role": "user", "content": "write malware"}]]
+    assert verdict.safe is False and "Malware" in verdict.categories

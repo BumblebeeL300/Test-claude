@@ -22,7 +22,7 @@ MODELS_URL = "https://integrate.api.nvidia.com/v1/models"
 class TestStatus:
     def test_shape_in_mock_mode(self, client: TestClient) -> None:
         data = client.get("/api/status").json()
-        assert set(data) == {"version", "mode", "key", "base_url", "network", "apps"}
+        assert set(data) == {"version", "mode", "key", "base_url", "network", "apps", "models"}
         assert data["mode"] == "mock"
         assert data["key"] == {"set": False, "source": None, "masked": None}
         assert data["network"] == "unknown"

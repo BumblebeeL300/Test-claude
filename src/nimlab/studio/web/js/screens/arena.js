@@ -2,6 +2,7 @@
 import { h, clear, shortModel, pop, reduced, sleep, clamp, fmtNum } from '../util.js';
 import { icon } from '../icons.js';
 import { store, on, api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 
 const IDEAS = ['Fix this regex that matches emails', 'Explain quantum tunnelling to a teenager', 'Summarise this contract clause'];
 const AR = { prompt: '' };
@@ -76,7 +77,7 @@ export function mount(el) {
     scat.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of quality against latency">${g}<path d="${fl}" class="front" fill="none"/><text x="${W / 2}" y="${H - 4}" class="ax" text-anchor="middle">latency (p50)</text><text x="12" y="${H / 2}" class="ax" text-anchor="middle" transform="rotate(-90 12 ${H / 2})">quality</text>${dots}</svg>`;
     scat.querySelectorAll('.pt').forEach((n) => { n.addEventListener('mouseenter', () => hl(n.dataset.m, true)); n.addEventListener('mouseleave', () => hl(n.dataset.m, false)); });
   }
-  async function runArena() { try { const r = await api.post('/arena/run', {}); toast('Arena started. Matches stream in as they finish.'); api.stream(r.run_id, (ev) => { if (ev.type === 'item') { const t = document.getElementById('ar-src'); if (t) t.textContent = `playing ${ev.data.done}/${ev.data.total}`; } if (ev.type === 'run.done') { load(); refresh(['status', 'runs']); } if (ev.type === 'run.failed') toast('Arena failed: ' + (ev.data?.error || ''), 'bad'); }); } catch (e) { toast(e.message, 'bad'); } }
+  async function runArena() { try { const r = await api.post('/arena/run', { model_overrides: await modelOverrides('arena') }); toast('Arena started. Matches stream in as they finish.'); api.stream(r.run_id, (ev) => { if (ev.type === 'item') { const t = document.getElementById('ar-src'); if (t) t.textContent = `playing ${ev.data.done}/${ev.data.total}`; } if (ev.type === 'run.done') { load(); refresh(['status', 'runs']); } if (ev.type === 'run.failed') toast('Arena failed: ' + (ev.data?.error || ''), 'bad'); }); } catch (e) { toast(e.message, 'bad'); } }
   async function load() { try { const r = await api.get('/arena/runs'); board = normBoard(Array.isArray(r) ? r : r.runs || []); } catch { board = []; } paintBoard(); }
 
   el.append(h('div.ar', h('header.ar-h', h('div.label', 'Arena'), h('h1', 'Who’s winning, ', h('em', 'and who gets the call.'))), h('div.ar-grid', board_, scatP), router));

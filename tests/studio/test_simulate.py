@@ -163,7 +163,9 @@ class TestStudioClient:
     async def test_passthrough_when_not_simulating(self) -> None:
         base = NIMClient(NIMConfig(mock=True))
         client = sim.StudioClient(base, simulate=False)
-        res = await client.chat("nvidia/nemotron-3-super-120b-a12b", [{"role": "user", "content": "hi"}])
+        res = await client.chat(
+            "nvidia/nemotron-3-super-120b-a12b", [{"role": "user", "content": "hi"}]
+        )
         assert res.content and client.mock is True
         assert client.usage is base.usage
 

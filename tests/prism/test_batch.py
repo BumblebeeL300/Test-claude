@@ -150,7 +150,9 @@ class TestEngine:
     async def test_default_model_is_the_registry_vision_pick(
         self, prism: Prism, sample_ui: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        assert (await prism.describe(sample_ui)).model == "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+        assert (
+            await prism.describe(sample_ui)
+        ).model == "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
         monkeypatch.setenv("NIMLAB_MODEL_VISION", "microsoft/phi-3.5-vision-instruct")
         assert (await prism.describe(sample_ui)).model == "microsoft/phi-3.5-vision-instruct"
         assert (await Prism(prism.client, model="x/y").describe(sample_ui)).model == "x/y"

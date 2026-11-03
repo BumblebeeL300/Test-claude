@@ -2,6 +2,7 @@
 import { h, clear, shortModel, pop, reduced, clamp } from '../util.js';
 import { icon } from '../icons.js';
 import { store, on, api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 
 const STRATS = [
   { id: 'moa', n: 'MoA', d: 'Proposers answer in parallel, layers refine, one synthesises' },
@@ -48,7 +49,7 @@ export function mount(el, params) {
 
   function defaultPanel() {
     const roles = store.models.filter((m) => (m.roles || []).some((r) => r === 'chat' || r === 'reasoning')).map((m) => m.id);
-    const base = ['meta/llama-3.1-405b-instruct', 'nvidia/llama-3.1-nemotron-ultra-253b-v1', 'deepseek-ai/deepseek-r1', 'mistralai/mistral-large-2-instruct', 'meta/llama-3.3-70b-instruct'];
+    const base = ['nvidia/nemotron-3-super-120b-a12b', 'nvidia/nemotron-3-ultra-550b-a55b', 'deepseek-ai/deepseek-v4.1-flash', 'mistralai/mistral-large-4-1t-a52b', 'google/gemma-4-31b-it'];
     return (roles.length >= 5 ? base.filter((b) => roles.includes(b)).concat(roles) : base).filter((v, i, a) => a.indexOf(v) === i).slice(0, 5);
   }
   function seat(model) {
@@ -103,7 +104,7 @@ export function mount(el, params) {
   async function convene() {
     const question = q.value.trim(); if (!question) { toast('Put a question to the table first', 'warn'); q.focus(); return; }
     goBtn.disabled = true;
-    try { const r = await api.post('/council/run', { question, strategy: C.strategy }); C.question = question; resetTable(); hubStage.textContent = 'seating…'; C.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
+    try { const r = await api.post('/council/run', { question, strategy: C.strategy, model_overrides: await modelOverrides('council') }); C.question = question; resetTable(); hubStage.textContent = 'seating…'; C.ui = ui; attach(r.run_id); refresh(['status', 'runs']); }
     catch (e) { toast('Couldn’t convene: ' + e.message, 'bad'); goBtn.disabled = false; }
   }
 

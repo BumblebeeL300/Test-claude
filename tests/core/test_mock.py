@@ -195,7 +195,9 @@ def test_only_last_user_message_matters_and_content_parts_work() -> None:
 def test_reasoning_models_emit_think_block() -> None:
     text = content_of(mock_chat_response("nvidia/nemotron-3-ultra-550b-a55b", USER))
     assert text.startswith("<think>") and "</think>" in text
-    assert "<think>" not in content_of(mock_chat_response("nvidia/nemotron-3-super-120b-a12b", USER))
+    assert "<think>" not in content_of(
+        mock_chat_response("nvidia/nemotron-3-super-120b-a12b", USER)
+    )
 
 
 def test_max_tokens_truncates_plain_text() -> None:

@@ -132,7 +132,9 @@ async def test_stream_chat_yields_word_chunks(mock_client: NIMClient) -> None:
 
 
 async def test_stream_chat_filters_think(mock_client: NIMClient) -> None:
-    text = "".join([c async for c in mock_client.stream_chat("nvidia/nemotron-3-ultra-550b-a55b", USER)])
+    text = "".join(
+        [c async for c in mock_client.stream_chat("nvidia/nemotron-3-ultra-550b-a55b", USER)]
+    )
     assert "<think>" not in text and "think>" not in text
     assert text == (await mock_client.chat("nvidia/nemotron-3-ultra-550b-a55b", USER)).content
 

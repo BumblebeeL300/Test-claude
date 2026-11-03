@@ -9,22 +9,29 @@ from nimlab.core import ModelInfo, ModelRegistry, Role, default_registry
 from nimlab.core.registry import CURATED_MODELS, DEFAULTS
 
 REQUIRED_IDS = [
-    "nvidia/nemotron-3-super-120b-a12b",
+    # Refreshed 2026-11-03 from integrate.api.nvidia.com/v1/models and build.nvidia.com.
     "nvidia/nemotron-3-ultra-550b-a55b",
     "nvidia/nemotron-3-super-120b-a12b",
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1",
-    "nvidia/nemotron-3-ultra-550b-a55b",
-    "poolside/laguna-xs-2.1",
-    "deepseek-ai/deepseek-v4.1-flash",
-    "mistralai/mistral-large-4-1t-a52b",
-    "nvidia/nemotron-3.5-bolt-e4b",
     "nvidia/nemotron-3.5-lightning-30b-a3b",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-    "nvidia/nemotron-3.5-embed-1b",
+    "poolside/laguna-xs-2.1",
+    "deepseek-ai/deepseek-v4.1-flash",
+    "google/gemma-4-31b-it",
     "nvidia/nemotron-3.5-embed-1b",
     "nvidia/nemotron-3.5-rerank-8b",
+    "nvidia/llama-nemotron-rerank-vl-1b-v2",
     "nvidia/nemotron-4-340b-reward",
     "nvidia/nemotron-3.5-content-safety",
+    "nvidia/llama-3.1-nemotron-safety-guard-8b-v3",
+]
+
+RETIRED_IDS = [
+    "meta/llama-3.3-70b-instruct",
+    "meta/llama-3.1-8b-instruct",
+    "deepseek-ai/deepseek-r1",
+    "qwen/qwen2.5-coder-32b-instruct",
+    "microsoft/phi-4-mini-instruct",
+    "nvidia/llama-3.2-nv-embedqa-1b-v2",
 ]
 
 
@@ -42,6 +49,24 @@ def test_required_models_present() -> None:
         info = reg.get(model_id)
         assert info.id == model_id and info.roles and info.context_window > 0
         assert 1 <= info.cost_tier <= 5
+
+
+def test_retired_ids_are_not_in_the_catalog_but_have_replacements() -> None:
+    from nimlab.core.registry import RETIRED
+
+    reg = default_registry()
+    for model_id in RETIRED_IDS:
+        assert model_id not in reg, model_id
+        assert RETIRED[model_id] in reg
+
+
+def test_deprecated_models_are_never_defaults() -> None:
+    reg = default_registry()
+    for role in Role:
+        picked = reg.pick(role)
+        if role is not Role.REWARD:  # NVIDIA deprecated every hosted reward model
+            assert not reg.get(picked).deprecated, (role, picked)
+    assert reg.get("nvidia/nemotron-4-340b-reward").deprecated
 
 
 def test_ids_unique() -> None:
@@ -173,5 +198,8 @@ def test_live_snapshot_helpers(tmp_path: Path) -> None:
     live = ModelRegistry.load_live_ids(snap)
     assert live == {"nvidia/nemotron-3-super-120b-a12b", "some/other"}
     missing = default_registry().missing_from(live)
-    assert "nvidia/nemotron-3-super-120b-a12b" not in missing and "deepseek-ai/deepseek-v4.1-flash" in missing
+    assert (
+        "nvidia/nemotron-3-super-120b-a12b" not in missing
+        and "deepseek-ai/deepseek-v4.1-flash" in missing
+    )
     assert ModelRegistry.load_live_ids(tmp_path / "absent.txt") == set()

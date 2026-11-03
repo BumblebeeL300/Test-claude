@@ -12,7 +12,9 @@ from nimlab.arena.cli import app
 from nimlab.arena.results import RunStore
 
 runner = CliRunner()
-MODELS = "nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3.5-lightning-30b-a3b,poolside/laguna-xs-2.1"
+MODELS = (
+    "nvidia/nemotron-3-super-120b-a12b,nvidia/nemotron-3.5-lightning-30b-a3b,poolside/laguna-xs-2.1"
+)
 EXAMPLE = Path(__file__).resolve().parents[2] / "examples" / "arena" / "custom_suite.json"
 
 
@@ -156,7 +158,10 @@ def test_run_errors_are_friendly(runs: str) -> None:
 
 
 def test_battle_prints_elo_with_confidence_intervals(runs: str) -> None:
-    models = "nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3.5-lightning-30b-a3b,nvidia/nemotron-3.5-bolt-e4b"
+    models = (
+        "nvidia/nemotron-3-ultra-550b-a55b,nvidia/nemotron-3.5-lightning-30b-a3b,"
+        "nvidia/nemotron-3.5-bolt-e4b"
+    )
     out = invoke(
         "--mock",
         "battle",

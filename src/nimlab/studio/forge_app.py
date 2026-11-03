@@ -13,11 +13,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-from nimlab.core import NIMError
+from nimlab.core import NIMError, default_registry
 from nimlab.forge import Forge, ForgeConfig, ForgeEvent
 
 from .projects import ProjectError
 from .runs import Run
+from .scope import scoped_work
 from .simulate import SimForgeClient
 from .state import StudioState
 
@@ -227,7 +228,11 @@ class _Bridge:
 
 
 def start_build(
-    state: StudioState, prompt: str, project: str | None, max_iters: int | None
+    state: StudioState,
+    prompt: str,
+    project: str | None,
+    max_iters: int | None,
+    overrides: dict[str, str] | None = None,
 ) -> tuple[Run, str]:
     """Register a Forge run; returns ``(run, project_id)``."""
     project_id = state.projects.choose_id(prompt, project)
@@ -242,7 +247,13 @@ def start_build(
         return await build_project(state, run, prompt, project_id, name, max_iters, simulated)
 
     title = prompt.strip().splitlines()[0][:80]
-    run = state.runs.start("forge", title, work, simulated=simulated, meta={"project": project_id})
+    run = state.runs.start(
+        "forge",
+        title,
+        scoped_work("forge", overrides, work),
+        simulated=simulated,
+        meta={"project": project_id},
+    )
     return run, project_id
 
 
@@ -271,6 +282,28 @@ async def build_project(
     else:
         client = state.client()
     cfg = ForgeConfig(max_iters=max_iters) if max_iters else ForgeConfig()
+    # Models chosen for this request or saved for Foundry are explicit: they skip Forge's
+    # "reviewer from another family" heuristic. Global / env / toml picks still go through it.
+    registry = default_registry()
+
+    def chosen(role: str) -> str | None:
+        layers = registry.override_layers(role)
+        value = layers.get("request") or layers.get("app")
+        if value:
+            registry.pick(role)  # records the pick for the run's model_info
+        return value
+
+    cfg = cfg.model_copy(
+        update={
+            k: v
+            for k, v in (
+                ("planner", chosen("reasoning")),
+                ("coder", chosen("coder")),
+                ("reviewer", chosen("chat")),
+            )
+            if v
+        }
+    )
     bridge = _Bridge(run, path)
     forge = Forge(client, cfg, on_event=bridge)
     try:

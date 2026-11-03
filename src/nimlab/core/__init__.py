@@ -14,7 +14,14 @@ from .errors import (
     NIMTimeoutError,
 )
 from .logging import get_console
-from .registry import ModelInfo, ModelRegistry, Role, default_registry, model_scope
+from .registry import (
+    ModelInfo,
+    ModelRegistry,
+    Role,
+    default_registry,
+    model_scope,
+    set_default_registry,
+)
 from .results import ChatResult, RerankResult, ToolCall, Usage
 from .text import chunk_text, cosine, extract_json, strip_think
 from .tools import AgentEvent, AgentRun, AgentStep, Tool, ToolResult, run_agent, tool
@@ -50,6 +57,7 @@ __all__ = [
     "get_console",
     "model_scope",
     "run_agent",
+    "set_default_registry",
     "strip_think",
     "tool",
 ]

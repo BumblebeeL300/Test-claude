@@ -3,6 +3,9 @@ import { h, $, clear, esc, ago } from '../util.js';
 import { icon } from '../icons.js';
 import { describe } from '../descriptions.js';
 import { store, go, toggleTheme, emit, APPS } from '../app.js';
+import { pickGlobalRole, pickAppModel } from './models.js';
+
+const ROLES = ['chat', 'reasoning', 'coder', 'vision', 'fast', 'embed', 'rerank', 'reward', 'safety'];
 
 let open = null;
 export function setPrefill(screen, text) { (store.prefill ||= {})[screen] = text; emit('prefill', { screen, text }); }
@@ -21,6 +24,8 @@ function items() {
     { t: 'Settings', s: '⌘,', ic: 'settings', j: 'var(--c-core)', run: () => import('../screens/settings.js').then((m) => m.openSettings()) },
     { t: 'Toggle theme', s: 'ink / paper', ic: 'sun', j: 'var(--c-core)', run: toggleTheme },
     ...APPS.map((a) => ({ t: `Go to ${a.name}`, d: describe(a.id)?.short, s: '⌘' + a.key, ic: a.icon, j: `var(--c-${a.app || 'core'})`, run: () => go(a.id) })),
+    ...ROLES.map((r) => ({ t: `Switch model for ${r}…`, d: `Global ${r} model: pick one or return to Auto`, s: 'Models', kw: '', ic: 'bolt', j: 'var(--c-core)', run: () => setTimeout(() => pickGlobalRole(r), 0) })),
+    ...APPS.filter((a) => a.app).map((a) => ({ t: `Switch ${a.name} model…`, d: `Models used by ${a.name} (this app only)`, s: 'Models', ic: a.icon, j: `var(--c-${a.app})`, run: () => { go(a.id); setTimeout(() => pickAppModel(a.id), 250); } })),
     { t: 'Replace API key…', s: 'Ignition', ic: 'key', j: 'var(--c-core)', run: () => import('../app.js').then((m) => m.maybeIgnite(true)) },
   ];
   for (const p of store.projects.slice(0, 8)) list.push({ t: `Project: ${p.name}`, s: `${p.files ?? '?'} files`, ic: 'folder', j: 'var(--c-forge)', run: () => go('foundry', { project: p.id }), group: 'Projects' });

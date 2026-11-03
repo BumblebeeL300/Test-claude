@@ -4,6 +4,7 @@
 import { h, clear, clamp, debounce, shortModel, reduced } from '../util.js';
 import { icon } from '../icons.js';
 import { store, api, toast } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 
 // ---------- geometry (must match loom.css) ----------
 const W = 232, HEAD = 34, ROW = 24, LCD = 70, FOOT = 10, ZMIN = 0.2, ZMAX = 1.6;
@@ -855,7 +856,7 @@ export async function mount(el, params = {}) {
     if (errs.length) { toast(`Fix ${errs.length} problem${errs.length > 1 ? 's' : ''} first: ${errs[0].message}`, 'warn', 6000); selectNone(); renderInspector(); if (errs[0].node) centerOn(errs[0].node); return; }
     for (const k of Object.keys(RS)) delete RS[k];
     resetRunUi(); run.log = []; ui.log.textContent = ''; clear(ui.outs); run.outputs = null;
-    let res; try { res = await api.post('/loom/run', { pipeline: exportPipeline(), inputs: runInputs() }); } catch (e) { return toast(e.message || 'Could not start the run', 'bad', 6000); }
+    let res; try { res = await api.post('/loom/run', { pipeline: exportPipeline(), inputs: runInputs(), model_overrides: await modelOverrides('loom') }); } catch (e) { return toast(e.message || 'Could not start the run', 'bad', 6000); }
     run.id = res.run_id; run.status = 'running'; setRunning(true);
     ui.status.hidden = false; ui.status.dataset.s = 'run'; ui.status.textContent = 'RUNNING'; toggleTray(true, true);
     run.stop = api.stream(run.id, onEvent, () => { run.stop = null; });

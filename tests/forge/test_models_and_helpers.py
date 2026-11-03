@@ -285,7 +285,7 @@ class TestRoles:
     def test_defaults_use_registry_roles(self) -> None:
         models = resolve_models()
         assert "r1" in models.planner or "reason" in models.planner or "nemotron" in models.planner
-        assert "coder" in models.coder.lower()
+        assert models.coder == "poolside/laguna-xs-2.1"
         assert model_family(models.reviewer) != model_family(models.coder)
 
     def test_env_override_flows_through(self, monkeypatch: pytest.MonkeyPatch) -> None:

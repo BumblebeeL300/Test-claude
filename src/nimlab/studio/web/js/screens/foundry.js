@@ -2,6 +2,7 @@
 import { h, $, clear, sleep, ago, pop, reduced, autogrow, fmtNum, shortModel, clamp } from '../util.js';
 import { icon } from '../icons.js';
 import { store, on, go, api, toast, refresh, appStatus } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 import { openFile, openDiff } from '../components/drawer.js';
 import { langOf, LANG_COLOR, codeBlock } from '../highlight.js';
 
@@ -256,7 +257,7 @@ export function mount(el, params) {
     if (!prompt) { toast('Describe what to build first', 'warn'); intent.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-8px)' }, { transform: 'translateX(8px)' }, { transform: 'none' }], { duration: 300 }); intent.focus(); return; }
     startBtn.disabled = true;
     try {
-      const body = { prompt, max_iters: F.maxIters }; if (ctx.project) body.project = ctx.project;
+      const body = { prompt, max_iters: F.maxIters, model_overrides: await modelOverrides('forge') }; if (ctx.project) body.project = ctx.project;
       const r = await api.post('/forge/build', body);
       reset(); F.prompt = prompt; F.project = r.project || ctx.project; ctx.project = F.project; setBuilding(true); startClock(Date.now());
       F.ui = ui; attach(r.run_id, prompt, F.project); refresh(['status', 'runs']);

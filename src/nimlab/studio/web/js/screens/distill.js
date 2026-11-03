@@ -3,6 +3,7 @@
 import { h, clear, pop, reduced, clamp, fmtNum, shortModel } from '../util.js';
 import { icon } from '../icons.js';
 import { api, toast, refresh } from '../app.js';
+import { modelOverrides } from '../components/models.js';
 import { token } from '../api.js';
 
 const TIERS = [
@@ -211,7 +212,7 @@ export async function mount(el) {
     const ids = D.models.split(',').map((s) => s.trim()).filter(Boolean);
     goBtn.disabled = true; reset();
     try {
-      const r = await api.post('/distill/run', { recipe: D.recipe, n: D.n, models: ids.length ? ids : undefined, options });
+      const r = await api.post('/distill/run', { recipe: D.recipe, n: D.n, models: ids.length ? ids : undefined, options, model_overrides: await modelOverrides('distill') });
       D.runId = r.run_id; D.status = 'running'; runFormats = rec.formats; D.fmt = r.format; attach(r.run_id);
       goBtn.hidden = true; stopBtn.hidden = false; status.textContent = 'Warming the still…'; refresh(['status', 'runs']);
     } catch (e) { goBtn.disabled = false; toast(e.message, 'bad'); status.textContent = e.message; }

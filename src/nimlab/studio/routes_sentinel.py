@@ -24,7 +24,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from nimlab.core import NIMError, default_registry
+from nimlab.core import NIMError, default_registry, model_scope
 from nimlab.sentinel import (
     Action,
     Redactor,
@@ -44,6 +44,7 @@ from nimlab.sentinel.shield import Shield
 from nimlab.sentinel.store import RunStore
 
 from .runs import Run
+from .scope import clean_overrides, scoped_work
 from .settings import StudioSettings
 from .state import StudioState
 
@@ -71,6 +72,8 @@ router = APIRouter(prefix="/api/sentinel")
 
 class ScanBody(BaseModel):
     models: list[str] | None = Field(default=None, max_length=12)
+    #: Optional ``{role: model}`` overrides for this scan (e.g. the ``safety`` guard model).
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
     suites: list[str] | str | None = None
     shield: bool = False
     limit: int | None = Field(default=None, ge=1, le=50)
@@ -162,12 +165,14 @@ def start_scan(
     *,
     shield: bool = False,
     limit: int | None = None,
+    overrides: dict[str, str] | None = None,
 ) -> Run:
     """Register a Sentinel scan as a Studio run (raises ``ValueError`` for unknown suites)."""
     resolved = _resolve(suites, limit)
-    chosen = [m.strip() for m in (models or []) if m and m.strip()] or default_models(
-        default_registry()
-    )
+    with model_scope("sentinel", overrides) as planning:
+        chosen = [m.strip() for m in (models or []) if m and m.strip()] or default_models(
+            default_registry()
+        )
     simulated = state.mock
     store = RunStore(runs_dir(state))
 
@@ -232,7 +237,10 @@ def start_scan(
                 await client.aclose()
 
     return state.runs.start(
-        "sentinel", f"{len(chosen)} models, {len(resolved)} suites", work, simulated=simulated
+        "sentinel",
+        f"{len(chosen)} models, {len(resolved)} suites",
+        scoped_work("sentinel", overrides, work, planning),
+        simulated=simulated,
     )
 
 
@@ -261,7 +269,18 @@ async def sentinel_suites() -> list[dict[str, Any]]:
 async def sentinel_scan(body: ScanBody, request: Request) -> dict[str, Any]:
     state = get_state(request)
     try:
-        run = start_scan(state, body.models, body.suites, shield=body.shield, limit=body.limit)
+        try:
+            overrides = clean_overrides(body.model_overrides)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        run = start_scan(
+            state,
+            body.models,
+            body.suites,
+            shield=body.shield,
+            limit=body.limit,
+            overrides=overrides,
+        )
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return {"run_id": run.id}

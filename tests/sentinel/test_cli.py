@@ -77,7 +77,9 @@ def test_scan_prints_scorecard_saves_run_and_writes_html(tmp_path: Path, runs: s
         str(html),
     )
     assert "simulated" in result.output.lower() and "Saved run" in result.output
-    assert "nemotron-3-super-120b-a12b" in result.output and "nemotron-3.5-bolt-e4b" in result.output
+    assert (
+        "nemotron-3-super-120b-a12b" in result.output and "nemotron-3.5-bolt-e4b" in result.output
+    )
     assert html.is_file() and html.read_text(encoding="utf-8").count('class="radar"') == 2
     store = RunStore(runs)
     run = store.load("latest")

@@ -428,7 +428,7 @@ _CLOSERS = (
     "In summary, {topic} is manageable once the key trade-offs are explicit.",
     "That covers the essentials; I can go deeper on any part.",
 )
-_REASONING_MODELS = ("deepseek-r1", "qwq", "/r1")
+_REASONING_MODELS = ("deepseek-r1", "qwq", "/r1", "nemotron-3-ultra", "deepseek-v4")
 
 
 def is_reasoning_model(model: str) -> bool:

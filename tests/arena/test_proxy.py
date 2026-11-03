@@ -131,7 +131,10 @@ def test_explicit_models_pass_through_untouched(
     assert "x-nimlab-category" not in r.headers
     body = r.json()
     assert body["model"] == "nvidia/nemotron-3.5-lightning-30b-a3b" and "nimlab" not in body
-    assert body["choices"][0]["message"]["content"] == "answer from nvidia/nemotron-3.5-lightning-30b-a3b"
+    assert (
+        body["choices"][0]["message"]["content"]
+        == "answer from nvidia/nemotron-3.5-lightning-30b-a3b"
+    )
 
 
 def test_unknown_model_ids_are_passed_through_not_rejected(api: TestClient) -> None:

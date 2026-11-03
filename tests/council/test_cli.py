@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -49,7 +50,10 @@ def test_ask_each_strategy_in_mock_mode(strategy: str, tmp_path: Path) -> None:
     assert json.loads(json_out.read_text())["strategy"] == strategy
 
     html = html_out.read_text(encoding="utf-8")
-    assert "<details" in html and trace.final_answer.splitlines()[0][:30] in html
+    assert (
+        "<details" in html
+        and re.search(r"[A-Za-z ,]{15,}", trace.final_answer).group(0)[:15] in html
+    )
 
 
 def test_ask_models_flag_overrides_the_panel(tmp_path: Path) -> None:

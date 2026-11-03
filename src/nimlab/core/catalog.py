@@ -94,7 +94,7 @@ _CODER = r"coder|codestral|codegemma|codellama|starcoder|devstral|laguna|(?<![a-
 _REASONING = (
     r"(?<![a-z0-9])r1(?![0-9a-z])|reason|thinking|(?<![a-z])think(?![a-z])|qwq|"
     r"nemotron-3(?:\.5)?-(?:ultra|super)|nemotron-(?:super|ultra)|gpt-oss|kimi|glm-|"
-    r"deepseek-v[34]|minimax-m|step-\d|laguna|muse-"
+    r"deepseek-v[34]|minimax-m|step-\d|muse-"
 )
 _FAST = r"mini|lite|flash|lightning|bolt|nano|small|tiny|(?<![a-z0-9])e\d+b"
 

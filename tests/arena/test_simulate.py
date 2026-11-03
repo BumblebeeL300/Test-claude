@@ -37,7 +37,10 @@ def test_profiles_are_deterministic_and_reflect_model_size_and_role() -> None:
     assert model_profile(REASONER).p_correct("math_reasoning") > model_profile(REASONER).p_correct(
         "coding"
     )
-    assert model_profile(REASONER).ttft_s > 2 * model_profile("nvidia/nemotron-3-super-120b-a12b").ttft_s
+    assert (
+        model_profile(REASONER).ttft_s
+        > 2 * model_profile("nvidia/nemotron-3.5-lightning-30b-a3b").ttft_s
+    )
     unknown = model_profile("acme/mystery-model")
     assert 1 <= unknown.tier <= 5 and 0.05 <= unknown.p_correct("coding") <= 0.98
 

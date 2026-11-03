@@ -209,7 +209,11 @@ def test_html_report_has_all_sections() -> None:
     assert parsed.tags.count("svg") >= 4  # elo chart + scatter + two legend swatches
     assert "Overall ranking" in page and "Scores by suite" in page
     assert "Elo ratings with confidence intervals" in page and "Quality vs latency" in page
-    for model in ("nemotron-3-ultra-550b-a55b", "nemotron-3-super-120b-a12b", "nemotron-3.5-lightning-30b-a3b"):
+    for model in (
+        "nemotron-3-ultra-550b-a55b",
+        "nemotron-3-super-120b-a12b",
+        "nemotron-3.5-lightning-30b-a3b",
+    ):
         assert model in page
     # per-suite heatmap: one cell per model x suite with a bucket class
     assert len(re.findall(r'<td class="c h\d', page)) == 6

@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from nimlab.core import model_scope
 from nimlab.distill import Distiller, DistillError, RecipeError, list_recipes
 from nimlab.distill.card import render_card
 from nimlab.distill.export import FORMATS
@@ -26,6 +27,7 @@ from nimlab.distill.report import render_report_html
 from nimlab.distill.store import DEFAULT_RUNS_DIR, RunStore, StoreError
 
 from .runs import Run, RunManager
+from .scope import clean_overrides, scoped_work
 
 __all__ = ["APP_INFO", "router"]
 
@@ -53,6 +55,8 @@ class RunBody(BaseModel):
     models: list[str] | None = Field(default=None, max_length=8)
     options: dict[str, Any] = Field(default_factory=dict)
     format: str | None = None
+    #: Optional ``{role: model}`` overrides for this run (generators, reward model, embedder...).
+    model_overrides: dict[str, str] | None = Field(default=None, max_length=16)
 
 
 # --------------------------------------------------------------------------- state helpers
@@ -181,12 +185,17 @@ async def start_run(body: RunBody, request: Request) -> dict[str, Any]:
     if "concurrency" not in options:
         options["concurrency"] = SIM_CONCURRENCY
     runs_dir = _runs_dir(request)
-    probe = Distiller(_client(request), runs_dir=runs_dir)
     try:
-        rec, opts, panel, fmt = probe.plan(
-            body.recipe, n=body.n, models=body.models, fmt=body.format, options=options
-        )
-        simulated = probe.uses_simulator(opts)
+        overrides = clean_overrides(body.model_overrides)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    try:
+        with model_scope("distill", overrides) as planning:
+            probe = Distiller(_client(request), runs_dir=runs_dir)
+            rec, opts, panel, fmt = probe.plan(
+                body.recipe, n=body.n, models=body.models, fmt=body.format, options=options
+            )
+            simulated = probe.uses_simulator(opts)
     except (DistillError, RecipeError) as exc:
         raise HTTPException(422, str(exc)) from exc
     if rec.kind == "qa_from_docs" and not simulated and not opts.docs:
@@ -209,7 +218,7 @@ async def start_run(body: RunBody, request: Request) -> dict[str, Any]:
     run = _manager(request).start(
         "distill",
         f"{rec.name} · n={body.n} · {len(panel)} model{'s' if len(panel) != 1 else ''}",
-        work,
+        scoped_work("distill", overrides, work, planning),
         simulated=simulated,
     )
     return {"run_id": run.id, "simulated": simulated, "format": fmt}

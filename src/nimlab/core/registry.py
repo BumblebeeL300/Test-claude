@@ -51,6 +51,7 @@ __all__ = [
     "default_registry",
     "model_scope",
     "reset_default_registry",
+    "set_default_registry",
 ]
 
 _log = get_logger("nimlab.registry")
@@ -132,7 +133,7 @@ CURATED_MODELS: tuple[ModelInfo, ...] = (
     # [L] [G] https://big-agi.com/models/nemotron-3-super-120b-a12b
     _m(
         "nvidia/nemotron-3-super-120b-a12b",
-        [_C, _R, _K],
+        [_C, _R],
         1048576,
         3,
         "Open MoE (120B, 12B active); strong general default, reasoning on by default",
@@ -243,7 +244,7 @@ CURATED_MODELS: tuple[ModelInfo, ...] = (
     # [L][B] https://build.nvidia.com/poolside/laguna-xs-2.1 ; description/ctx [G]
     _m(
         "poolside/laguna-xs-2.1",
-        [_K, _R],
+        [_K],
         262144,
         2,
         "Poolside coding-focused reasoning model; can be slow to cold-start",
@@ -744,31 +745,38 @@ class ModelRegistry:
         view.picks = []
         return view
 
-    def override_for(self, role: Role | str, app: str | None = None) -> tuple[str, str] | None:
-        """``(model, source)`` for an explicit override, highest precedence first, or ``None``.
+    def override_layers(self, role: Role | str, app: str | None = None) -> dict[str, str]:
+        """Every explicit override present for ``role``, keyed by source, highest first.
 
         Sources: ``request`` > ``app`` > ``studio`` > ``env`` > ``toml``.
         """
         r = _coerce_role(role)
+        layers: dict[str, str] = {}
         if r in self._request:
-            return self._request[r], "request"
+            layers["request"] = self._request[r]
         name = app or self._app
         if name:
             value = self.app_overrides(name).get(name, {}).get(r)
             if value:
-                return value, "app"
+                layers["app"] = value
         value = self.studio_overrides().get(r)
         if value:
-            return value, "studio"
+            layers["studio"] = value
         env_value = self._environ().get(f"NIMLAB_MODEL_{r.name}", "").strip()
         if env_value:
-            return env_value, "env"
+            layers["env"] = env_value
         table = self._toml_models()
         for key in (r.value, r.name, r.value.upper()):
             toml_value = table.get(key)
             if isinstance(toml_value, str) and toml_value.strip():
-                return toml_value.strip(), "toml"
-        return None
+                layers["toml"] = toml_value.strip()
+                break
+        return layers
+
+    def override_for(self, role: Role | str, app: str | None = None) -> tuple[str, str] | None:
+        """``(model, source)`` of the winning explicit override, or ``None``."""
+        layers = self.override_layers(role, app)
+        return next(iter(layers.items()))[::-1] if layers else None
 
     # -- live discovery
     def _live_enabled(self) -> bool:
@@ -1033,8 +1041,21 @@ _scope: contextvars.ContextVar[ModelRegistry | None] = contextvars.ContextVar(
 
 
 @lru_cache(maxsize=1)
-def _process_registry() -> ModelRegistry:
+def _created_registry() -> ModelRegistry:
     return ModelRegistry()
+
+
+_installed: ModelRegistry | None = None
+
+
+def _process_registry() -> ModelRegistry:
+    return _installed if _installed is not None else _created_registry()
+
+
+def set_default_registry(registry: ModelRegistry | None) -> None:
+    """Use ``registry`` as the process-wide default (``None`` restores the built-in one)."""
+    global _installed
+    _installed = registry
 
 
 def default_registry() -> ModelRegistry:
@@ -1044,7 +1065,9 @@ def default_registry() -> ModelRegistry:
 
 
 def reset_default_registry() -> None:
-    _process_registry.cache_clear()
+    global _installed
+    _installed = None
+    _created_registry.cache_clear()
 
 
 default_registry.cache_clear = reset_default_registry  # type: ignore[attr-defined]

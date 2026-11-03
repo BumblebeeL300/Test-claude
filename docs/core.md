@@ -180,7 +180,7 @@ It runs through the same parsing and usage-tracking code as real responses.
 
 | call | behaviour |
 |---|---|
-| `chat` | Plausible prose built from a hash of (model, last user message), echoing keywords from it. Respects `max_tokens` (`finish_reason="length"`). Reasoning models (`deepseek-r1`, `qwq`) emit a `<think>` block so stripping is exercised. |
+| `chat` | Plausible prose built from a hash of (model, last user message), echoing keywords from it. Respects `max_tokens` (`finish_reason="length"`). Reasoning models (`deepseek-r1`, `qwq`, `nemotron-3-ultra`, `deepseek-v4`) emit a `<think>` block so stripping is exercised. |
 | `chat_json` / `response_format={"type":"json_schema",...}` | Valid JSON for the schema: str/int/float/bool, lists, nested models, enums, `Literal`, optional (populated, not null), `dict[str, X]`, `date`/`datetime`/`UUID`, min/max bounds, `uniqueItems`, recursive models (depth-limited). Strings read like `"Summary about <keywords>"`; fields named `query`/`question`/`text`/`prompt`... echo the user message. |
 | `tools=[...]` | First turn (no `tool` message after the last `user` message): a tool call to the first tool (or the one forced by `tool_choice`; `"none"` disables) with schema-valid arguments, `finish_reason="tool_calls"`. Once a `tool` message follows: plain text `"Based on the tool results, here is the answer: <tool output>"`. |
 | `stream_chat` | The `chat` text, in word chunks. |
@@ -197,11 +197,11 @@ counts, scores, latency) are estimates in mock mode.
 
 ```python
 class Role(str, Enum):  CHAT REASONING CODER VISION EMBED RERANK REWARD SAFETY FAST   # values lowercase
-ModelInfo(id: str, roles: frozenset[Role], context_window: int, notes: str, cost_tier: int)  # 1..5, frozen
+ModelInfo(id, roles: frozenset[Role], context_window, notes, cost_tier, deprecated=False)  # tier 1..5
 ```
 
 ```python
-reg = default_registry()            # process-wide ModelRegistry
+reg = default_registry()            # process-wide ModelRegistry (or the active model_scope view)
 reg.pick(Role.CODER)                # -> "poolside/laguna-xs-2.1"  (str roles OK: "coder")
 reg.by_role(Role.REASONING)         # -> list[ModelInfo]; current pick first, then by cost_tier, id
 reg.get("nvidia/nemotron-3-super-120b-a12b")   # ModelInfo; KeyError if not curated
@@ -209,27 +209,68 @@ reg.find(id) -> ModelInfo | None;  id in reg;  reg.ids();  reg.all();  len(reg)
 reg.register(ModelInfo(...), default_for="coder")    # add custom models at runtime
 ```
 
-Defaults: CHAT `nvidia/nemotron-3-super-120b-a12b`, REASONING `nvidia/nemotron-3-ultra-550b-a55b`, CODER
+### Model selection
+
+Curated preferences (`registry.PREFERRED`, refreshed 2026-11-03; the first entry of each is `DEFAULTS[role]`):
+CHAT `nvidia/nemotron-3-super-120b-a12b`, REASONING `nvidia/nemotron-3-ultra-550b-a55b`, CODER
 `poolside/laguna-xs-2.1`, VISION `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`, EMBED
 `nvidia/nemotron-3.5-embed-1b`, RERANK `nvidia/nemotron-3.5-rerank-8b`, REWARD
-`nvidia/nemotron-4-340b-reward`, SAFETY `nvidia/nemotron-3.5-content-safety`, FAST
-`nvidia/nemotron-3.5-lightning-30b-a3b`. `nimlab models [--role R] [--live]` prints the catalog.
+`nvidia/nemotron-4-340b-reward` (deprecated), SAFETY `nvidia/nemotron-3.5-content-safety`, FAST
+`nvidia/nemotron-3.5-lightning-30b-a3b`. Ids that earlier versions used and that are gone from the live
+catalog are listed in `registry.RETIRED` with a suggested replacement.
 
-`pick(role)` precedence (re-read on every call): env `NIMLAB_MODEL_<ROLE>` (e.g.
-`NIMLAB_MODEL_CODER=...`) > `[models]` table in `./nimlab.toml` (or the file named by
-`NIMLAB_CONFIG`) > built-in default. Overrides may name models that are not in the catalog.
+`pick(role)` precedence, highest first:
+
+1. per-request override (`reg.scoped(app, {"chat": "x/y"})` / `model_scope(app, overrides)`), then the
+   per-app override (`reg.set_app_overrides(app, {...})`),
+2. the global per-role override (`reg.set_studio_overrides({...})`, saved in `studio_settings.json`),
+3. env `NIMLAB_MODEL_<ROLE>`, then `[models]` in `./nimlab.toml` (or the file named by `NIMLAB_CONFIG`),
+4. **live discovery**: the first preferred default that `GET /v1/models` lists and that has not been marked
+   unavailable this session, else the best *heuristic* match for the role in the live list
+   (`catalog.heuristic_score`: `embed`, `rerank`, `reward`, `guard`/`safety`, `vision`/`vl`, `coder`,
+   `r1`/`reasoning`/`thinking`, `instruct`, size parsed from the name),
+5. the curated default.
+
+Overrides may name models that are not in the catalog and are never second-guessed. Reranking is served by
+the retrieval API and is not listed by `/v1/models`, so it is never judged against that list.
 
 ```toml
 # nimlab.toml
 [models]
-coder = "qwen/qwen3-coder-480b-a35b-instruct"
+coder = "poolside/laguna-xs-2.1"
 chat  = "nvidia/nemotron-3-ultra-550b-a55b"
 ```
 
-The catalog is curated from the public NIM catalog and is **not verified against a live account**
-(no network when it was written). `nimlab models --live` marks which entries your endpoint serves
-and lists live ids the catalog lacks; `ModelRegistry.missing_from(live_ids)` does the same in code.
-Models that exist but are not enabled for a key return an error from the API, not from the registry.
+**Live discovery** (`nimlab.core.catalog.LiveCatalog`) only runs with a real key (not in mock mode, not when
+`NIMLAB_DISCOVERY=0`). It calls `GET {base_url}/models` once, caches the list for 24 h in
+`~/NIMLab/models_cache.json` (keyed by endpoint and a hash of the key, never the key itself), falls back to a
+stale cache when the endpoint is unreachable and to the curated defaults when there is none.
+`reg.refresh_catalog()` refetches (Studio does so after `POST /api/key`); `reg.stale_defaults()` lists the
+roles whose default is gone and what replaced it.
+
+**Runtime fallback** (`NIMClient`): a 404 / 410, or a 400 / 422 whose message says the model is not found /
+not available (`Function '<id>': Not found for account ...` on NVIDIA's API, "The model `x` does not exist"
+on OpenAI-style gateways), raises `NIMModelUnavailableError` (a subclass of `NIMResponseError`). `chat`,
+`stream_chat` (before the first token), `embed` and `rerank` then mark the model unavailable for the session
+and, if the id came from a role pick (not from the caller or an override), retry once with
+`reg.next_candidate(role)` and log a warning naming both models; `result.model` is the model that answered.
+Swapping an embedding model mid-session changes the vector space: Atlas notices through its embedding tag and
+re-embeds on the next ingest.
+
+`nimlab models [--role R] [--live] [--refresh]` prints the catalog; with `--live` it adds each role's chosen
+model and source, flags curated ids missing from the live list and suggests replacements.
+`ModelRegistry.missing_from(live_ids)` does the flagging in code.
+
+**Endpoint shapes checked on 2026-11-03.** Embeddings: unchanged, `POST /v1/embeddings` with
+`input_type=query|passage` (required by the new `nemotron-3*-embed-*` models). Reranking: unchanged,
+`POST {rerank_base_url}/{model}/reranking` with `{"query": {"text"}, "passages": [{"text"}]}` ->
+`{"rankings": [{"index", "logit"}]}`; the client also accepts `{"results": [{"index", "relevance_score"}]}`.
+Reward: `llama-3.1-nemotron-70b-reward` replied `reward:<float>`; `nemotron-4-340b-reward` replies
+`helpfulness:..,correctness:..,coherence:..,complexity:..,verbosity:..` (scored as the mean of the first
+three, a different scale: re-tune Distill's `min_reward`); both are deprecated by NVIDIA, so the LLM judge is
+the fallback. Safety: NemoGuard 8B, Safety Guard v3 and Llama Guard take the instruction template and answer
+JSON or `safe` / `unsafe\nS1`; `nemotron-3.5-content-safety` takes the plain user/assistant turns and answers
+`User Safety: ...` / `Response Safety: ...` / `Safety Categories: ...` lines; the parser reads all of them.
 
 ## Tool agent loop — `nimlab.core.tools`
 
