@@ -49,7 +49,7 @@ export function mount(el, params) {
   const iters = h('select.field.sm', { 'aria-label': 'Debug budget', on: { change: () => (F.maxIters = +iters.value) } }, [2, 3, 5].map((n) => h('option', { value: n, selected: n === F.maxIters }, `${n} debug rounds`)));
   const startBtn = h('button.btn.primary.big', { on: { click: start } }, icon('play'), 'Start build', h('kbd', '⌘↵'));
   const cancelBtn = h('button.btn.sm', { on: { click: cancel } }, icon('stop'), 'Cancel');
-  const newBtn = h('button.btn.sm', { on: { click: () => resetToIdle(false) } }, icon('plus'), 'New build');
+  const newBtn = h('button.btn.sm', { on: { click: () => { selectProject(null); intent.value = ''; grow(); intent.focus(); } } }, icon('plus'), 'New build');
   const clock = h('span.num.clock', '00:00'), tokNum = h('b.num', '0'), tokBar = h('div.tokbar', Array.from({ length: 20 }, () => h('i')));
   const ticketMeta = h('div.ticket-meta', h('span.led.busy'), h('span.label.st', 'BUILDING'), clock, h('span.sep'), h('span.label', 'TOKENS'), tokNum, tokBar, h('span.grow'), cancelBtn, newBtn);
   const intentBox = h('div.intent-box', h('div.bp-corner.tl'), h('div.bp-corner.tr'), h('div.bp-corner.bl'), h('div.bp-corner.br'),
@@ -287,11 +287,11 @@ export function mount(el, params) {
     clear(projSel); projSel.append(h('option', { value: '' }, 'New project (auto-named)'), store.projects.map((p) => h('option', { value: p.id, selected: p.id === ctx.project }, p.name))); projSel.value = ctx.project || '';
   }
   ui = { apply }; F.ui = ui;
-  offs.push(on('projects', () => { paintProjects(); fill(); }), on('prefill', (d) => { if (d.screen === 'foundry' && F.status !== 'running') { intent.value = d.text || intent.value; grow(); intent.focus(); } }));
+  offs.push(on('projects', () => { paintProjects(); fill(); }), on('prefill', (d) => { if (d.screen === 'foundry' && F.status !== 'running') { if (F.status !== 'idle') resetToIdle(true); intent.value = d.text || intent.value; if (store.prefill) delete store.prefill.foundry; grow(); intent.focus(); } }));
   paintProjects(); fill();
 
   // prefill / resume
-  const pre = store.prefill?.foundry; if (pre != null) { intent.value = pre; delete store.prefill.foundry; }
+  const pre = store.prefill?.foundry; if (pre != null) { if (F.status !== 'running') { F.runId = null; F.events = []; F.status = 'idle'; } intent.value = pre; delete store.prefill.foundry; }
   if (params.project) { ctx.project = params.project; F.project = params.project; fill(); paintProjects(); }
   if (params.run && params.run !== F.runId) { const r = store.runs.find((x) => x.id === params.run); F.stop?.(); F.runId = params.run; intent.value = r?.title || ''; reset(); setBuilding(true); startClock(Date.now()); F.events = []; F.status = 'running'; attach(params.run, r?.title || '', params.project || F.project); }
   else if (F.runId && F.events.length) { intent.value = F.prompt; reset(); setBuilding(true); const evs = F.events.slice(); evs.forEach((ev) => apply(ev, true)); if (F.status === 'running') startClock(M.t0 || Date.now()); }

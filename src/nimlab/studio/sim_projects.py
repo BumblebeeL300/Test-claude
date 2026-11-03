@@ -687,8 +687,17 @@ _RULES: tuple[tuple[str, ProjectTemplate], ...] = (
 
 def pick_template(prompt: str) -> ProjectTemplate:
     """The template whose keywords appear in ``prompt`` (a generic text toolkit otherwise)."""
+    from .sim_extra import EXTRA_RULES, generic_template
+
     low = prompt.lower()
-    for pattern, template in _RULES:
+    for pattern, template in (*_RULES[:2], *EXTRA_RULES, *_RULES[2:]):
         if re.search(pattern, low):
             return template
-    return _TEXTKIT
+    return generic_template(prompt)
+
+
+def all_templates() -> list[ProjectTemplate]:
+    """Every fixed template (the generic fallback is built per prompt)."""
+    from .sim_extra import EXTRA_RULES
+
+    return [t for _, t in (*_RULES, *EXTRA_RULES)]

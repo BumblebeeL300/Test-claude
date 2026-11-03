@@ -61,11 +61,13 @@ When the client is in mock mode (no key, `NIMLAB_MOCK=1`, `--mock`), Studio does
 core mock's placeholder text. Instead:
 
 * **Forge** is driven by `SimForgeClient`, a scripted stand-in for the NIM client. The *tools are
-  real*: Forge writes real files into the project folder and runs real `pytest`. The script picks a
-  small project from keywords in the prompt (FizzBuzz, todo list, slugify, LRU cache, word stats,
-  calculator, otherwise a text toolkit), writes README, requirements, module and tests, with one
-  deliberately planted bug. Verify finds one failing test, the coder applies a patch, tests go green,
-  the reviewer approves. Pauses (`sim_delay`) make the UI animate.
+  real*: Forge writes real files into the project folder and runs real `pytest`. The script derives the project from the
+  prompt: keyword rules pick one of about a dozen templates (FizzBuzz, todo, URL slugs, LRU cache, word
+  stats, calculator, URL shortener with a stdlib HTTP API, markdown table parser, unit converter, password
+  generator, text adventure, CSV stats, notes CLI). Anything else gets a generic module named after the
+  prompt's words (`weather_forecast_kit.py` with `count_weather()` ...). Plan goal, step texts, README and
+  review reference the prompt. Each project has a real module and pytest tests with one deliberately
+  planted bug: verify finds one failing test, the coder applies a patch, tests go green, the reviewer approves. Pauses (`sim_delay`) make the UI animate.
 * **Council** answers are composed per model (five voices; critique, revision and synthesis prompts
   get fitting shapes), and the judge/critic/rubric JSON replies are plausible.
 * **Atlas** answers are extractive: the best-matching sentences of the retrieved passages, each with its

@@ -110,12 +110,13 @@ nimlab arena serve                          # OpenAI-compatible proxy on http://
 Runtime data (`.nimlab/`, `.forge/`, `*.db`) is git-ignored. Python examples live in
 [`examples/`](examples/).
 
-## NIM Lab Studio (desktop app)
+## NIM Lab Studio (macOS app)
 
-One window for all four apps: build projects with Forge and watch the tests go green, run a Council,
-ask Atlas about your documents, benchmark and route with Arena. No key needed to try it: without
-`NVIDIA_API_KEY` Studio runs in a clearly marked simulation mode; paste a key in the app (it is kept in
-the macOS Keychain, or a 0600 file elsewhere) to go live.
+A synth-rack desktop UI for all four apps in one window: **Foundry** (type a prompt, watch Forge plan,
+build, test and ship a project), **Council** (a round table of models reaching a verdict), **Atlas**
+(ask your documents, with citations) and **Arena** (scoreboard and smart router), wired together by a
+**Switchboard**. It is a small FastAPI server on `127.0.0.1` (token-protected) plus a static web UI shown
+in a native window.
 
 ```bash
 pip install -e '.[desktop]'     # optional: native window (pywebview) and Keychain (keyring)
@@ -123,8 +124,23 @@ nimlab studio                   # native window; falls back to your browser
 nimlab studio --browser         # always the browser
 ```
 
-It serves a token-protected API on `127.0.0.1` only. A macOS `.app`/`.dmg` is built from
-[`packaging/macos`](packaging/macos/README.md) (not yet tested on a Mac). See [docs/studio.md](docs/studio.md).
+![Foundry: a simulated build that shipped](docs/images/studio-foundry.png)
+
+| | |
+| --- | --- |
+| ![Council](docs/images/studio-council.png) | ![Switchboard](docs/images/studio-switchboard.png) |
+
+* **No key needed to try it.** Without a key Studio shows a **SIMULATION** badge and plays scripted
+  sessions: Foundry derives a small project from your prompt (real files, real `pytest`, one failing test,
+  a fix), Council and Atlas compose plausible text. With a key the badge reads **LIVE** plus the masked key.
+* **Key storage.** Paste your NVIDIA key in the first-run "Ignition" screen or in Settings. On macOS it is
+  stored in the Keychain (elsewhere a 0600 file); it is never written to the project or the UI.
+* **Build the `.app`:** run [`packaging/macos/build_app.sh`](packaging/macos/README.md) on a Mac
+  (PyInstaller, ad-hoc signed, optional `.dmg`).
+
+> **Honest status:** the `.app` build and the native pywebview window have **not been tested on a real
+> Mac yet**. The server, the web UI (driven end to end with Playwright in a browser) and the PyInstaller
+> spec were exercised on Linux. See [docs/studio.md](docs/studio.md) for the architecture and API.
 
 ## Model roles and overrides
 

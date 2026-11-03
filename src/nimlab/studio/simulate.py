@@ -31,6 +31,7 @@ from pydantic import BaseModel
 from nimlab.core import ChatResult, ToolCall, Usage, UsageTracker
 from nimlab.core.mock import estimate_tokens
 
+from .sim_extra import short_prompt
 from .sim_projects import ProjectTemplate, pick_template
 
 __all__ = ["SimForgeClient", "StudioClient", "current_step"]
@@ -74,6 +75,7 @@ class SimForgeClient:
     ) -> None:
         self.prompt = prompt
         self.template = template or pick_template(prompt)
+        self.said = short_prompt(prompt)
         self.usage = usage if usage is not None else UsageTracker()
         self.delay = max(0.0, delay)
         self.calls = 0
@@ -121,7 +123,17 @@ class SimForgeClient:
         elif turn == 0:
             script: list[tuple[str, list[ToolCall]]] = [
                 ("", [self._tc("list_dir", path=".")]),
-                ("", [self._tc("write_file", path="README.md", content=t.readme)]),
+                (
+                    "",
+                    [
+                        self._tc(
+                            "write_file",
+                            path="README.md",
+                            content=t.readme.rstrip("\n")
+                            + f'\n\nBuilt from the request: "{self.said}"\n',
+                        )
+                    ],
+                ),
                 ("", [self._tc("write_file", path="requirements-dev.txt", content="pytest>=8\n")]),
                 ("", [self._tc("write_file", path=t.source_file, content=t.buggy_source)]),
                 ("", [self._tc("write_file", path=t.test_module, content=t.tests)]),
@@ -170,9 +182,15 @@ class SimForgeClient:
         if name == "Plan":
             await self._pause(1.6)
             data: dict[str, Any] = {
-                "goal": t.goal,
+                "goal": f'{t.goal} (request: "{self.said}")',
                 "steps": [
-                    {"id": i, "description": desc, "files": list(files)}
+                    {
+                        "id": i,
+                        "description": desc
+                        if i > 1 or t.key == "generic"
+                        else f'For "{self.said}": {desc[0].lower()}{desc[1:]}',
+                        "files": list(files),
+                    }
                     for i, (desc, files) in enumerate(t.steps, start=1)
                 ],
                 "test_strategy": f"pytest: {len(re.findall(r'^def test_', t.tests, re.M))} focused "
@@ -183,12 +201,13 @@ class SimForgeClient:
             await self._pause(1.4)
             data = {
                 "verdict": "approve",
-                "summary": t.review_note + " Tests cover the edge cases that matter.",
+                "summary": f'Matches the request "{self.said}". {t.review_note} '
+                "Tests cover the edge cases that matter.",
                 "issues": [
                     {
                         "severity": "nit",
                         "file": t.source_file,
-                        "description": "Consider adding type hints to the public helpers.",
+                        "description": f"Consider adding type hints to the public helpers of {t.module}.",
                         "suggestion": "Annotate arguments and return types.",
                     }
                 ],

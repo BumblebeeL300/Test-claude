@@ -110,7 +110,17 @@ function shell() {
   api.onSse((s) => { const el = $('#sse'); el.dataset.s = s; el.lastChild.textContent = s === 'live' ? 'LIVE' : s === 'reconnecting' ? 'RECONNECTING' : 'IDLE'; });
 }
 function paintStatus() {
-  const sim = $('#sim-badge'); if (sim) sim.hidden = !(store.status && isSim());
+  const sim = $('#sim-badge');
+  if (sim) {
+    const st = store.status; sim.hidden = !st;
+    if (st) {
+      const simulated = isSim(); const masked = st.key?.masked || 'nvapi-••••';
+      sim.classList.toggle('live', !simulated);
+      sim.title = simulated ? 'Simulation mode: no key or --mock, deterministic models. Click to add a key.' : `Live: real NVIDIA NIM calls with ${masked}. Click for settings.`;
+      sim.replaceChildren(h('span.led', { class: simulated ? 'warn' : 'on' }), simulated ? 'SIMULATION' : 'LIVE', ...(simulated ? [] : [h('span.badge-key.mono', masked)]));
+      sim.dataset.mode = simulated ? 'sim' : 'live';
+    }
+  }
   const apps = store.status?.apps || [];
   $$rail().forEach((b) => { const a = appMeta(b.dataset.id); const busy = a?.app && apps.find((x) => x.id === a.app)?.status === 'busy'; const d = b.querySelector('.busy-dot'); if (d) d.hidden = !busy; });
 }

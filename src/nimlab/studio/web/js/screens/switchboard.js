@@ -78,7 +78,7 @@ export function mount(el) {
     c.mode.className = 'mode ' + (isSim() ? 'sim' : 'live'); c.mode.replaceChildren(h('span.led', { class: isSim() ? 'warn' : 'on' }), isSim() ? 'SIMULATION' : 'LIVE');
     c.key.textContent = s.key?.set ? s.key.masked || 'nvapi-••••' : 'no key';
     c.models.textContent = store.models.length || '—';
-    c.net.className = 'led ' + ({ ok: 'on', blocked: 'bad' }[s.network] || 'warn'); c.netl.textContent = { ok: 'ONLINE', blocked: 'BLOCKED' }[s.network] || 'UNPROBED';
+    if (isSim()) { c.net.className = 'led warn'; c.netl.textContent = 'OFFLINE · SIM'; } else { c.net.className = 'led ' + ({ ok: 'on', blocked: 'bad' }[s.network] || 'warn'); c.netl.textContent = { ok: 'ONLINE', blocked: 'BLOCKED' }[s.network] || 'UNPROBED'; }
     c.base.textContent = (s.base_url || '').replace(/^https?:\/\//, '');
     cables();
   }

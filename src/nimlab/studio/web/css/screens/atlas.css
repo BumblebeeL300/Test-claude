@@ -17,7 +17,7 @@
 .at-out { display: grid; gap: 18px; margin-top: 8px; }
 .ans-card { padding: 22px 24px; border-radius: 20px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--hair)); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, var(--raised)), var(--panel)); box-shadow: var(--shadow); }
 .ans-h { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; } .ans-h > .label { color: var(--accent); letter-spacing: .3em; }
-.ans { font: 450 clamp(16px, 1.6vw, 19px)/1.65 var(--font-ui); letter-spacing: -.01em; min-height: 3em; }
+.ans { font: 450 clamp(16px, 1.6vw, 19px)/1.65 var(--font-ui); letter-spacing: -.01em; min-height: 3em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .caret { display: inline-block; width: 9px; height: 1.1em; background: var(--accent); vertical-align: -.2em; margin-left: 2px; animation: blink 1s steps(2) infinite; } @keyframes blink { 50% { opacity: 0; } }
 .cite { display: inline-grid; place-items: center; min-width: 17px; height: 17px; padding: 0 4px; margin: 0 2px; border-radius: 6px; vertical-align: super; line-height: 1; font: 700 10px var(--font-mono); background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); transition: .2s var(--ease-spring); position: relative; top: -.1em; }
 button.cite:hover { background: var(--accent); color: var(--on-signal); transform: translateY(-2px) scale(1.15); } .cite.static { vertical-align: baseline; top: 0; margin: 0; }

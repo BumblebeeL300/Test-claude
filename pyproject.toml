@@ -74,6 +74,7 @@ ignore = ["B008", "RUF012"]
 # Studio: prose/code samples inside string literals (simulated answers, sample projects, test data).
 "src/nimlab/studio/simulate.py" = ["E501"]
 "src/nimlab/studio/sim_projects.py" = ["E501"]
+"src/nimlab/studio/sim_extra.py" = ["E501", "SIM905"]
 "tests/studio/**" = ["E501", "RUF001"]
 
 [tool.mypy]

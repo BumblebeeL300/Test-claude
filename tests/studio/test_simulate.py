@@ -11,9 +11,17 @@ import pytest
 
 from nimlab.core import NIMClient, NIMConfig, UsageTracker
 from nimlab.studio import simulate as sim
-from nimlab.studio.sim_projects import _RULES, _TEXTKIT, pick_template
+from nimlab.studio.sim_extra import generic_template, prompt_words
+from nimlab.studio.sim_projects import _TEXTKIT, all_templates, pick_template
 
-ALL_TEMPLATES = [t for _, t in _RULES] + [_TEXTKIT]
+GENERIC_PROMPTS = [
+    "a weather forecast formatter",
+    "Build me a haiku syllable counter!",
+    "def class import",
+    "x",
+    '"quoted" \\ back\\slash """ prompt about pizza',
+]
+ALL_TEMPLATES = [*all_templates(), _TEXTKIT, *(generic_template(p) for p in GENERIC_PROMPTS)]
 
 
 def run_pytest(tmp: Path) -> str:
@@ -29,7 +37,7 @@ def run_pytest(tmp: Path) -> str:
 
 
 class TestTemplates:
-    @pytest.mark.parametrize("template", ALL_TEMPLATES, ids=lambda t: t.key)
+    @pytest.mark.parametrize("template", ALL_TEMPLATES, ids=lambda t: t.key + "-" + t.module)
     def test_exactly_one_failing_test_then_green(self, template, tmp_path: Path) -> None:  # type: ignore[no-untyped-def]
         (tmp_path / template.test_module).write_text(template.tests)
         (tmp_path / template.source_file).write_text(template.buggy_source)
@@ -50,11 +58,43 @@ class TestTemplates:
             ("an LRU cache", "lru"),
             ("count word frequency", "wordstats"),
             ("a calculator", "calculator"),
-            ("something else entirely", "textkit"),
+            ("a URL shortener with an HTTP API", "shortener"),
+            ("parse a markdown table", "mdtable"),
+            ("unit converter", "units"),
+            ("password generator", "password"),
+            ("text adventure mini game", "adventure"),
+            ("CSV stats tool", "csvstats"),
+            ("a notes CLI", "notes"),
+            ("something else entirely", "generic"),
         ],
     )
     def test_keyword_selection(self, prompt: str, key: str) -> None:
         assert pick_template(prompt).key == key
+
+    def test_different_prompts_make_different_projects(self) -> None:
+        prompts = [
+            "todo list",
+            "url shortener api",
+            "markdown table parser",
+            "LRU cache",
+            "unit converter",
+            "password generator",
+            "text adventure game",
+            "csv stats",
+            "weather forecast formatter",
+            "haiku syllable counter",
+        ]
+        picked = [pick_template(p) for p in prompts]
+        assert len({t.source for t in picked}) == len(prompts)
+        assert len({t.source_file for t in picked}) == len(prompts)
+
+    def test_generic_module_is_named_after_the_prompt(self) -> None:
+        t = generic_template("a weather forecast formatter")
+        assert t.source_file == "weather_forecast_formatter_kit.py"
+        assert "def count_weather(" in t.source and "def count_forecast(" in t.source
+        assert prompt_words("def class import") == ["def", "import"]
+        assert prompt_words("!!") == ["item"]
+        assert generic_template("haiku syllable counter").source_file.startswith("haiku_syllable")
 
 
 class TestText:
@@ -204,3 +244,16 @@ class TestSimForgeClient:
 
     def test_not_flagged_as_mock(self) -> None:
         assert sim.SimForgeClient("x").mock is False
+
+
+class TestPromptDrivenPlan:
+    async def test_plan_and_review_reference_the_prompt(self) -> None:
+        from nimlab.forge.models import Plan, Review
+
+        prompt = "Build a password generator for my team"
+        client = sim.SimForgeClient(prompt, delay=0)
+        plan = await client.chat_json("m", [], Plan)
+        assert "password generator for my team" in plan.goal
+        assert "password generator for my team" in plan.steps[0].description
+        review = await client.chat_json("m", [], Review)
+        assert "password generator for my team" in review.summary
